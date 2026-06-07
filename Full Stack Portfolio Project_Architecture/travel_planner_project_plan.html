@@ -1,0 +1,241 @@
+
+<style>
+* { box-sizing: border-box; }
+.plan-header { padding: 4px 0 20px; }
+.plan-title { font-size: 20px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 4px; }
+.plan-sub { font-size: 13px; color: var(--color-text-secondary); }
+.section { margin-bottom: 28px; }
+.section-label { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.stack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stack-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 11px 14px; }
+.stack-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+.b-blue   { background: #E6F1FB; color: #0C447C; }
+.b-teal   { background: #E1F5EE; color: #085041; }
+.b-amber  { background: #FAEEDA; color: #633806; }
+.b-purple { background: #EEEDFE; color: #3C3489; }
+.b-coral  { background: #FAECE7; color: #712B13; }
+.b-gray   { background: #F1EFE8; color: #444441; }
+@media (prefers-color-scheme: dark) {
+  .b-blue   { background: #0C447C; color: #B5D4F4; }
+  .b-teal   { background: #085041; color: #9FE1CB; }
+  .b-amber  { background: #633806; color: #FAC775; }
+  .b-purple { background: #3C3489; color: #CECBF6; }
+  .b-coral  { background: #712B13; color: #F5C4B3; }
+  .b-gray   { background: #444441; color: #D3D1C7; }
+}
+.stack-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+.stack-val { font-size: 12px; color: var(--color-text-secondary); }
+.phase { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); margin-bottom: 8px; overflow: hidden; }
+.phase-header { display: flex; align-items: center; gap: 12px; padding: 13px 16px; cursor: pointer; }
+.phase-num { width: 26px; height: 26px; border-radius: 50%; background: var(--color-background-secondary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--color-text-secondary); flex-shrink: 0; }
+.phase-info { flex: 1; }
+.phase-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 2px; }
+.phase-meta { font-size: 12px; color: var(--color-text-secondary); }
+.phase-duration { font-size: 12px; font-weight: 500; color: var(--color-text-tertiary); background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 20px; padding: 2px 10px; white-space: nowrap; }
+.phase-body { padding: 0 16px 14px 54px; border-top: 0.5px solid var(--color-border-tertiary); }
+.task-list { margin: 10px 0 0; padding: 0; list-style: none; }
+.task-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--color-text-secondary); padding: 4px 0; line-height: 1.4; }
+.task-item i { font-size: 15px; margin-top: 1px; color: var(--color-text-tertiary); flex-shrink: 0; }
+.goal-box { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 8px 12px; margin-top: 8px; font-size: 12px; color: var(--color-text-secondary); }
+.goal-box strong { color: var(--color-text-primary); font-weight: 500; }
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.summary-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; text-align: center; }
+.summary-num { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+.summary-lbl { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.git-flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.git-box { font-size: 12px; font-family: var(--font-mono); background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 6px; padding: 3px 10px; color: var(--color-text-primary); }
+.git-arrow { font-size: 13px; color: var(--color-text-tertiary); }
+.api-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.api-pill { font-size: 12px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 20px; padding: 4px 12px; color: var(--color-text-secondary); display: flex; align-items: center; gap: 5px; }
+</style>
+
+<div class="plan-header">
+  <p class="plan-title">Travel Planner — תוכנית עבודה</p>
+  <p class="plan-sub">פרויקט גמר לתיק עבודות | Full Stack</p>
+</div>
+
+<div class="section">
+  <div class="section-label">סיכום</div>
+  <div class="summary-grid">
+    <div class="summary-card"><div class="summary-num">7</div><div class="summary-lbl">שלבים</div></div>
+    <div class="summary-card"><div class="summary-num">~6</div><div class="summary-lbl">שבועות</div></div>
+    <div class="summary-card"><div class="summary-num">100%</div><div class="summary-lbl">חינמי</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Stack סופי</div>
+  <div class="stack-grid">
+    <div class="stack-card"><div class="stack-head"><span class="badge b-blue">Frontend</span></div><div class="stack-name">React + JavaScript</div><div class="stack-val">Vercel</div></div>
+    <div class="stack-card"><div class="stack-head"><span class="badge b-teal">Backend</span></div><div class="stack-name">ASP.NET Core C#</div><div class="stack-val">Render</div></div>
+    <div class="stack-card"><div class="stack-head"><span class="badge b-amber">Database</span></div><div class="stack-name">PostgreSQL</div><div class="stack-val">Supabase — חינמי</div></div>
+    <div class="stack-card"><div class="stack-head"><span class="badge b-purple">Auth</span></div><div class="stack-name">Firebase Auth</div><div class="stack-val">Google + Email</div></div>
+    <div class="stack-card"><div class="stack-head"><span class="badge b-coral">APIs חיצוניים</span></div>
+      <div class="api-row">
+        <span class="api-pill"><i class="ti ti-cloud" aria-hidden="true"></i>מזג אוויר</span>
+        <span class="api-pill"><i class="ti ti-world" aria-hidden="true"></i>מדינות</span>
+        <span class="api-pill"><i class="ti ti-currency-dollar" aria-hidden="true"></i>מטבע</span>
+      </div>
+    </div>
+    <div class="stack-card"><div class="stack-head"><span class="badge b-gray">Git</span></div>
+      <div class="git-flow">
+        <span class="git-box">feature/*</span><span class="git-arrow">→</span>
+        <span class="git-box">develop</span><span class="git-arrow">→</span>
+        <span class="git-box">main</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">תוכנית עבודה</div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">1</div>
+      <div class="phase-info">
+        <div class="phase-title">GitHub + סביבת עבודה</div>
+        <div class="phase-meta">הבסיס של הכל</div>
+      </div>
+      <div class="phase-duration">3-4 ימים</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>יצירת Repository ב-GitHub</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>הגדרת branches: main, develop</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>Branch protection על main</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>מבנה תיקיות: frontend/ backend/</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>.gitignore, README ראשוני</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>יצירת פרויקט React ופרויקט ASP.NET</li>
+      </ul>
+      <div class="goal-box"><strong>יעד:</strong> הכל עולה ל-GitHub, שני הפרויקטים רצים מקומית</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">2</div>
+      <div class="phase-info">
+        <div class="phase-title">Database — PostgreSQL על Supabase</div>
+        <div class="phase-meta">עיצוב סכמה ויצירת טבלאות</div>
+      </div>
+      <div class="phase-duration">3-4 ימים</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>פתיחת חשבון Supabase</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>יצירת טבלת Users</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>יצירת טבלת Trips עם כל השדות</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>הגדרת relations ו-foreign keys</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>חיבור ASP.NET ל-DB דרך connection string</li>
+      </ul>
+      <div class="goal-box"><strong>יעד:</strong> ASP.NET מתחבר ל-DB ושולף נתונים בהצלחה</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">3</div>
+      <div class="phase-info">
+        <div class="phase-title">ASP.NET Core API</div>
+        <div class="phase-meta">הלב של הפרויקט</div>
+      </div>
+      <div class="phase-duration">1-2 שבועות</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>TripsController — CRUD מלא</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>TripService עם לוגיקה עסקית</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>ADO.NET — שאילתות SQL ידניות</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>Validation על כל הבקשות</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>Error handling מסודר</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>בדיקות ב-Postman לכל endpoint</li>
+      </ul>
+      <div class="goal-box"><strong>יעד:</strong> כל ה-endpoints עובדים ומאומתים ב-Postman</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">4</div>
+      <div class="phase-info">
+        <div class="phase-title">Firebase Auth</div>
+        <div class="phase-meta">Login + הגנה על ה-API</div>
+      </div>
+      <div class="phase-duration">4-5 ימים</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>הגדרת Firebase project</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>Login עם Google + Email/Password</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>ASP.NET מאמת JWT tokens של Firebase</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>הגנה על כל ה-endpoints</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>שמירת userId עם כל טיול ב-DB</li>
+      </ul>
+      <div class="goal-box"><strong>יעד:</strong> רק משתמש מחובר יכול לגשת לטיולים שלו</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">5</div>
+      <div class="phase-info">
+        <div class="phase-title">APIs חיצוניים</div>
+        <div class="phase-meta">מזג אוויר, מדינות, מטבע</div>
+      </div>
+      <div class="phase-duration">4-5 ימים</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>OpenWeatherMap — מזג אוויר לפי עיר</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>RestCountries — דגל, בירה, שפה, מטבע</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>ExchangeRate-API — המרת שקלים למטבע מקומי</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>ASP.NET קורא לכל ה-APIs ומחזיר ל-React</li>
+      </ul>
+      <div class="goal-box"><strong>יעד:</strong> עמוד טיול מציג מזג אוויר + מידע מדינה + המרת מטבע</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">6</div>
+      <div class="phase-info">
+        <div class="phase-title">React Frontend</div>
+        <div class="phase-meta">ממשק המשתמש</div>
+      </div>
+      <div class="phase-duration">1.5-2 שבועות</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>דף Login עם Firebase</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>דשבורד — רשימת כל הטיולים</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>טופס יצירת טיול חדש</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>עמוד פרטי טיול — מזג אוויר, מטבע, מדינה</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>עריכה ומחיקה של טיול</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>חיבור מלא ל-API דרך Axios</li>
+      </ul>
+      <div class="goal-box"><strong>יעד:</strong> אפליקציה עובדת מקצה לקצה מקומית</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">7</div>
+      <div class="phase-info">
+        <div class="phase-title">Deploy + README</div>
+        <div class="phase-meta">הפרויקט חי באינטרנט</div>
+      </div>
+      <div class="phase-duration">3-4 ימים</div>
+    </div>
+    <div class="phase-body">
+      <ul class="task-list">
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>Deploy Frontend על Vercel</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>Deploy Backend על Render</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>README מלא — screenshots, הוראות הרצה, הסבר</li>
+        <li class="task-item"><i class="ti ti-check" aria-hidden="true"></i>בדיקה שהכל עובד מהאינטרנט</li>
+      </ul>
+      <div class="goal-box"><strong>יעד:</strong> קישור חי שאפשר לשלוח ב-CV</div>
+    </div>
+  </div>
+</div>
