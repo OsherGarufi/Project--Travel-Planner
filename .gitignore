@@ -20,3 +20,6 @@ obj/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local Supabase notes / secrets
+Full Stack Portfolio Project_Architecture/Superbase.txt
