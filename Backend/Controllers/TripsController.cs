@@ -23,6 +23,20 @@ public class TripsController : ControllerBase
         return Ok(trips);
     }
 
+    /// <summary>Returns a single trip by its id.</summary>
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetTripById(Guid id)
+    {
+        var trip = await _dbService.GetTripByIdAsync(id);
+
+        if (trip is null)
+        {
+            return NotFound($"Trip with id '{id}' was not found.");
+        }
+
+        return Ok(trip);
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateTrip(CreateTripRequest request)
     {
