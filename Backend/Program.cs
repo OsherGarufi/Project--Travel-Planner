@@ -1,9 +1,9 @@
-using Backend.DAL;  
+using Backend.DAL;
+using Backend.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 builder.Services.AddScoped<DbService>();
 
@@ -11,6 +11,9 @@ builder.Services.AddScoped<DbService>();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// Global exception handling should run early in the request pipeline.
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
