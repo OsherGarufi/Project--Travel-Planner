@@ -38,18 +38,8 @@ public class TripsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateTrip(CreateTripRequest request)
+    public async Task<IActionResult> CreateTrip([FromBody] CreateTripRequest request)
     {
-        if (request.EndDate < request.StartDate)
-        {
-            return BadRequest("End date cannot be before start date.");
-        }
-
-        if (request.BudgetAmount < 0)
-        {
-            return BadRequest("Budget amount cannot be negative.");
-        }
-
         var createdTrip = await _dbService.CreateTripAsync(request);
 
         return Created($"/api/trips/{createdTrip.Id}", createdTrip);
@@ -57,18 +47,8 @@ public class TripsController : ControllerBase
 
     /// <summary>Updates an existing trip by its id.</summary>
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateTrip(Guid id, UpdateTripRequest request)
+    public async Task<IActionResult> UpdateTrip(Guid id,[FromBody] UpdateTripRequest request)
     {
-        if (request.EndDate < request.StartDate)
-        {
-            return BadRequest("End date cannot be before start date.");
-        }
-
-        if (request.BudgetAmount < 0)
-        {
-            return BadRequest("Budget amount cannot be negative.");
-        }
-
         var updatedTrip = await _dbService.UpdateTripAsync(id, request);
 
         if (updatedTrip is null)
