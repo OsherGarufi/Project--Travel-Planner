@@ -23,3 +23,5 @@ Thumbs.db
 
 # Local Supabase notes / secrets
 Full Stack Portfolio Project_Architecture/Superbase.txt
+# Firebase Admin private key
+travel-planner-firebase-admin.json
