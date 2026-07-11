@@ -268,6 +268,124 @@ public class DbService
         return affectedRows > 0;
     }
 
+    /// <summary>Creates a user if it does not exist, or updates it if it already exists.</summary>
+    public async Task<AppUser> UpsertUserAsync(UpsertUserRequest request)
+    {
+        await using var connection = new NpgsqlConnection(GetConnectionString());
+        await connection.OpenAsync();
+
+        const string sql = """
+        INSERT INTO users (
+            firebase_uid,
+            email,
+            display_name,
+            photo_url
+        )
+        VALUES (
+            @firebase_uid,
+            @email,
+            @display_name,
+            @photo_url
+        )
+        ON CONFLICT (firebase_uid)
+        DO UPDATE SET
+            email = EXCLUDED.email,
+            display_name = EXCLUDED.display_name,
+            photo_url = EXCLUDED.photo_url
+        RETURNING
+            id,
+            firebase_uid,
+            email,
+            display_name,
+            photo_url,
+            created_at,
+            updated_at;
+        """;
+
+        await using var command = new NpgsqlCommand(sql, connection);
+
+        command.Parameters.AddWithValue("firebase_uid", request.FirebaseUid);
+        command.Parameters.AddWithValue("email", request.Email);
+
+        command.Parameters.AddWithValue(
+            "display_name",
+            string.IsNullOrWhiteSpace(request.DisplayName)
+                ? DBNull.Value
+                : request.DisplayName
+        );
+
+        command.Parameters.AddWithValue(
+            "photo_url",
+            string.IsNullOrWhiteSpace(request.PhotoUrl)
+                ? DBNull.Value
+                : request.PhotoUrl
+        );
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            throw new InvalidOperationException("Failed to create or update user.");
+        }
+
+        return MapUser(reader);
+    }
+
+    /// <summary>Returns a user by Firebase UID, or null if the user does not exist.</summary>
+    public async Task<AppUser?> GetUserByFirebaseUidAsync(string firebaseUid)
+    {
+        await using var connection = new NpgsqlConnection(GetConnectionString());
+        await connection.OpenAsync();
+
+        const string sql = """
+        SELECT
+            id,
+            firebase_uid,
+            email,
+            display_name,
+            photo_url,
+            created_at,
+            updated_at
+        FROM users
+        WHERE firebase_uid = @firebase_uid
+        LIMIT 1;
+        """;
+
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("firebase_uid", firebaseUid);
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+
+        return MapUser(reader);
+    }
+
+    /// <summary>Maps a database row into an AppUser model object.</summary>
+    private static AppUser MapUser(NpgsqlDataReader reader)
+    {
+        return new AppUser
+        {
+            Id = reader.GetGuid(reader.GetOrdinal("id")),
+            FirebaseUid = reader.GetString(reader.GetOrdinal("firebase_uid")),
+            Email = reader.GetString(reader.GetOrdinal("email")),
+
+            DisplayName = reader.IsDBNull(reader.GetOrdinal("display_name"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("display_name")),
+
+            PhotoUrl = reader.IsDBNull(reader.GetOrdinal("photo_url"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("photo_url")),
+
+            CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at")),
+            UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updated_at"))
+        };
+    }
+
     /// <summary>Maps a database row into a Trip model object.</summary>
     private static Trip MapTrip(NpgsqlDataReader reader)
     {
