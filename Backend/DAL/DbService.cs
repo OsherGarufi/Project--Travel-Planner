@@ -182,6 +182,73 @@ public class DbService
         return MapTrip(reader);
     }
 
+    /// <summary>Updates an existing trip in the database and returns the updated trip, or null if it does not exist.</summary>
+    public async Task<Trip?> UpdateTripAsync(Guid id, UpdateTripRequest request)
+    {
+        await using var connection = new NpgsqlConnection(GetConnectionString());
+        await connection.OpenAsync();
+
+        const string sql = """
+        UPDATE trips
+        SET
+            title = @title,
+            destination_country_code = @destination_country_code,
+            destination_country_name = @destination_country_name,
+            destination_city = @destination_city,
+            start_date = @start_date,
+            end_date = @end_date,
+            budget_amount = @budget_amount,
+            budget_currency = @budget_currency,
+            notes = @notes
+        WHERE id = @id
+        RETURNING
+            id,
+            user_id,
+            title,
+            destination_country_code,
+            destination_country_name,
+            destination_city,
+            start_date,
+            end_date,
+            budget_amount,
+            budget_currency,
+            notes,
+            created_at,
+            updated_at;
+        """;
+
+        await using var command = new NpgsqlCommand(sql, connection);
+
+        command.Parameters.AddWithValue("id", id);
+        command.Parameters.AddWithValue("title", request.Title);
+        command.Parameters.AddWithValue("destination_country_code", request.DestinationCountryCode.ToUpper());
+        command.Parameters.AddWithValue("destination_country_name", request.DestinationCountryName);
+        command.Parameters.AddWithValue("destination_city", request.DestinationCity);
+        command.Parameters.AddWithValue("start_date", request.StartDate);
+        command.Parameters.AddWithValue("end_date", request.EndDate);
+
+        command.Parameters.AddWithValue(
+            "budget_amount",
+            request.BudgetAmount.HasValue ? request.BudgetAmount.Value : DBNull.Value
+        );
+
+        command.Parameters.AddWithValue("budget_currency", request.BudgetCurrency.ToUpper());
+
+        command.Parameters.AddWithValue(
+            "notes",
+            string.IsNullOrWhiteSpace(request.Notes) ? DBNull.Value : request.Notes
+        );
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+
+        return MapTrip(reader);
+    }
+
     /// <summary>Maps a database row into a Trip model object.</summary>
     private static Trip MapTrip(NpgsqlDataReader reader)
     {

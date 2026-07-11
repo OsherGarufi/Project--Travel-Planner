@@ -54,4 +54,28 @@ public class TripsController : ControllerBase
 
         return Created($"/api/trips/{createdTrip.Id}", createdTrip);
     }
+
+    /// <summary>Updates an existing trip by its id.</summary>
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateTrip(Guid id, UpdateTripRequest request)
+    {
+        if (request.EndDate < request.StartDate)
+        {
+            return BadRequest("End date cannot be before start date.");
+        }
+
+        if (request.BudgetAmount < 0)
+        {
+            return BadRequest("Budget amount cannot be negative.");
+        }
+
+        var updatedTrip = await _dbService.UpdateTripAsync(id, request);
+
+        if (updatedTrip is null)
+        {
+            return NotFound($"Trip with id '{id}' was not found.");
+        }
+
+        return Ok(updatedTrip);
+    }
 }
