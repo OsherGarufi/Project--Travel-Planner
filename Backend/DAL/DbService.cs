@@ -249,6 +249,25 @@ public class DbService
         return MapTrip(reader);
     }
 
+    /// <summary>Deletes a trip by id and returns true if a trip was deleted.</summary>
+    public async Task<bool> DeleteTripAsync(Guid id)
+    {
+        await using var connection = new NpgsqlConnection(GetConnectionString());
+        await connection.OpenAsync();
+
+        const string sql = """
+        DELETE FROM trips
+        WHERE id = @id;
+        """;
+
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("id", id);
+
+        var affectedRows = await command.ExecuteNonQueryAsync();
+
+        return affectedRows > 0;
+    }
+
     /// <summary>Maps a database row into a Trip model object.</summary>
     private static Trip MapTrip(NpgsqlDataReader reader)
     {

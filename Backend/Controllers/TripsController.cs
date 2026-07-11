@@ -78,4 +78,18 @@ public class TripsController : ControllerBase
 
         return Ok(updatedTrip);
     }
+
+    /// <summary>Deletes an existing trip by its id.</summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteTrip(Guid id)
+    {
+        var wasDeleted = await _dbService.DeleteTripAsync(id);
+
+        if (!wasDeleted)
+        {
+            return NotFound($"Trip with id '{id}' was not found.");
+        }
+
+        return NoContent();
+    }
 }
