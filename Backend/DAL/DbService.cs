@@ -145,6 +145,48 @@ public class DbService
         return MapTrip(reader);
     }
 
+    /// <summary>Returns a single trip by id only if it belongs to the specified user.</summary>
+    public async Task<Trip?> GetTripByIdForUserAsync(Guid id, Guid userId)
+    {
+        await using var connection = new NpgsqlConnection(GetConnectionString());
+        await connection.OpenAsync();
+
+        const string sql = """
+        SELECT
+            id,
+            user_id,
+            title,
+            destination_country_code,
+            destination_country_name,
+            destination_city,
+            start_date,
+            end_date,
+            budget_amount,
+            budget_currency,
+            notes,
+            created_at,
+            updated_at
+        FROM trips
+        WHERE id = @id
+        AND user_id = @user_id
+        LIMIT 1;
+        """;
+
+        await using var command = new NpgsqlCommand(sql, connection);
+
+        command.Parameters.AddWithValue("id", id);
+        command.Parameters.AddWithValue("user_id", userId);
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+
+        return MapTrip(reader);
+    }
+
     /// <summary>Creates a new trip in the database and returns the created trip.</summary>
     public async Task<Trip> CreateTripAsync(CreateTripRequest request, Guid userId)
     {

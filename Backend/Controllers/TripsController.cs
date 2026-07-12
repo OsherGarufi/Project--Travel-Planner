@@ -35,11 +35,18 @@ public class TripsController : ControllerBase
         return Ok(trips);
     }
 
-    /// <summary>Returns a single trip by its id.</summary>
+    /// <summary>Returns a single trip by its id only if it belongs to the authenticated user.</summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetTripById(Guid id)
     {
-        var trip = await _dbService.GetTripByIdAsync(id);
+        var user = await GetAuthenticatedUserAsync();
+
+        if (user is null)
+        {
+            return Unauthorized("Invalid or missing Firebase ID token.");
+        }
+
+        var trip = await _dbService.GetTripByIdForUserAsync(id, user.Id);
 
         if (trip is null)
         {
