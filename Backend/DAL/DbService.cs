@@ -64,6 +64,48 @@ public class DbService
         return trips;
     }
 
+    /// <summary>Returns all trips that belong to a specific user.</summary>
+    public async Task<List<Trip>> GetTripsByUserIdAsync(Guid userId)
+    {
+        var trips = new List<Trip>();
+
+        await using var connection = new NpgsqlConnection(GetConnectionString());
+        await connection.OpenAsync();
+
+        const string sql = """
+        SELECT
+            id,
+            user_id,
+            title,
+            destination_country_code,
+            destination_country_name,
+            destination_city,
+            start_date,
+            end_date,
+            budget_amount,
+            budget_currency,
+            notes,
+            created_at,
+            updated_at
+        FROM trips
+        WHERE user_id = @user_id
+        ORDER BY created_at DESC;
+        """;
+
+        await using var command = new NpgsqlCommand(sql, connection);
+
+        command.Parameters.AddWithValue("user_id", userId);
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            trips.Add(MapTrip(reader));
+        }
+
+        return trips;
+    }
+
     /// <summary>Returns a single trip by id, or null if it does not exist.</summary>
     public async Task<Trip?> GetTripByIdAsync(Guid id)
     {
