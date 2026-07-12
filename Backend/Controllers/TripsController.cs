@@ -72,11 +72,19 @@ public class TripsController : ControllerBase
         return Created($"/api/trips/{createdTrip.Id}", createdTrip);
     }
 
-    /// <summary>Updates an existing trip by its id.</summary>
+    /// <summary>Updates an existing trip only if it belongs to the authenticated user.</summary>
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateTrip(Guid id,[FromBody] UpdateTripRequest request )
+    public async Task<IActionResult> UpdateTrip(Guid id,[FromBody] UpdateTripRequest request)
     {
-        var updatedTrip = await _dbService.UpdateTripAsync(id, request);
+        var user = await GetAuthenticatedUserAsync();
+
+        if (user is null)
+        {
+            return Unauthorized("Invalid or missing Firebase ID token.");
+        }
+
+        var updatedTrip =
+            await _dbService.UpdateTripForUserAsync(id, user.Id, request);
 
         if (updatedTrip is null)
         {
@@ -86,11 +94,18 @@ public class TripsController : ControllerBase
         return Ok(updatedTrip);
     }
 
-    /// <summary>Deletes an existing trip by its id.</summary>
+    /// <summary>Deletes an existing trip only if it belongs to the authenticated user.</summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteTrip(Guid id)
     {
-        var wasDeleted = await _dbService.DeleteTripAsync(id);
+        var user = await GetAuthenticatedUserAsync();
+
+        if (user is null)
+        {
+            return Unauthorized("Invalid or missing Firebase ID token.");
+        }
+
+        var wasDeleted = await _dbService.DeleteTripForUserAsync(id, user.Id);
 
         if (!wasDeleted)
         {

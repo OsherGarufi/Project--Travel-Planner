@@ -26,44 +26,6 @@ public class DbService
         return connectionString;
     }
 
-    /// <summary>Returns all trips from the database, ordered by newest first.</summary>
-    public async Task<List<Trip>> GetTripsAsync()
-    {
-        var trips = new List<Trip>();
-
-        await using var connection = new NpgsqlConnection(GetConnectionString());
-        await connection.OpenAsync();
-
-        const string sql = """
-            SELECT
-                id,
-                user_id,
-                title,
-                destination_country_code,
-                destination_country_name,
-                destination_city,
-                start_date,
-                end_date,
-                budget_amount,
-                budget_currency,
-                notes,
-                created_at,
-                updated_at
-            FROM trips
-            ORDER BY created_at DESC;
-            """;
-
-        await using var command = new NpgsqlCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
-        {
-            trips.Add(MapTrip(reader));
-        }
-
-        return trips;
-    }
-
     /// <summary>Returns all trips that belong to a specific user.</summary>
     public async Task<List<Trip>> GetTripsByUserIdAsync(Guid userId)
     {
@@ -104,45 +66,6 @@ public class DbService
         }
 
         return trips;
-    }
-
-    /// <summary>Returns a single trip by id, or null if it does not exist.</summary>
-    public async Task<Trip?> GetTripByIdAsync(Guid id)
-    {
-        await using var connection = new NpgsqlConnection(GetConnectionString());
-        await connection.OpenAsync();
-
-        const string sql = """
-        SELECT
-            id,
-            user_id,
-            title,
-            destination_country_code,
-            destination_country_name,
-            destination_city,
-            start_date,
-            end_date,
-            budget_amount,
-            budget_currency,
-            notes,
-            created_at,
-            updated_at
-        FROM trips
-        WHERE id = @id
-        LIMIT 1;
-        """;
-
-        await using var command = new NpgsqlCommand(sql, connection);
-        command.Parameters.AddWithValue("id", id);
-
-        await using var reader = await command.ExecuteReaderAsync();
-
-        if (!await reader.ReadAsync())
-        {
-            return null;
-        }
-
-        return MapTrip(reader);
     }
 
     /// <summary>Returns a single trip by id only if it belongs to the specified user.</summary>
@@ -279,8 +202,8 @@ public class DbService
         return MapTrip(reader);
     }
 
-    /// <summary>Updates an existing trip in the database and returns the updated trip, or null if it does not exist.</summary>
-    public async Task<Trip?> UpdateTripAsync(Guid id, UpdateTripRequest request)
+    /// <summary>Updates a trip only if it belongs to the specified user.</summary>
+    public async Task<Trip?> UpdateTripForUserAsync(Guid id,Guid userId,UpdateTripRequest request)
     {
         await using var connection = new NpgsqlConnection(GetConnectionString());
         await connection.OpenAsync();
@@ -298,6 +221,7 @@ public class DbService
             budget_currency = @budget_currency,
             notes = @notes
         WHERE id = @id
+        AND user_id = @user_id
         RETURNING
             id,
             user_id,
@@ -317,23 +241,37 @@ public class DbService
         await using var command = new NpgsqlCommand(sql, connection);
 
         command.Parameters.AddWithValue("id", id);
+        command.Parameters.AddWithValue("user_id", userId);
         command.Parameters.AddWithValue("title", request.Title);
-        command.Parameters.AddWithValue("destination_country_code", request.DestinationCountryCode.ToUpper());
-        command.Parameters.AddWithValue("destination_country_name", request.DestinationCountryName);
+        command.Parameters.AddWithValue(
+            "destination_country_code",
+            request.DestinationCountryCode.ToUpper()
+        );
+        command.Parameters.AddWithValue(
+            "destination_country_name",
+            request.DestinationCountryName
+        );
         command.Parameters.AddWithValue("destination_city", request.DestinationCity);
         command.Parameters.AddWithValue("start_date", request.StartDate);
         command.Parameters.AddWithValue("end_date", request.EndDate);
 
         command.Parameters.AddWithValue(
             "budget_amount",
-            request.BudgetAmount.HasValue ? request.BudgetAmount.Value : DBNull.Value
+            request.BudgetAmount.HasValue
+                ? request.BudgetAmount.Value
+                : DBNull.Value
         );
 
-        command.Parameters.AddWithValue("budget_currency", request.BudgetCurrency.ToUpper());
+        command.Parameters.AddWithValue(
+            "budget_currency",
+            request.BudgetCurrency.ToUpper()
+        );
 
         command.Parameters.AddWithValue(
             "notes",
-            string.IsNullOrWhiteSpace(request.Notes) ? DBNull.Value : request.Notes
+            string.IsNullOrWhiteSpace(request.Notes)
+                ? DBNull.Value
+                : request.Notes
         );
 
         await using var reader = await command.ExecuteReaderAsync();
@@ -346,19 +284,22 @@ public class DbService
         return MapTrip(reader);
     }
 
-    /// <summary>Deletes a trip by id and returns true if a trip was deleted.</summary>
-    public async Task<bool> DeleteTripAsync(Guid id)
+    /// <summary>Deletes a trip only if it belongs to the specified user.</summary>
+    public async Task<bool> DeleteTripForUserAsync(Guid id, Guid userId)
     {
         await using var connection = new NpgsqlConnection(GetConnectionString());
         await connection.OpenAsync();
 
         const string sql = """
         DELETE FROM trips
-        WHERE id = @id;
+        WHERE id = @id
+        AND user_id = @user_id;
         """;
 
         await using var command = new NpgsqlCommand(sql, connection);
+
         command.Parameters.AddWithValue("id", id);
+        command.Parameters.AddWithValue("user_id", userId);
 
         var affectedRows = await command.ExecuteNonQueryAsync();
 
