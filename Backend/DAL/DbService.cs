@@ -104,72 +104,85 @@ public class DbService
     }
 
     /// <summary>Creates a new trip in the database and returns the created trip.</summary>
-    public async Task<Trip> CreateTripAsync(CreateTripRequest request)
+    public async Task<Trip> CreateTripAsync(CreateTripRequest request, Guid userId)
     {
         await using var connection = new NpgsqlConnection(GetConnectionString());
         await connection.OpenAsync();
 
         const string sql = """
-            INSERT INTO trips (
-                user_id,
-                title,
-                destination_country_code,
-                destination_country_name,
-                destination_city,
-                start_date,
-                end_date,
-                budget_amount,
-                budget_currency,
-                notes
-            )
-            VALUES (
-                @user_id,
-                @title,
-                @destination_country_code,
-                @destination_country_name,
-                @destination_city,
-                @start_date,
-                @end_date,
-                @budget_amount,
-                @budget_currency,
-                @notes
-            )
-            RETURNING
-                id,
-                user_id,
-                title,
-                destination_country_code,
-                destination_country_name,
-                destination_city,
-                start_date,
-                end_date,
-                budget_amount,
-                budget_currency,
-                notes,
-                created_at,
-                updated_at;
-            """;
+        INSERT INTO trips (
+            user_id,
+            title,
+            destination_country_code,
+            destination_country_name,
+            destination_city,
+            start_date,
+            end_date,
+            budget_amount,
+            budget_currency,
+            notes
+        )
+        VALUES (
+            @user_id,
+            @title,
+            @destination_country_code,
+            @destination_country_name,
+            @destination_city,
+            @start_date,
+            @end_date,
+            @budget_amount,
+            @budget_currency,
+            @notes
+        )
+        RETURNING
+            id,
+            user_id,
+            title,
+            destination_country_code,
+            destination_country_name,
+            destination_city,
+            start_date,
+            end_date,
+            budget_amount,
+            budget_currency,
+            notes,
+            created_at,
+            updated_at;
+        """;
 
         await using var command = new NpgsqlCommand(sql, connection);
 
-        command.Parameters.AddWithValue("user_id", request.UserId);
+        command.Parameters.AddWithValue("user_id", userId);
         command.Parameters.AddWithValue("title", request.Title);
-        command.Parameters.AddWithValue("destination_country_code", request.DestinationCountryCode.ToUpper());
-        command.Parameters.AddWithValue("destination_country_name", request.DestinationCountryName);
+        command.Parameters.AddWithValue(
+            "destination_country_code",
+            request.DestinationCountryCode.ToUpper()
+        );
+        command.Parameters.AddWithValue(
+            "destination_country_name",
+            request.DestinationCountryName
+        );
         command.Parameters.AddWithValue("destination_city", request.DestinationCity);
         command.Parameters.AddWithValue("start_date", request.StartDate);
         command.Parameters.AddWithValue("end_date", request.EndDate);
 
         command.Parameters.AddWithValue(
             "budget_amount",
-            request.BudgetAmount.HasValue ? request.BudgetAmount.Value : DBNull.Value
+            request.BudgetAmount.HasValue
+                ? request.BudgetAmount.Value
+                : DBNull.Value
         );
 
-        command.Parameters.AddWithValue("budget_currency", request.BudgetCurrency.ToUpper());
+        command.Parameters.AddWithValue(
+            "budget_currency",
+            request.BudgetCurrency.ToUpper()
+        );
 
         command.Parameters.AddWithValue(
             "notes",
-            string.IsNullOrWhiteSpace(request.Notes) ? DBNull.Value : request.Notes
+            string.IsNullOrWhiteSpace(request.Notes)
+                ? DBNull.Value
+                : request.Notes
         );
 
         await using var reader = await command.ExecuteReaderAsync();

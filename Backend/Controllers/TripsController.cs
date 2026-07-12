@@ -1,5 +1,6 @@
 ﻿using Backend.DAL;
 using Backend.Dtos;
+using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -9,10 +10,15 @@ namespace Backend.Controllers;
 public class TripsController : ControllerBase
 {
     private readonly DbService _dbService;
+    private readonly FirebaseAuthService _firebaseAuthService;
 
-    public TripsController(DbService dbService)
+    public TripsController(
+        DbService dbService,
+        FirebaseAuthService firebaseAuthService
+    )
     {
         _dbService = dbService;
+        _firebaseAuthService = firebaseAuthService;
     }
 
     [HttpGet]
@@ -38,16 +44,55 @@ public class TripsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateTrip([FromBody] CreateTripRequest request)
+    public async Task<IActionResult> CreateTrip(
+        [FromBody] CreateTripRequest request,
+        [FromHeader(Name = "Authorization")] string? authorizationHeader
+    )
     {
-        var createdTrip = await _dbService.CreateTripAsync(request);
+        if (string.IsNullOrWhiteSpace(authorizationHeader))
+        {
+            return Unauthorized("Missing Authorization header.");
+        }
 
-        return Created($"/api/trips/{createdTrip.Id}", createdTrip);
+        if (!authorizationHeader.StartsWith("Bearer "))
+        {
+            return Unauthorized("Invalid Authorization header format.");
+        }
+
+        var idToken = authorizationHeader["Bearer ".Length..];
+
+        try
+        {
+            var firebaseToken =
+                await _firebaseAuthService.VerifyIdTokenAsync(idToken);
+
+            var user =
+                await _dbService.GetUserByFirebaseUidAsync(firebaseToken.Uid);
+
+            if (user is null)
+            {
+                return Unauthorized(
+                    "User was not found in the database. Please login first."
+                );
+            }
+
+            var createdTrip =
+                await _dbService.CreateTripAsync(request, user.Id);
+
+            return Created($"/api/trips/{createdTrip.Id}", createdTrip);
+        }
+        catch
+        {
+            return Unauthorized("Invalid Firebase ID token.");
+        }
     }
 
     /// <summary>Updates an existing trip by its id.</summary>
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateTrip(Guid id,[FromBody] UpdateTripRequest request)
+    public async Task<IActionResult> UpdateTrip(
+        Guid id,
+        [FromBody] UpdateTripRequest request
+    )
     {
         var updatedTrip = await _dbService.UpdateTripAsync(id, request);
 

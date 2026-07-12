@@ -1,8 +1,9 @@
 using Backend.DAL;
 using Backend.Middleware;
+using Backend.Services;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
-using Backend.Services;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,8 +29,51 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<DbService>();
 builder.Services.AddScoped<FirebaseAuthService>();
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Adds OpenAPI/Swagger support and configures an Authorization header.
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new OpenApiComponents();
+
+        document.Components.SecuritySchemes ??=
+            new Dictionary<string, OpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["Bearer"] =
+            new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.ApiKey,
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Description =
+                    "Enter your Firebase ID token in this format: Bearer {token}"
+            };
+
+        foreach (var path in document.Paths.Values)
+        {
+            foreach (var operation in path.Operations.Values)
+            {
+                operation.Security ??= new List<OpenApiSecurityRequirement>();
+
+                operation.Security.Add(new OpenApiSecurityRequirement
+                {
+                    [
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        }
+                    ] = Array.Empty<string>()
+                });
+            }
+        }
+
+        return Task.CompletedTask;
+    });
+});
 
 var app = builder.Build();
 

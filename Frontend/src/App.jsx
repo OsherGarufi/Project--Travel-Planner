@@ -22,7 +22,7 @@ function App() {
 
       const firebaseUser = result.user
 
-      const idToken = await firebaseUser.getIdToken()
+      const idToken = await firebaseUser.getIdToken(true)
 
       setUser(firebaseUser)
 
