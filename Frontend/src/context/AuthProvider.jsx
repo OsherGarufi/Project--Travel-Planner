@@ -1,18 +1,14 @@
 import { onAuthStateChanged } from 'firebase/auth'
-import {
-  createContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { auth } from '../config/firebase'
 import {
+  loginWithEmail,
   loginWithGoogle,
   logoutFromFirebase,
+  registerWithEmail,
   syncFirebaseUserWithBackend,
 } from '../services/authService'
-
-export const AuthContext = createContext(null)
+import { AuthContext } from './AuthContext'
 
 export function AuthProvider({ children }) {
   const [firebaseUser, setFirebaseUser] = useState(null)
@@ -22,21 +18,24 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true)
 
   const isManualLoginInProgress = useRef(false)
+  const isRegistrationInProgress = useRef(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (currentFirebaseUser) => {
+        if (
+          isManualLoginInProgress.current || 
+          isRegistrationInProgress.current
+        ) {
+          return
+        }
+
         if (!currentFirebaseUser) {
           setFirebaseUser(null)
           setBackendUser(null)
           setIdToken(null)
           setIsLoading(false)
-
-          return
-        }
-
-        if (isManualLoginInProgress.current) {
           return
         }
 
@@ -100,6 +99,90 @@ export function AuthProvider({ children }) {
     }
   }
 
+const loginWithEmailAndPassword = async (
+  email,
+  password,
+) => {
+  try {
+    isManualLoginInProgress.current = true
+
+    setIsLoading(true)
+    setError('')
+
+    const loginResult = await loginWithEmail(
+      email,
+      password,
+    )
+
+    setFirebaseUser(loginResult.firebaseUser)
+    setBackendUser(loginResult.backendUser)
+    setIdToken(loginResult.idToken)
+
+    return loginResult
+  } catch (loginError) {
+    console.error('Email login failed:', loginError)
+
+    if (loginError.message === 'EMAIL_NOT_VERIFIED') {
+      setError(
+        'Please verify your email address before signing in.',
+      )
+    } else if (
+      loginError.code === 'auth/invalid-credential' ||
+      loginError.code === 'auth/user-not-found' ||
+      loginError.code === 'auth/wrong-password'
+    ) {
+      setError(
+        'The email address or password is incorrect.',
+      )
+    } else if (loginError.code === 'auth/invalid-email') {
+      setError('Please enter a valid email address.')
+    } else if (loginError.code === 'auth/too-many-requests') {
+      setError(
+        'Too many failed login attempts. Please try again later.',
+      )
+    } else if (loginError.code === 'auth/network-request-failed') {
+      setError(
+        'Network error. Please check your internet connection.',
+      )
+    } else {
+      setError(
+        'Login failed. Please try again.',
+      )
+    }
+
+    throw loginError
+  } finally {
+    isManualLoginInProgress.current = false
+    setIsLoading(false)
+  }
+}
+
+  const register = async (displayName, email, password) => {
+    try {
+      isRegistrationInProgress.current = true
+
+      setIsLoading(true)
+      setError('')
+
+      return await registerWithEmail(
+        displayName,
+        email,
+        password,
+      )
+    } catch (registerError) {
+      console.error('Registration failed:', registerError)
+
+      setError(
+        'Registration failed. Check the browser console.',
+      )
+
+      throw registerError
+    } finally {
+      isRegistrationInProgress.current = false
+      setIsLoading(false)
+    }
+  }
+
   const logout = async () => {
     try {
       setIsLoading(true)
@@ -128,6 +211,8 @@ export function AuthProvider({ children }) {
     error,
     isLoading,
     login,
+    loginWithEmailAndPassword,
+    register,
     logout,
   }
 

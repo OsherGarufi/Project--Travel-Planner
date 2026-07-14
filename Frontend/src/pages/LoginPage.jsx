@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import '../css/App.css'
 import { useAuth } from '../hooks/useAuth'
 
@@ -10,7 +10,11 @@ function LoginPage() {
     error,
     isLoading,
     login,
+    loginWithEmailAndPassword,
   } = useAuth()
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
   const navigate = useNavigate()
 
@@ -26,7 +30,17 @@ function LoginPage() {
     try {
       await login()
     } catch {
-      // AuthContext already handles the error state.
+      // AuthProvider already handles the error state.
+    }
+  }
+
+  const handleEmailLogin = async (event) => {
+    event.preventDefault()
+
+    try {
+      await loginWithEmailAndPassword(email, password)
+    } catch {
+      // AuthProvider already handles the error state.
     }
   }
 
@@ -34,9 +48,45 @@ function LoginPage() {
     <main>
       <h1>Travel Planner</h1>
 
-      <p>Firebase Authentication and Backend API test</p>
+      <p>Sign in to continue planning your trips.</p>
 
       {error && <p>{error}</p>}
+
+      <form onSubmit={handleEmailLogin}>
+        <div>
+          <label htmlFor="email">Email</label>
+
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            required
+            disabled={isLoading}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password">Password</label>
+
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password"
+            required
+            disabled={isLoading}
+          />
+        </div>
+
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Signing in...' : 'Login with Email'}
+        </button>
+      </form>
+
+      <p>Or</p>
 
       <button
         type="button"
@@ -45,6 +95,11 @@ function LoginPage() {
       >
         {isLoading ? 'Signing in...' : 'Login with Google'}
       </button>
+
+      <p>
+        Don&apos;t have an account?{' '}
+        <Link to="/register">Create an account</Link>
+      </p>
     </main>
   )
 }
