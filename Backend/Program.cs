@@ -7,6 +7,8 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+const string FrontendCorsPolicy = "FrontendCorsPolicy";
+
 // Loads the Firebase Admin credentials path from User Secrets
 // and initializes the Firebase Admin SDK when the application starts.
 var firebaseCredentialsPath =
@@ -28,6 +30,17 @@ FirebaseApp.Create(new AppOptions
 builder.Services.AddControllers();
 builder.Services.AddScoped<DbService>();
 builder.Services.AddScoped<FirebaseAuthService>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontendCorsPolicy, policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 // Adds OpenAPI/Swagger support and configures an Authorization header.
 builder.Services.AddOpenApi(options =>
@@ -92,6 +105,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(FrontendCorsPolicy);
 
 app.UseAuthorization();
 
