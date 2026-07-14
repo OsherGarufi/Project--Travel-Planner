@@ -28,6 +28,10 @@ export async function syncFirebaseUserWithBackend(firebaseUser) {
 export async function loginWithGoogle() {
   const provider = new GoogleAuthProvider()
 
+  provider.setCustomParameters({
+    prompt: 'select_account',
+  })
+
   const result = await signInWithPopup(auth, provider)
 
   return syncFirebaseUserWithBackend(result.user)
