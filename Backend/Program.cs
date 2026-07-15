@@ -28,8 +28,20 @@ FirebaseApp.Create(new AppOptions
 
 // Add services to the container.
 builder.Services.AddControllers();
+
 builder.Services.AddScoped<DbService>();
 builder.Services.AddScoped<FirebaseAuthService>();
+
+builder.Services.AddMemoryCache();
+
+builder.Services.AddHttpClient<ICountryService, CountryService>(client =>
+{
+    client.BaseAddress = new Uri(
+        "https://api.restcountries.com/"
+    );
+
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 builder.Services.AddCors(options =>
 {
@@ -45,47 +57,55 @@ builder.Services.AddCors(options =>
 // Adds OpenAPI/Swagger support and configures an Authorization header.
 builder.Services.AddOpenApi(options =>
 {
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        document.Components ??= new OpenApiComponents();
-
-        document.Components.SecuritySchemes ??=
-            new Dictionary<string, OpenApiSecurityScheme>();
-
-        document.Components.SecuritySchemes["Bearer"] =
-            new OpenApiSecurityScheme
-            {
-                Type = SecuritySchemeType.ApiKey,
-                Name = "Authorization",
-                In = ParameterLocation.Header,
-                Description =
-                    "Enter your Firebase ID token in this format: Bearer {token}"
-            };
-
-        foreach (var path in document.Paths.Values)
+    options.AddDocumentTransformer(
+        (document, context, cancellationToken) =>
         {
-            foreach (var operation in path.Operations.Values)
-            {
-                operation.Security ??= new List<OpenApiSecurityRequirement>();
+            document.Components ??= new OpenApiComponents();
 
-                operation.Security.Add(new OpenApiSecurityRequirement
+            document.Components.SecuritySchemes ??=
+                new Dictionary<string, OpenApiSecurityScheme>();
+
+            document.Components.SecuritySchemes["Bearer"] =
+                new OpenApiSecurityScheme
                 {
-                    [
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        }
-                    ] = Array.Empty<string>()
-                });
-            }
-        }
+                    Type = SecuritySchemeType.ApiKey,
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Description =
+                        "Enter your Firebase ID token in this format: Bearer {token}"
+                };
 
-        return Task.CompletedTask;
-    });
+            foreach (var path in document.Paths.Values)
+            {
+                foreach (var operation in path.Operations.Values)
+                {
+                    operation.Security ??=
+                        new List<OpenApiSecurityRequirement>();
+
+                    operation.Security.Add(
+                        new OpenApiSecurityRequirement
+                        {
+                            [
+                                new OpenApiSecurityScheme
+                                {
+                                    Reference =
+                                        new OpenApiReference
+                                        {
+                                            Type =
+                                                ReferenceType
+                                                    .SecurityScheme,
+                                            Id = "Bearer"
+                                        }
+                                }
+                            ] = Array.Empty<string>()
+                        }
+                    );
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+    );
 });
 
 var app = builder.Build();
@@ -100,7 +120,10 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "Travel Planner API v1");
+        options.SwaggerEndpoint(
+            "/openapi/v1.json",
+            "Travel Planner API v1"
+        );
     });
 }
 
