@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CountryDetails from '../components/CountryDetails'
 import { getCountries } from '../services/countryService'
 
 function PlanTripPage() {
@@ -36,6 +37,10 @@ function PlanTripPage() {
     loadCountries()
   }, [])
 
+  const selectedCountry = countries.find(
+    (country) => country.code === selectedCountryCode,
+  )
+
   const handleCountryChange = (event) => {
     setSelectedCountryCode(event.target.value)
     setSelectedCity('')
@@ -60,7 +65,9 @@ function PlanTripPage() {
             id="country"
             value={selectedCountryCode}
             onChange={handleCountryChange}
-            disabled={isLoadingCountries || Boolean(countriesError)}
+            disabled={
+              isLoadingCountries || Boolean(countriesError)
+            }
           >
             <option value="">
               {isLoadingCountries
@@ -133,6 +140,8 @@ function PlanTripPage() {
           Check Destination
         </button>
       </form>
+
+      <CountryDetails country={selectedCountry} />
     </main>
   )
 }
