@@ -60,7 +60,7 @@ function PlanTripPage() {
             id="country"
             value={selectedCountryCode}
             onChange={handleCountryChange}
-            disabled={isLoadingCountries}
+            disabled={isLoadingCountries || Boolean(countriesError)}
           >
             <option value="">
               {isLoadingCountries
@@ -70,10 +70,10 @@ function PlanTripPage() {
 
             {countries.map((country) => (
               <option
-                key={country.cca2}
-                value={country.cca2}
+                key={country.code}
+                value={country.code}
               >
-                {country.name.common}
+                {country.name}
               </option>
             ))}
           </select>
