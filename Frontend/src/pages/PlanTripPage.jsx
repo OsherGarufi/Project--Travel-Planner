@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import CountryDetails from '../components/CountryDetails'
 import { getCountries } from '../services/countryService'
 
@@ -13,6 +14,8 @@ function PlanTripPage() {
   const [isLoadingCountries, setIsLoadingCountries] =
     useState(true)
   const [countriesError, setCountriesError] = useState('')
+
+  const navigate = useNavigate()
 
   useEffect(() => {
     const loadCountries = async () => {
@@ -48,6 +51,13 @@ function PlanTripPage() {
 
   return (
     <main>
+      <button
+        type="button"
+        onClick={() => navigate('/home')}
+      >
+        Back to Dashboard
+      </button>
+
       <h1>Plan a New Trip</h1>
 
       <p>

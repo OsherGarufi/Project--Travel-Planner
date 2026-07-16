@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { getTrips } from '../services/tripService'
 
@@ -8,6 +9,8 @@ function TripsPage() {
   const [trips, setTrips] = useState([])
   const [isLoadingTrips, setIsLoadingTrips] = useState(true)
   const [tripsError, setTripsError] = useState('')
+
+  const navigate = useNavigate()
 
   useEffect(() => {
     const loadTrips = async () => {
@@ -37,6 +40,13 @@ function TripsPage() {
   if (isLoadingTrips) {
     return (
       <main>
+        <button
+          type="button"
+          onClick={() => navigate('/home')}
+        >
+          Back to Dashboard
+        </button>
+
         <p>Loading trips...</p>
       </main>
     )
@@ -44,6 +54,13 @@ function TripsPage() {
 
   return (
     <main>
+      <button
+        type="button"
+        onClick={() => navigate('/home')}
+      >
+        Back to Dashboard
+      </button>
+
       <h1>My Trips</h1>
 
       {tripsError && <p>{tripsError}</p>}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../css/App.css'
 import { useAuth } from '../hooks/useAuth'
@@ -12,43 +12,48 @@ function HomePage() {
     logout,
   } = useAuth()
 
-  const [copyMessage, setCopyMessage] = useState('')
-
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return
+    }
+
+    console.group('Travel Planner - Authentication Debug')
+
+    console.log('Firebase User:', firebaseUser)
+    console.log('Backend User:', backendUser)
+    console.log(
+      'Firebase UID:',
+      firebaseUser?.uid ?? backendUser?.firebaseUid,
+    )
+    console.log('Database User ID:', backendUser?.id)
+    console.log(
+      'Email:',
+      backendUser?.email ?? firebaseUser?.email,
+    )
+    console.log('ID Token:', idToken)
+
+    console.groupEnd()
+  }, [firebaseUser, backendUser, idToken])
 
   const handleLogout = async () => {
     try {
       await logout()
       navigate('/login', { replace: true })
     } catch {
-      // AuthContext already handles the error state.
+      // AuthProvider already handles the error state.
     }
   }
-
-  const handleCopyToken = async () => {
-    if (!idToken) {
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(idToken)
-      setCopyMessage('Token copied')
-    } catch (copyError) {
-      console.error('Could not copy token:', copyError)
-      setCopyMessage('Could not copy token')
-    }
-  }
-
-  const shortenedToken = idToken
-    ? `${idToken.slice(0, 40)}...${idToken.slice(-20)}`
-    : 'No token available'
 
   return (
     <main>
       <h1>Travel Planner</h1>
 
       <section>
-        <h2>Welcome, {backendUser?.displayName ?? 'Traveler'}</h2>
+        <h2>
+          Welcome, {backendUser?.displayName ?? 'Traveler'}
+        </h2>
 
         {firebaseUser?.photoURL && (
           <img
@@ -60,41 +65,32 @@ function HomePage() {
         )}
 
         <p>
-          <strong>Name:</strong> {backendUser?.displayName}
+          Explore destinations, review useful country
+          information and save the trips that suit you.
         </p>
+      </section>
 
-        <p>
-          <strong>Email:</strong> {backendUser?.email}
-        </p>
-
-        <p>
-          <strong>Firebase UID:</strong> {backendUser?.firebaseUid}
-        </p>
-
-        <p>
-          <strong>Database User ID:</strong> {backendUser?.id}
-        </p>
+      <section>
+        <h2>What would you like to do?</h2>
 
         <div>
-          <p>
-            <strong>ID Token:</strong>
-          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/plan')}
+          >
+            Plan a New Trip
+          </button>
 
-          <code>{shortenedToken}</code>
-
-          <div>
-            <button
-              type="button"
-              onClick={handleCopyToken}
-              disabled={!idToken}
-            >
-              Copy Token
-            </button>
-
-            {copyMessage && <p>{copyMessage}</p>}
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/trips')}
+          >
+            My Saved Trips
+          </button>
         </div>
+      </section>
 
+      <section>
         <button
           type="button"
           onClick={handleLogout}
