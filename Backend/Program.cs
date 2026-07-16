@@ -43,6 +43,15 @@ builder.Services.AddHttpClient<ICountryService, CountryService>(client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
+builder.Services.AddHttpClient<ICityService, CityService>(client =>
+{
+    client.BaseAddress = new Uri(
+        "http://geodb-free-service.wirefreethought.com/"
+    );
+
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(FrontendCorsPolicy, policy =>
