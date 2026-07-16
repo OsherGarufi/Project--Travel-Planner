@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ProfileAvatar from '../components/ProfileAvatar'
 import '../css/App.css'
 import { useAuth } from '../hooks/useAuth'
 
@@ -14,12 +15,19 @@ function HomePage() {
 
   const navigate = useNavigate()
 
+  const displayName =
+    backendUser?.displayName ??
+    firebaseUser?.displayName ??
+    'Traveler'
+
   useEffect(() => {
     if (!import.meta.env.DEV) {
       return
     }
 
-    console.group('Travel Planner - Authentication Debug')
+    console.group(
+      'Travel Planner - Authentication Debug',
+    )
 
     console.log('Firebase User:', firebaseUser)
     console.log('Backend User:', backendUser)
@@ -51,18 +59,13 @@ function HomePage() {
       <h1>Travel Planner</h1>
 
       <section>
-        <h2>
-          Welcome, {backendUser?.displayName ?? 'Traveler'}
-        </h2>
+        <h2>Welcome, {displayName}</h2>
 
-        {firebaseUser?.photoURL && (
-          <img
-            src={firebaseUser.photoURL}
-            alt={firebaseUser.displayName ?? 'User'}
-            width="80"
-            height="80"
-          />
-        )}
+        <ProfileAvatar
+          photoUrl={firebaseUser?.photoURL}
+          displayName={displayName}
+          size={80}
+        />
 
         <p>
           Explore destinations, review useful country
