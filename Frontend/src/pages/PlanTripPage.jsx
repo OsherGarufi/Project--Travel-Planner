@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CountryDetails from '../components/CountryDetails'
+import HistoricalWeather from '../components/plan-trip/HistoricalWeather'
+import WeatherForecast from '../components/plan-trip/WeatherForecast'
 import {
   getMajorCities,
   searchCities,
@@ -878,159 +880,17 @@ function PlanTripPage() {
         </section>
       )}
 
-      {weatherForecast && (
-        <section>
-          <h2>Weather Forecast</h2>
-
-          {isPartialForecast && (
-            <p>
-              Only the days currently inside the
-              {` ${WEATHER_FORECAST_DAYS}-day forecast `}
-              range are displayed.
-            </p>
-          )}
-
-          <p>
-            Timezone: {weatherForecast.timezone}
-          </p>
-
-          <ul>
-            {weatherForecast.days.map((day) => (
-              <li key={day.date}>
-                <h3>{day.date}</h3>
-
-                <p>
-                  Temperature:{' '}
-                  {day.minimumTemperature}
-                  {weatherForecast.units.temperature}
-                  {' – '}
-                  {day.maximumTemperature}
-                  {weatherForecast.units.temperature}
-                </p>
-
-                <p>
-                  Feels like:{' '}
-                  {day.minimumApparentTemperature}
-                  {weatherForecast.units.temperature}
-                  {' – '}
-                  {day.maximumApparentTemperature}
-                  {weatherForecast.units.temperature}
-                </p>
-
-                <p>
-                  Precipitation probability:{' '}
-                  {day.precipitationProbability}
-                  {
-                    weatherForecast.units
-                      .precipitationProbability
-                  }
-                </p>
-
-                <p>
-                  Precipitation amount:{' '}
-                  {day.precipitationSum}
-                  {weatherForecast.units.precipitation}
-                </p>
-
-                <p>
-                  Maximum wind speed:{' '}
-                  {day.maximumWindSpeed}{' '}
-                  {weatherForecast.units.windSpeed}
-                </p>
-
-                <p>Sunrise: {day.sunrise}</p>
-                <p>Sunset: {day.sunset}</p>
-              </li>
-            ))}
-          </ul>
-
-          <p>
-            <a
-              href="https://open-meteo.com/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {WEATHER_ATTRIBUTION}
-            </a>
-          </p>
-        </section>
-      )}
-
-      {historicalWeather && (
-        <section>
-          <h2>
-            Weather From the Same Dates Last Year
-          </h2>
-
-          <p>
-            Historical period:{' '}
-            {historicalWeather.historicalStartDate}
-            {' – '}
-            {historicalWeather.historicalEndDate}
-          </p>
-
-          <p>
-            Historical weather is provided for reference
-            only. It is not a forecast, and actual
-            conditions may differ.
-          </p>
-
-          <p>
-            Timezone: {historicalWeather.timezone}
-          </p>
-
-          <ul>
-            {historicalWeather.days.map((day) => (
-              <li key={day.date}>
-                <h3>{day.date}</h3>
-
-                <p>
-                  Temperature:{' '}
-                  {day.minimumTemperature}
-                  {historicalWeather.units.temperature}
-                  {' – '}
-                  {day.maximumTemperature}
-                  {historicalWeather.units.temperature}
-                </p>
-
-                <p>
-                  Feels like:{' '}
-                  {day.minimumApparentTemperature}
-                  {historicalWeather.units.temperature}
-                  {' – '}
-                  {day.maximumApparentTemperature}
-                  {historicalWeather.units.temperature}
-                </p>
-
-                <p>
-                  Precipitation amount:{' '}
-                  {day.precipitationSum}
-                  {historicalWeather.units.precipitation}
-                </p>
-
-                <p>
-                  Maximum wind speed:{' '}
-                  {day.maximumWindSpeed}{' '}
-                  {historicalWeather.units.windSpeed}
-                </p>
-
-                <p>Sunrise: {day.sunrise}</p>
-                <p>Sunset: {day.sunset}</p>
-              </li>
-            ))}
-          </ul>
-
-          <p>
-            <a
-              href="https://open-meteo.com/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {WEATHER_ATTRIBUTION}
-            </a>
-          </p>
-        </section>
-      )}
+      <WeatherForecast
+        forecast={weatherForecast}
+        isPartial={isPartialForecast}
+        forecastDays={WEATHER_FORECAST_DAYS}
+        attribution={WEATHER_ATTRIBUTION}
+      />
+      
+      <HistoricalWeather
+        historicalWeather={historicalWeather}
+        attribution={WEATHER_ATTRIBUTION}
+      />
     </main>
   )
 }
