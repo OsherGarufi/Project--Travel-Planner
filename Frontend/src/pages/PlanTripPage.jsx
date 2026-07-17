@@ -7,6 +7,7 @@ import {
 } from '../services/cityService'
 import { getCountries } from '../services/countryService'
 import {
+  getHistoricalWeather,
   getWeatherForecast,
   WEATHER_ATTRIBUTION,
   WEATHER_FORECAST_DAYS,
@@ -14,19 +15,25 @@ import {
 
 function formatDateForInput(date) {
   const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(
-    2,
-    '0',
-  )
-  const day = String(date.getDate()).padStart(2, '0')
+
+  const month = String(
+    date.getMonth() + 1,
+  ).padStart(2, '0')
+
+  const day = String(
+    date.getDate(),
+  ).padStart(2, '0')
 
   return `${year}-${month}-${day}`
 }
 
 function PlanTripPage() {
   const [countries, setCountries] = useState([])
-  const [selectedCountryCode, setSelectedCountryCode] =
-    useState('')
+
+  const [
+    selectedCountryCode,
+    setSelectedCountryCode,
+  ] = useState('')
 
   const [majorCities, setMajorCities] = useState([])
   const [selectedCity, setSelectedCity] = useState(null)
@@ -36,11 +43,15 @@ function PlanTripPage() {
     setIsAdditionalCitySearchOpen,
   ] = useState(false)
 
-  const [citySearchQuery, setCitySearchQuery] =
-    useState('')
+  const [
+    citySearchQuery,
+    setCitySearchQuery,
+  ] = useState('')
 
-  const [citySearchResults, setCitySearchResults] =
-    useState([])
+  const [
+    citySearchResults,
+    setCitySearchResults,
+  ] = useState([])
 
   const [
     hasSearchedAdditionalCities,
@@ -50,14 +61,20 @@ function PlanTripPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  const [isLoadingCountries, setIsLoadingCountries] =
-    useState(true)
+  const [
+    isLoadingCountries,
+    setIsLoadingCountries,
+  ] = useState(true)
 
-  const [countriesError, setCountriesError] =
-    useState('')
+  const [
+    countriesError,
+    setCountriesError,
+  ] = useState('')
 
-  const [isLoadingCities, setIsLoadingCities] =
-    useState(false)
+  const [
+    isLoadingCities,
+    setIsLoadingCities,
+  ] = useState(false)
 
   const [citiesError, setCitiesError] = useState('')
 
@@ -66,25 +83,50 @@ function PlanTripPage() {
     setIsSearchingAdditionalCities,
   ] = useState(false)
 
-  const [citySearchError, setCitySearchError] =
-    useState('')
+  const [
+    citySearchError,
+    setCitySearchError,
+  ] = useState('')
 
-  const [weatherForecast, setWeatherForecast] =
-    useState(null)
+  const [
+    weatherForecast,
+    setWeatherForecast,
+  ] = useState(null)
 
-  const [isLoadingWeather, setIsLoadingWeather] =
-    useState(false)
+  const [
+    isLoadingWeather,
+    setIsLoadingWeather,
+  ] = useState(false)
 
-  const [weatherError, setWeatherError] =
-    useState('')
+  const [
+    weatherError,
+    setWeatherError,
+  ] = useState('')
 
   const [
     isForecastUnavailable,
     setIsForecastUnavailable,
   ] = useState(false)
 
-  const [isPartialForecast, setIsPartialForecast] =
-    useState(false)
+  const [
+    isPartialForecast,
+    setIsPartialForecast,
+  ] = useState(false)
+
+  const [
+    historicalWeather,
+    setHistoricalWeather,
+  ] = useState(null)
+
+  const [
+    isLoadingHistoricalWeather,
+    setIsLoadingHistoricalWeather,
+  ] = useState(false)
+
+  const [
+    historicalWeatherError,
+    setHistoricalWeatherError,
+  ] = useState('')
 
   const citySearchControllerRef = useRef(null)
   const weatherControllerRef = useRef(null)
@@ -97,11 +139,15 @@ function PlanTripPage() {
         setIsLoadingCountries(true)
         setCountriesError('')
 
-        const countriesResult = await getCountries()
+        const countriesResult =
+          await getCountries()
 
         setCountries(countriesResult)
       } catch (error) {
-        console.error('Failed to load countries:', error)
+        console.error(
+          'Failed to load countries:',
+          error,
+        )
 
         setCountriesError(
           'Could not load the countries. Please try again.',
@@ -169,7 +215,8 @@ function PlanTripPage() {
   }, [])
 
   const selectedCountry = countries.find(
-    (country) => country.code === selectedCountryCode,
+    (country) =>
+      country.code === selectedCountryCode,
   )
 
   const isSelectedCityInMajorCities =
@@ -204,6 +251,10 @@ function PlanTripPage() {
     setIsLoadingWeather(false)
     setIsForecastUnavailable(false)
     setIsPartialForecast(false)
+
+    setHistoricalWeather(null)
+    setHistoricalWeatherError('')
+    setIsLoadingHistoricalWeather(false)
   }
 
   const resetAdditionalCitySearch = () => {
@@ -271,79 +322,88 @@ function PlanTripPage() {
     setIsSearchingAdditionalCities(false)
   }
 
-  const handleAdditionalCitySearchSubmit = async () => {
-    const normalizedQuery = citySearchQuery
-      .trim()
-      .replace(/\s+/g, ' ')
+  const handleAdditionalCitySearchSubmit =
+    async () => {
+      const normalizedQuery = citySearchQuery
+        .trim()
+        .replace(/\s+/g, ' ')
 
-    if (!selectedCountryCode) {
-      return
-    }
-
-    if (normalizedQuery.length < 2) {
-      setCitySearchResults([])
-      setHasSearchedAdditionalCities(false)
-      setCitySearchError(
-        'Enter at least 2 characters to search.',
-      )
-
-      return
-    }
-
-    cancelActiveCitySearch()
-
-    const controller = new AbortController()
-
-    citySearchControllerRef.current = controller
-
-    try {
-      setIsSearchingAdditionalCities(true)
-      setCitySearchError('')
-      setCitySearchResults([])
-      setHasSearchedAdditionalCities(false)
-
-      const citiesResult = await searchCities(
-        selectedCountryCode,
-        normalizedQuery,
-        controller.signal,
-      )
-
-      if (
-        controller.signal.aborted ||
-        citySearchControllerRef.current !== controller
-      ) {
+      if (!selectedCountryCode) {
         return
       }
 
-      setCitySearchResults(citiesResult)
-      setHasSearchedAdditionalCities(true)
-    } catch (error) {
-      if (
-        error.name === 'AbortError' ||
-        controller.signal.aborted
-      ) {
+      if (normalizedQuery.length < 2) {
+        setCitySearchResults([])
+        setHasSearchedAdditionalCities(false)
+
+        setCitySearchError(
+          'Enter at least 2 characters to search.',
+        )
+
         return
       }
 
-      console.error(
-        'Failed to search additional cities:',
-        error,
-      )
+      cancelActiveCitySearch()
 
-      setCitySearchResults([])
-      setHasSearchedAdditionalCities(true)
-      setCitySearchError(
-        'Could not search for cities. Please try again.',
-      )
-    } finally {
-      if (citySearchControllerRef.current === controller) {
-        citySearchControllerRef.current = null
-        setIsSearchingAdditionalCities(false)
+      const controller = new AbortController()
+
+      citySearchControllerRef.current = controller
+
+      try {
+        setIsSearchingAdditionalCities(true)
+        setCitySearchError('')
+        setCitySearchResults([])
+        setHasSearchedAdditionalCities(false)
+
+        const citiesResult = await searchCities(
+          selectedCountryCode,
+          normalizedQuery,
+          controller.signal,
+        )
+
+        if (
+          controller.signal.aborted ||
+          citySearchControllerRef.current !==
+            controller
+        ) {
+          return
+        }
+
+        setCitySearchResults(citiesResult)
+        setHasSearchedAdditionalCities(true)
+      } catch (error) {
+        if (
+          error.name === 'AbortError' ||
+          controller.signal.aborted
+        ) {
+          return
+        }
+
+        console.error(
+          'Failed to search additional cities:',
+          error,
+        )
+
+        setCitySearchResults([])
+        setHasSearchedAdditionalCities(true)
+
+        setCitySearchError(
+          'Could not search for cities. Please try again.',
+        )
+      } finally {
+        if (
+          citySearchControllerRef.current ===
+          controller
+        ) {
+          citySearchControllerRef.current = null
+          setIsSearchingAdditionalCities(false)
+        }
       }
     }
-  }
 
-  const handleAdditionalCitySearchKeyDown = (event) => {
+  const handleAdditionalCitySearchKeyDown = (
+    event,
+  ) => {
     if (event.key !== 'Enter') {
       return
     }
@@ -387,12 +447,7 @@ function PlanTripPage() {
       return
     }
 
-    cancelActiveWeatherRequest()
-
-    setWeatherForecast(null)
-    setWeatherError('')
-    setIsForecastUnavailable(false)
-    setIsPartialForecast(false)
+    resetWeather()
 
     const today = new Date()
 
@@ -490,9 +545,75 @@ function PlanTripPage() {
         'Could not load the weather forecast. Please try again.',
       )
     } finally {
-      if (weatherControllerRef.current === controller) {
+      if (
+        weatherControllerRef.current === controller
+      ) {
         weatherControllerRef.current = null
         setIsLoadingWeather(false)
+      }
+    }
+  }
+
+  const handleViewLastYearWeather = async () => {
+    if (
+      !selectedCity ||
+      !startDate ||
+      !endDate
+    ) {
+      return
+    }
+
+    cancelActiveWeatherRequest()
+
+    setHistoricalWeather(null)
+    setHistoricalWeatherError('')
+
+    const controller = new AbortController()
+
+    weatherControllerRef.current = controller
+
+    try {
+      setIsLoadingHistoricalWeather(true)
+
+      const historicalResult =
+        await getHistoricalWeather(
+          selectedCity.latitude,
+          selectedCity.longitude,
+          startDate,
+          endDate,
+          controller.signal,
+        )
+
+      if (
+        controller.signal.aborted ||
+        weatherControllerRef.current !== controller
+      ) {
+        return
+      }
+
+      setHistoricalWeather(historicalResult)
+    } catch (error) {
+      if (
+        error.name === 'AbortError' ||
+        controller.signal.aborted
+      ) {
+        return
+      }
+
+      console.error(
+        'Failed to load historical weather:',
+        error,
+      )
+
+      setHistoricalWeatherError(
+        'Could not load last year’s weather. Please try again.',
+      )
+    } finally {
+      if (
+        weatherControllerRef.current === controller
+      ) {
+        weatherControllerRef.current = null
+        setIsLoadingHistoricalWeather(false)
       }
     }
   }
@@ -526,7 +647,8 @@ function PlanTripPage() {
             value={selectedCountryCode}
             onChange={handleCountryChange}
             disabled={
-              isLoadingCountries || Boolean(countriesError)
+              isLoadingCountries ||
+              Boolean(countriesError)
             }
           >
             <option value="">
@@ -613,7 +735,9 @@ function PlanTripPage() {
                 id="additionalCitySearch"
                 type="text"
                 value={citySearchQuery}
-                onChange={handleCitySearchQueryChange}
+                onChange={
+                  handleCitySearchQueryChange
+                }
                 onKeyDown={
                   handleAdditionalCitySearchKeyDown
                 }
@@ -656,7 +780,9 @@ function PlanTripPage() {
                       key={city.id}
                       type="button"
                       onClick={() =>
-                        handleAdditionalCitySelection(city)
+                        handleAdditionalCitySelection(
+                          city,
+                        )
                       }
                     >
                       {city.name}
@@ -669,7 +795,9 @@ function PlanTripPage() {
         </div>
 
         <div>
-          <label htmlFor="startDate">Start date</label>
+          <label htmlFor="startDate">
+            Start date
+          </label>
 
           <input
             id="startDate"
@@ -680,7 +808,9 @@ function PlanTripPage() {
         </div>
 
         <div>
-          <label htmlFor="endDate">End date</label>
+          <label htmlFor="endDate">
+            End date
+          </label>
 
           <input
             id="endDate"
@@ -699,7 +829,8 @@ function PlanTripPage() {
             !selectedCity ||
             !startDate ||
             !endDate ||
-            isLoadingWeather
+            isLoadingWeather ||
+            isLoadingHistoricalWeather
           }
         >
           {isLoadingWeather
@@ -725,6 +856,25 @@ function PlanTripPage() {
             Forecast information becomes available within
             {` ${WEATHER_FORECAST_DAYS} days of the trip.`}
           </p>
+
+          <p>
+            Would you like to view the weather from the
+            same dates last year?
+          </p>
+
+          <button
+            type="button"
+            onClick={handleViewLastYearWeather}
+            disabled={isLoadingHistoricalWeather}
+          >
+            {isLoadingHistoricalWeather
+              ? 'Loading Last Year’s Weather...'
+              : 'View Last Year’s Weather'}
+          </button>
+
+          {historicalWeatherError && (
+            <p>{historicalWeatherError}</p>
+          )}
         </section>
       )}
 
@@ -786,6 +936,82 @@ function PlanTripPage() {
                   Maximum wind speed:{' '}
                   {day.maximumWindSpeed}{' '}
                   {weatherForecast.units.windSpeed}
+                </p>
+
+                <p>Sunrise: {day.sunrise}</p>
+                <p>Sunset: {day.sunset}</p>
+              </li>
+            ))}
+          </ul>
+
+          <p>
+            <a
+              href="https://open-meteo.com/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {WEATHER_ATTRIBUTION}
+            </a>
+          </p>
+        </section>
+      )}
+
+      {historicalWeather && (
+        <section>
+          <h2>
+            Weather From the Same Dates Last Year
+          </h2>
+
+          <p>
+            Historical period:{' '}
+            {historicalWeather.historicalStartDate}
+            {' – '}
+            {historicalWeather.historicalEndDate}
+          </p>
+
+          <p>
+            Historical weather is provided for reference
+            only. It is not a forecast, and actual
+            conditions may differ.
+          </p>
+
+          <p>
+            Timezone: {historicalWeather.timezone}
+          </p>
+
+          <ul>
+            {historicalWeather.days.map((day) => (
+              <li key={day.date}>
+                <h3>{day.date}</h3>
+
+                <p>
+                  Temperature:{' '}
+                  {day.minimumTemperature}
+                  {historicalWeather.units.temperature}
+                  {' – '}
+                  {day.maximumTemperature}
+                  {historicalWeather.units.temperature}
+                </p>
+
+                <p>
+                  Feels like:{' '}
+                  {day.minimumApparentTemperature}
+                  {historicalWeather.units.temperature}
+                  {' – '}
+                  {day.maximumApparentTemperature}
+                  {historicalWeather.units.temperature}
+                </p>
+
+                <p>
+                  Precipitation amount:{' '}
+                  {day.precipitationSum}
+                  {historicalWeather.units.precipitation}
+                </p>
+
+                <p>
+                  Maximum wind speed:{' '}
+                  {day.maximumWindSpeed}{' '}
+                  {historicalWeather.units.windSpeed}
                 </p>
 
                 <p>Sunrise: {day.sunrise}</p>
