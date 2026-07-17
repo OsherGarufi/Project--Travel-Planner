@@ -6,6 +6,22 @@ import {
   searchCities,
 } from '../services/cityService'
 import { getCountries } from '../services/countryService'
+import {
+  getWeatherForecast,
+  WEATHER_ATTRIBUTION,
+  WEATHER_FORECAST_DAYS,
+} from '../services/weatherService'
+
+function formatDateForInput(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(
+    2,
+    '0',
+  )
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
 
 function PlanTripPage() {
   const [countries, setCountries] = useState([])
@@ -53,7 +69,25 @@ function PlanTripPage() {
   const [citySearchError, setCitySearchError] =
     useState('')
 
+  const [weatherForecast, setWeatherForecast] =
+    useState(null)
+
+  const [isLoadingWeather, setIsLoadingWeather] =
+    useState(false)
+
+  const [weatherError, setWeatherError] =
+    useState('')
+
+  const [
+    isForecastUnavailable,
+    setIsForecastUnavailable,
+  ] = useState(false)
+
+  const [isPartialForecast, setIsPartialForecast] =
+    useState(false)
+
   const citySearchControllerRef = useRef(null)
+  const weatherControllerRef = useRef(null)
 
   const navigate = useNavigate()
 
@@ -82,11 +116,6 @@ function PlanTripPage() {
 
   useEffect(() => {
     if (!selectedCountryCode) {
-      setMajorCities([])
-      setSelectedCity(null)
-      setCitiesError('')
-      setIsLoadingCities(false)
-
       return undefined
     }
 
@@ -135,6 +164,7 @@ function PlanTripPage() {
   useEffect(() => {
     return () => {
       citySearchControllerRef.current?.abort()
+      weatherControllerRef.current?.abort()
     }
   }, [])
 
@@ -157,6 +187,25 @@ function PlanTripPage() {
     citySearchControllerRef.current = null
   }
 
+  const cancelActiveWeatherRequest = () => {
+    if (!weatherControllerRef.current) {
+      return
+    }
+
+    weatherControllerRef.current.abort()
+    weatherControllerRef.current = null
+  }
+
+  const resetWeather = () => {
+    cancelActiveWeatherRequest()
+
+    setWeatherForecast(null)
+    setWeatherError('')
+    setIsLoadingWeather(false)
+    setIsForecastUnavailable(false)
+    setIsPartialForecast(false)
+  }
+
   const resetAdditionalCitySearch = () => {
     cancelActiveCitySearch()
 
@@ -176,10 +225,13 @@ function PlanTripPage() {
 
     setIsAdditionalCitySearchOpen(false)
     resetAdditionalCitySearch()
+    resetWeather()
   }
 
   const handleCityChange = (event) => {
     const selectedCityId = event.target.value
+
+    resetWeather()
 
     if (!selectedCityId) {
       setSelectedCity(null)
@@ -306,6 +358,143 @@ function PlanTripPage() {
 
     setIsAdditionalCitySearchOpen(false)
     resetAdditionalCitySearch()
+    resetWeather()
+  }
+
+  const handleStartDateChange = (event) => {
+    const newStartDate = event.target.value
+
+    setStartDate(newStartDate)
+
+    if (endDate && newStartDate > endDate) {
+      setEndDate('')
+    }
+
+    resetWeather()
+  }
+
+  const handleEndDateChange = (event) => {
+    setEndDate(event.target.value)
+    resetWeather()
+  }
+
+  const handleCheckDestination = async () => {
+    if (
+      !selectedCity ||
+      !startDate ||
+      !endDate
+    ) {
+      return
+    }
+
+    cancelActiveWeatherRequest()
+
+    setWeatherForecast(null)
+    setWeatherError('')
+    setIsForecastUnavailable(false)
+    setIsPartialForecast(false)
+
+    const today = new Date()
+
+    today.setHours(0, 0, 0, 0)
+
+    const lastForecastDate = new Date(today)
+
+    lastForecastDate.setDate(
+      lastForecastDate.getDate() +
+        WEATHER_FORECAST_DAYS -
+        1,
+    )
+
+    const todayValue = formatDateForInput(today)
+
+    const lastForecastDateValue =
+      formatDateForInput(lastForecastDate)
+
+    const tripIsEntirelyOutsideForecast =
+      startDate > lastForecastDateValue ||
+      endDate < todayValue
+
+    if (tripIsEntirelyOutsideForecast) {
+      setIsForecastUnavailable(true)
+
+      return
+    }
+
+    const controller = new AbortController()
+
+    weatherControllerRef.current = controller
+
+    try {
+      setIsLoadingWeather(true)
+
+      const forecastResult =
+        await getWeatherForecast(
+          selectedCity.latitude,
+          selectedCity.longitude,
+          controller.signal,
+        )
+
+      if (
+        controller.signal.aborted ||
+        weatherControllerRef.current !== controller
+      ) {
+        return
+      }
+
+      const availableTripDays =
+        forecastResult.days.filter(
+          (day) =>
+            day.date >= startDate &&
+            day.date <= endDate,
+        )
+
+      if (availableTripDays.length === 0) {
+        setIsForecastUnavailable(true)
+
+        return
+      }
+
+      const firstAvailableDate =
+        forecastResult.days[0]?.date
+
+      const lastAvailableDate =
+        forecastResult.days[
+          forecastResult.days.length - 1
+        ]?.date
+
+      const forecastIsPartial =
+        startDate < firstAvailableDate ||
+        endDate > lastAvailableDate
+
+      setWeatherForecast({
+        ...forecastResult,
+        days: availableTripDays,
+      })
+
+      setIsPartialForecast(forecastIsPartial)
+    } catch (error) {
+      if (
+        error.name === 'AbortError' ||
+        controller.signal.aborted
+      ) {
+        return
+      }
+
+      console.error(
+        'Failed to load weather forecast:',
+        error,
+      )
+
+      setWeatherError(
+        'Could not load the weather forecast. Please try again.',
+      )
+    } finally {
+      if (weatherControllerRef.current === controller) {
+        weatherControllerRef.current = null
+        setIsLoadingWeather(false)
+      }
+    }
   }
 
   return (
@@ -486,9 +675,7 @@ function PlanTripPage() {
             id="startDate"
             type="date"
             value={startDate}
-            onChange={(event) =>
-              setStartDate(event.target.value)
-            }
+            onChange={handleStartDateChange}
           />
         </div>
 
@@ -500,26 +687,124 @@ function PlanTripPage() {
             type="date"
             value={endDate}
             min={startDate}
-            onChange={(event) =>
-              setEndDate(event.target.value)
-            }
+            onChange={handleEndDateChange}
           />
         </div>
 
         <button
           type="button"
+          onClick={handleCheckDestination}
           disabled={
             !selectedCountryCode ||
             !selectedCity ||
             !startDate ||
-            !endDate
+            !endDate ||
+            isLoadingWeather
           }
         >
-          Check Destination
+          {isLoadingWeather
+            ? 'Checking Destination...'
+            : 'Check Destination'}
         </button>
       </form>
 
       <CountryDetails country={selectedCountry} />
+
+      {weatherError && <p>{weatherError}</p>}
+
+      {isForecastUnavailable && (
+        <section>
+          <h2>Weather Forecast</h2>
+
+          <p>
+            A weather forecast is not available for these
+            dates yet.
+          </p>
+
+          <p>
+            Forecast information becomes available within
+            {` ${WEATHER_FORECAST_DAYS} days of the trip.`}
+          </p>
+        </section>
+      )}
+
+      {weatherForecast && (
+        <section>
+          <h2>Weather Forecast</h2>
+
+          {isPartialForecast && (
+            <p>
+              Only the days currently inside the
+              {` ${WEATHER_FORECAST_DAYS}-day forecast `}
+              range are displayed.
+            </p>
+          )}
+
+          <p>
+            Timezone: {weatherForecast.timezone}
+          </p>
+
+          <ul>
+            {weatherForecast.days.map((day) => (
+              <li key={day.date}>
+                <h3>{day.date}</h3>
+
+                <p>
+                  Temperature:{' '}
+                  {day.minimumTemperature}
+                  {weatherForecast.units.temperature}
+                  {' – '}
+                  {day.maximumTemperature}
+                  {weatherForecast.units.temperature}
+                </p>
+
+                <p>
+                  Feels like:{' '}
+                  {day.minimumApparentTemperature}
+                  {weatherForecast.units.temperature}
+                  {' – '}
+                  {day.maximumApparentTemperature}
+                  {weatherForecast.units.temperature}
+                </p>
+
+                <p>
+                  Precipitation probability:{' '}
+                  {day.precipitationProbability}
+                  {
+                    weatherForecast.units
+                      .precipitationProbability
+                  }
+                </p>
+
+                <p>
+                  Precipitation amount:{' '}
+                  {day.precipitationSum}
+                  {weatherForecast.units.precipitation}
+                </p>
+
+                <p>
+                  Maximum wind speed:{' '}
+                  {day.maximumWindSpeed}{' '}
+                  {weatherForecast.units.windSpeed}
+                </p>
+
+                <p>Sunrise: {day.sunrise}</p>
+                <p>Sunset: {day.sunset}</p>
+              </li>
+            ))}
+          </ul>
+
+          <p>
+            <a
+              href="https://open-meteo.com/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {WEATHER_ATTRIBUTION}
+            </a>
+          </p>
+        </section>
+      )}
     </main>
   )
 }

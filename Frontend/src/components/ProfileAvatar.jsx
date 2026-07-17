@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 function getInitials(displayName) {
   const normalizedName = displayName?.trim()
@@ -29,11 +29,8 @@ function ProfileAvatar({
   displayName,
   size = 80,
 }) {
-  const [imageFailed, setImageFailed] = useState(false)
-
-  useEffect(() => {
-    setImageFailed(false)
-  }, [photoUrl])
+  const [failedPhotoUrl, setFailedPhotoUrl] =
+    useState(null)
 
   const initials = getInitials(displayName)
 
@@ -43,7 +40,10 @@ function ProfileAvatar({
     borderRadius: '50%',
   }
 
-  if (photoUrl && !imageFailed) {
+  const shouldDisplayPhoto =
+    photoUrl && failedPhotoUrl !== photoUrl
+
+  if (shouldDisplayPhoto) {
     return (
       <img
         src={photoUrl}
@@ -51,7 +51,7 @@ function ProfileAvatar({
         width={size}
         height={size}
         referrerPolicy="no-referrer"
-        onError={() => setImageFailed(true)}
+        onError={() => setFailedPhotoUrl(photoUrl)}
         style={{
           ...sharedStyle,
           objectFit: 'cover',
