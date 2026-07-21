@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CountryDetails from '../components/CountryDetails'
 import DestinationForm from '../components/plan-trip/DestinationForm'
+import ForecastUnavailable from '../components/plan-trip/ForecastUnavailable'
 import HistoricalWeather from '../components/plan-trip/HistoricalWeather'
 import WeatherForecast from '../components/plan-trip/WeatherForecast'
 import useDestinationSelection from '../hooks/plan-trip/useDestinationSelection'
@@ -101,7 +102,7 @@ function PlanTripPage() {
   }
 
   return (
-    <main>
+    <main className="plan-trip-page">
       <button
         type="button"
         onClick={() => navigate('/home')}
@@ -167,42 +168,25 @@ function PlanTripPage() {
 
       <CountryDetails country={selectedCountry} />
 
-      {weatherError && <p>{weatherError}</p>}
-
-      {isForecastUnavailable && (
-        <section>
-          <h2>Weather Forecast</h2>
-
-          <p>
-            A weather forecast is not available for these
-            dates yet.
-          </p>
-
-          <p>
-            Forecast information becomes available within
-            {` ${WEATHER_FORECAST_DAYS} days of the trip.`}
-          </p>
-
-          <p>
-            Would you like to view the weather from the
-            same dates last year?
-          </p>
-
-          <button
-            type="button"
-            onClick={handleViewLastYearWeather}
-            disabled={isLoadingHistoricalWeather}
-          >
-            {isLoadingHistoricalWeather
-              ? 'Loading Last Year’s Weather...'
-              : 'View Last Year’s Weather'}
-          </button>
-
-          {historicalWeatherError && (
-            <p>{historicalWeatherError}</p>
-          )}
-        </section>
+      {weatherError && (
+        <p className="plan-trip-page__error">
+          {weatherError}
+        </p>
       )}
+
+      <ForecastUnavailable
+        isUnavailable={isForecastUnavailable}
+        forecastDays={WEATHER_FORECAST_DAYS}
+        isLoadingHistoricalWeather={
+          isLoadingHistoricalWeather
+        }
+        historicalWeatherError={
+          historicalWeatherError
+        }
+        onViewLastYearWeather={
+          handleViewLastYearWeather
+        }
+      />
 
       <WeatherForecast
         forecast={weatherForecast}
