@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-    getHistoricalWeather,
-    getWeatherForecast,
-    WEATHER_FORECAST_DAYS,
+  getHistoricalWeather,
+  getWeatherForecast,
+  WEATHER_FORECAST_DAYS,
 } from '../../services/weatherService'
+import { formatDateForInput } from '../../utils/dateUtils'
 
 const INITIAL_FORECAST_STATE = {
   status: 'idle',
@@ -16,20 +17,6 @@ const INITIAL_HISTORICAL_STATE = {
   status: 'idle',
   data: null,
   error: '',
-}
-
-function formatDateForInput(date) {
-  const year = date.getFullYear()
-
-  const month = String(
-    date.getMonth() + 1,
-  ).padStart(2, '0')
-
-  const day = String(
-    date.getDate(),
-  ).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
 }
 
 function useTripWeather({

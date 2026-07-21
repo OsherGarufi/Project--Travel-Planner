@@ -1,3 +1,4 @@
+import { moveDateOneYearBack } from '../utils/dateUtils'
 const FORECAST_API_URL =
   'https://api.open-meteo.com/v1/forecast'
 
@@ -154,33 +155,7 @@ function normalizeDateRange(startDate, endDate) {
   }
 }
 
-function formatDatePart(value) {
-  return String(value).padStart(2, '0')
-}
 
-function moveDateOneYearBack(date) {
-  const [year, month, day] = date
-    .split('-')
-    .map(Number)
-
-  const historicalYear = year - 1
-
-  const lastDayOfHistoricalMonth =
-    new Date(
-      Date.UTC(historicalYear, month, 0),
-    ).getUTCDate()
-
-  const historicalDay = Math.min(
-    day,
-    lastDayOfHistoricalMonth,
-  )
-
-  return (
-    `${historicalYear}-` +
-    `${formatDatePart(month)}-` +
-    `${formatDatePart(historicalDay)}`
-  )
-}
 
 function createCoordinatesCachePart(
   latitude,
