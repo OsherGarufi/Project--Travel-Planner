@@ -10,7 +10,7 @@ import useTripWeather from '../hooks/plan-trip/useTripWeather'
 import {
   WEATHER_ATTRIBUTION,
   WEATHER_FORECAST_DAYS,
-} from '../services/weatherService'
+} from '../services/weather/weatherService'
 
 function PlanTripPage() {
   const {

@@ -3,7 +3,7 @@ import {
   getHistoricalWeather,
   getWeatherForecast,
   WEATHER_FORECAST_DAYS,
-} from '../../services/weatherService'
+} from '../../services/weather/weatherService'
 import { formatDateForInput } from '../../utils/dateUtils'
 
 const INITIAL_FORECAST_STATE = {
