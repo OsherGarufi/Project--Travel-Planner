@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-    getMajorCities,
-    searchCities,
-} from '../../services/cityService'
+  getMajorCities,
+  searchCities,
+} from '../../services/city/cityService'
 import { getCountries } from '../../services/countryService'
 
 function createInitialCitiesState() {
