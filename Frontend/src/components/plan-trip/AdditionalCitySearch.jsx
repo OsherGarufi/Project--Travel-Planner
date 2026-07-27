@@ -1,3 +1,7 @@
+import {
+  MIN_CITY_SEARCH_QUERY_LENGTH,
+} from '../../services/city/cityConstants'
+
 function AdditionalCitySearch({
   isOpen,
   query,
@@ -11,6 +15,11 @@ function AdditionalCitySearch({
   onKeyDown,
   onCitySelection,
 }) {
+  const isSearchDisabled =
+    isSearching ||
+    query.trim().length <
+      MIN_CITY_SEARCH_QUERY_LENGTH
+
   return (
     <>
       <button
@@ -41,12 +50,11 @@ function AdditionalCitySearch({
           <button
             type="button"
             onClick={onSearch}
-            disabled={
-              isSearching ||
-              query.trim().length < 2
-            }
+            disabled={isSearchDisabled}
           >
-            {isSearching ? 'Searching...' : 'Search'}
+            {isSearching
+              ? 'Searching...'
+              : 'Search'}
           </button>
 
           {error && (
@@ -72,7 +80,9 @@ function AdditionalCitySearch({
                 <button
                   key={city.id}
                   type="button"
-                  onClick={() => onCitySelection(city)}
+                  onClick={() =>
+                    onCitySelection(city)
+                  }
                 >
                   {city.name}
                 </button>
