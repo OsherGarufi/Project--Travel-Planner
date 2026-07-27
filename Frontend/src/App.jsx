@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import PlanTripPage from './pages/PlanTripPage'
 import RegisterPage from './pages/RegisterPage'
+import TripDetailsPage from './pages/TripDetailsPage'
 import TripsPage from './pages/TripsPage'
 
 function App() {
@@ -47,6 +48,15 @@ function App() {
         element={
           <ProtectedRoute>
             <TripsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/trips/:tripId"
+        element={
+          <ProtectedRoute>
+            <TripDetailsPage />
           </ProtectedRoute>
         }
       />

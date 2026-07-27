@@ -1,18 +1,24 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CountryDetails from '../components/CountryDetails'
+import CreateTripSection from '../components/plan-trip/CreateTripSection'
 import DestinationForm from '../components/plan-trip/DestinationForm'
 import ForecastUnavailable from '../components/plan-trip/ForecastUnavailable'
 import HistoricalWeather from '../components/plan-trip/HistoricalWeather'
 import WeatherForecast from '../components/plan-trip/WeatherForecast'
 import useDestinationSelection from '../hooks/plan-trip/useDestinationSelection'
 import useTripWeather from '../hooks/plan-trip/useTripWeather'
+import { useAuth } from '../hooks/useAuth'
+import { createTrip } from '../services/tripService'
 import {
   WEATHER_ATTRIBUTION,
   WEATHER_FORECAST_DAYS,
 } from '../services/weather/weatherService'
 
 function PlanTripPage() {
+  const { idToken } = useAuth()
+  const navigate = useNavigate()
+
   const {
     countries,
     selectedCountry,
@@ -47,6 +53,12 @@ function PlanTripPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
+  const [isCreatingTrip, setIsCreatingTrip] =
+    useState(false)
+
+  const [createTripError, setCreateTripError] =
+    useState('')
+
   const {
     weatherForecast,
     isLoadingWeather,
@@ -67,20 +79,25 @@ function PlanTripPage() {
     endDate,
   })
 
-  const navigate = useNavigate()
+  const clearCreateTripError = () => {
+    setCreateTripError('')
+  }
 
   const handleCountryChange = (event) => {
     resetWeather()
+    clearCreateTripError()
     handleDestinationCountryChange(event)
   }
 
   const handleCityChange = (event) => {
     resetWeather()
+    clearCreateTripError()
     handleDestinationCityChange(event)
   }
 
   const handleAdditionalCitySelection = (city) => {
     resetWeather()
+    clearCreateTripError()
     handleDestinationAdditionalCitySelection(city)
   }
 
@@ -88,6 +105,7 @@ function PlanTripPage() {
     const newStartDate = event.target.value
 
     setStartDate(newStartDate)
+    clearCreateTripError()
 
     if (endDate && newStartDate > endDate) {
       setEndDate('')
@@ -98,7 +116,59 @@ function PlanTripPage() {
 
   const handleEndDateChange = (event) => {
     setEndDate(event.target.value)
+    clearCreateTripError()
     resetWeather()
+  }
+
+  const isCreateTripDisabled =
+    !selectedCountry ||
+    !selectedCity ||
+    !startDate ||
+    !endDate ||
+    !idToken ||
+    isCreatingTrip
+
+  const handleCreateTrip = async () => {
+    if (isCreateTripDisabled) {
+      return
+    }
+
+    setIsCreatingTrip(true)
+    setCreateTripError('')
+
+    const tripData = {
+      title: `Trip to ${selectedCity.name}`,
+      destinationCountryCode:
+        selectedCountry.code,
+      destinationCountryName:
+        selectedCountry.name,
+      destinationCity: selectedCity.name,
+      startDate,
+      endDate,
+      budgetAmount: null,
+      budgetCurrency: 'ILS',
+      notes: null,
+    }
+
+    try {
+      const createdTrip = await createTrip(
+        tripData,
+        idToken,
+      )
+
+      navigate(`/trips/${createdTrip.id}`)
+    } catch (error) {
+      console.error(
+        'Failed to create trip:',
+        error,
+      )
+
+      setCreateTripError(
+        'Could not create the trip. Please try again.',
+      )
+    } finally {
+      setIsCreatingTrip(false)
+    }
   }
 
   return (
@@ -113,8 +183,8 @@ function PlanTripPage() {
       <h1>Plan a New Trip</h1>
 
       <p>
-        Choose a destination and check relevant information
-        before saving your trip.
+        Choose a destination and travel dates. You can also
+        check the weather before creating your trip.
       </p>
 
       <DestinationForm
@@ -198,6 +268,17 @@ function PlanTripPage() {
       <HistoricalWeather
         historicalWeather={historicalWeather}
         attribution={WEATHER_ATTRIBUTION}
+      />
+
+      <CreateTripSection
+        countryName={selectedCountry?.name ?? ''}
+        cityName={selectedCity?.name ?? ''}
+        startDate={startDate}
+        endDate={endDate}
+        isCreatingTrip={isCreatingTrip}
+        isCreateDisabled={isCreateTripDisabled}
+        createTripError={createTripError}
+        onCreateTrip={handleCreateTrip}
       />
     </main>
   )

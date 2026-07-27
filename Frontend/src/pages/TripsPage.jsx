@@ -5,12 +5,13 @@ import { getTrips } from '../services/tripService'
 
 function TripsPage() {
   const { idToken } = useAuth()
+  const navigate = useNavigate()
 
   const [trips, setTrips] = useState([])
-  const [isLoadingTrips, setIsLoadingTrips] = useState(true)
-  const [tripsError, setTripsError] = useState('')
-
-  const navigate = useNavigate()
+  const [isLoadingTrips, setIsLoadingTrips] =
+    useState(true)
+  const [tripsError, setTripsError] =
+    useState('')
 
   useEffect(() => {
     const loadTrips = async () => {
@@ -22,7 +23,10 @@ function TripsPage() {
 
         setTrips(tripsResult)
       } catch (error) {
-        console.error('Failed to load trips:', error)
+        console.error(
+          'Failed to load trips:',
+          error,
+        )
 
         setTripsError(
           'Could not load your trips. Please try again.',
@@ -39,7 +43,7 @@ function TripsPage() {
 
   if (isLoadingTrips) {
     return (
-      <main>
+      <main className="trips-page">
         <button
           type="button"
           onClick={() => navigate('/home')}
@@ -53,7 +57,7 @@ function TripsPage() {
   }
 
   return (
-    <main>
+    <main className="trips-page">
       <button
         type="button"
         onClick={() => navigate('/home')}
@@ -63,16 +67,23 @@ function TripsPage() {
 
       <h1>My Trips</h1>
 
-      {tripsError && <p>{tripsError}</p>}
+      {tripsError && (
+        <p className="trips-page__error">
+          {tripsError}
+        </p>
+      )}
 
       {!tripsError && trips.length === 0 && (
         <p>You do not have any trips yet.</p>
       )}
 
       {!tripsError && trips.length > 0 && (
-        <div>
+        <div className="trips-page__list">
           {trips.map((trip) => (
-            <article key={trip.id}>
+            <article
+              key={trip.id}
+              className="trips-page__trip-card"
+            >
               <h2>{trip.title}</h2>
 
               <p>
@@ -90,6 +101,15 @@ function TripsPage() {
                   {trip.budgetCurrency}
                 </p>
               )}
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(`/trips/${trip.id}`)
+                }
+              >
+                Open Trip
+              </button>
             </article>
           ))}
         </div>
