@@ -1,5 +1,10 @@
 import { onAuthStateChanged } from 'firebase/auth'
-import { useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { auth } from '../config/firebase'
 import {
   loginWithEmail,
@@ -10,32 +15,96 @@ import {
 } from '../services/authService'
 import { AuthContext } from './AuthContext'
 
+function getEmailLoginErrorMessage(loginError) {
+  if (loginError.message === 'EMAIL_NOT_VERIFIED') {
+    return 'Please verify your email address before signing in.'
+  }
+
+  if (
+    loginError.code === 'auth/invalid-credential' ||
+    loginError.code === 'auth/user-not-found' ||
+    loginError.code === 'auth/wrong-password'
+  ) {
+    return 'The email address or password is incorrect.'
+  }
+
+  if (loginError.code === 'auth/invalid-email') {
+    return 'Please enter a valid email address.'
+  }
+
+  if (loginError.code === 'auth/too-many-requests') {
+    return 'Too many failed login attempts. Please try again later.'
+  }
+
+  if (
+    loginError.code ===
+    'auth/network-request-failed'
+  ) {
+    return 'Network error. Please check your internet connection.'
+  }
+
+  return 'Login failed. Please try again.'
+}
+
 export function AuthProvider({ children }) {
-  const [firebaseUser, setFirebaseUser] = useState(null)
-  const [backendUser, setBackendUser] = useState(null)
+  const [firebaseUser, setFirebaseUser] =
+    useState(null)
+
+  const [backendUser, setBackendUser] =
+    useState(null)
+
   const [idToken, setIdToken] = useState(null)
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] =
+    useState(true)
 
-  const isManualLoginInProgress = useRef(false)
-  const isRegistrationInProgress = useRef(false)
+  const isAuthActionInProgress = useRef(false)
+  const authRestoreRequestIdRef = useRef(0)
+
+  const applyAuthResult = useCallback(
+    (loginResult) => {
+      setFirebaseUser(loginResult.firebaseUser)
+      setBackendUser(loginResult.backendUser)
+      setIdToken(loginResult.idToken)
+    },
+    [],
+  )
+
+  const clearAuthState = useCallback(() => {
+    setFirebaseUser(null)
+    setBackendUser(null)
+    setIdToken(null)
+  }, [])
+
+  const beginAuthAction = () => {
+    isAuthActionInProgress.current = true
+
+    authRestoreRequestIdRef.current += 1
+
+    setIsLoading(true)
+    setError('')
+  }
+
+  const finishAuthAction = () => {
+    isAuthActionInProgress.current = false
+    setIsLoading(false)
+  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (currentFirebaseUser) => {
-        if (
-          isManualLoginInProgress.current || 
-          isRegistrationInProgress.current
-        ) {
+        const restoreRequestId =
+          ++authRestoreRequestIdRef.current
+
+        if (isAuthActionInProgress.current) {
           return
         }
 
         if (!currentFirebaseUser) {
-          setFirebaseUser(null)
-          setBackendUser(null)
-          setIdToken(null)
+          clearAuthState()
           setIsLoading(false)
+
           return
         }
 
@@ -44,49 +113,68 @@ export function AuthProvider({ children }) {
           setError('')
 
           const loginResult =
-            await syncFirebaseUserWithBackend(currentFirebaseUser)
+            await syncFirebaseUserWithBackend(
+              currentFirebaseUser,
+            )
 
-          setFirebaseUser(loginResult.firebaseUser)
-          setBackendUser(loginResult.backendUser)
-          setIdToken(loginResult.idToken)
+          if (
+            authRestoreRequestIdRef.current !==
+            restoreRequestId
+          ) {
+            return
+          }
+
+          applyAuthResult(loginResult)
         } catch (restoreError) {
+          if (
+            authRestoreRequestIdRef.current !==
+            restoreRequestId
+          ) {
+            return
+          }
+
           console.error(
             'Authentication restore failed:',
             restoreError,
           )
 
-          setFirebaseUser(null)
-          setBackendUser(null)
-          setIdToken(null)
+          clearAuthState()
 
           setError(
             'Could not restore the authentication session. Check the browser console.',
           )
         } finally {
-          setIsLoading(false)
+          if (
+            authRestoreRequestIdRef.current ===
+            restoreRequestId
+          ) {
+            setIsLoading(false)
+          }
         }
       },
     )
 
-    return unsubscribe
-  }, [])
+    return () => {
+      authRestoreRequestIdRef.current += 1
+      unsubscribe()
+    }
+  }, [applyAuthResult, clearAuthState])
 
   const login = async () => {
+    beginAuthAction()
+
     try {
-      isManualLoginInProgress.current = true
+      const loginResult =
+        await loginWithGoogle()
 
-      setIsLoading(true)
-      setError('')
-
-      const loginResult = await loginWithGoogle()
-
-      setFirebaseUser(loginResult.firebaseUser)
-      setBackendUser(loginResult.backendUser)
-      setIdToken(loginResult.idToken)
+      applyAuthResult(loginResult)
 
       return loginResult
     } catch (loginError) {
-      console.error('Google login failed:', loginError)
+      console.error(
+        'Google login failed:',
+        loginError,
+      )
 
       setError(
         'Google login failed. Check the browser console.',
@@ -94,83 +182,59 @@ export function AuthProvider({ children }) {
 
       throw loginError
     } finally {
-      isManualLoginInProgress.current = false
-      setIsLoading(false)
+      finishAuthAction()
     }
   }
 
-const loginWithEmailAndPassword = async (
-  email,
-  password,
-) => {
-  try {
-    isManualLoginInProgress.current = true
+  const loginWithEmailAndPassword = async (
+    email,
+    password,
+  ) => {
+    beginAuthAction()
 
-    setIsLoading(true)
-    setError('')
-
-    const loginResult = await loginWithEmail(
-      email,
-      password,
-    )
-
-    setFirebaseUser(loginResult.firebaseUser)
-    setBackendUser(loginResult.backendUser)
-    setIdToken(loginResult.idToken)
-
-    return loginResult
-  } catch (loginError) {
-    console.error('Email login failed:', loginError)
-
-    if (loginError.message === 'EMAIL_NOT_VERIFIED') {
-      setError(
-        'Please verify your email address before signing in.',
-      )
-    } else if (
-      loginError.code === 'auth/invalid-credential' ||
-      loginError.code === 'auth/user-not-found' ||
-      loginError.code === 'auth/wrong-password'
-    ) {
-      setError(
-        'The email address or password is incorrect.',
-      )
-    } else if (loginError.code === 'auth/invalid-email') {
-      setError('Please enter a valid email address.')
-    } else if (loginError.code === 'auth/too-many-requests') {
-      setError(
-        'Too many failed login attempts. Please try again later.',
-      )
-    } else if (loginError.code === 'auth/network-request-failed') {
-      setError(
-        'Network error. Please check your internet connection.',
-      )
-    } else {
-      setError(
-        'Login failed. Please try again.',
-      )
-    }
-
-    throw loginError
-  } finally {
-    isManualLoginInProgress.current = false
-    setIsLoading(false)
-  }
-}
-
-  const register = async (displayName, email, password) => {
     try {
-      isRegistrationInProgress.current = true
+      const loginResult = await loginWithEmail(
+        email,
+        password,
+      )
 
-      setIsLoading(true)
-      setError('')
+      applyAuthResult(loginResult)
 
+      return loginResult
+    } catch (loginError) {
+      console.error(
+        'Email login failed:',
+        loginError,
+      )
+
+      setError(
+        getEmailLoginErrorMessage(loginError),
+      )
+
+      throw loginError
+    } finally {
+      finishAuthAction()
+    }
+  }
+
+  const register = async (
+    displayName,
+    email,
+    password,
+  ) => {
+    beginAuthAction()
+
+    try {
       return await registerWithEmail(
         displayName,
         email,
         password,
       )
     } catch (registerError) {
-      console.error('Registration failed:', registerError)
+      console.error(
+        'Registration failed:',
+        registerError,
+      )
 
       setError(
         'Registration failed. Check the browser console.',
@@ -178,29 +242,29 @@ const loginWithEmailAndPassword = async (
 
       throw registerError
     } finally {
-      isRegistrationInProgress.current = false
-      setIsLoading(false)
+      finishAuthAction()
     }
   }
 
   const logout = async () => {
+    beginAuthAction()
+
     try {
-      setIsLoading(true)
-      setError('')
-
       await logoutFromFirebase()
-
-      setFirebaseUser(null)
-      setBackendUser(null)
-      setIdToken(null)
+      clearAuthState()
     } catch (logoutError) {
-      console.error('Logout failed:', logoutError)
+      console.error(
+        'Logout failed:',
+        logoutError,
+      )
 
-      setError('Logout failed. Check the browser console.')
+      setError(
+        'Logout failed. Check the browser console.',
+      )
 
       throw logoutError
     } finally {
-      setIsLoading(false)
+      finishAuthAction()
     }
   }
 
