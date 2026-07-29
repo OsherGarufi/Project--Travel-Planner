@@ -3,10 +3,14 @@ import {
   useNavigate,
   useParams,
 } from 'react-router-dom'
+import DeleteTripSection from '../components/trip-details/DeleteTripSection'
 import TripEditForm from '../components/trip-details/TripEditForm'
 import { useAuth } from '../hooks/useAuth'
 import { useTrips } from '../hooks/useTrips'
-import { updateTrip } from '../services/tripService'
+import {
+  deleteTrip,
+  updateTrip,
+} from '../services/tripService'
 
 function TripDetailsPage() {
   const { tripId } = useParams()
@@ -16,6 +20,7 @@ function TripDetailsPage() {
   const {
     loadTripById,
     updateTripInCache,
+    removeTripFromCache,
   } = useTrips()
 
   const [trip, setTrip] = useState(null)
@@ -33,6 +38,17 @@ function TripDetailsPage() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+
+  const [
+    isConfirmingDelete,
+    setIsConfirmingDelete,
+  ] = useState(false)
+
+  const [isDeleting, setIsDeleting] =
+    useState(false)
+
+  const [deleteError, setDeleteError] =
+    useState('')
 
   useEffect(() => {
     if (!tripId) {
@@ -104,7 +120,10 @@ function TripDetailsPage() {
 
   const handleStartEditing = () => {
     fillEditForm(trip)
+
     setSaveError('')
+    setDeleteError('')
+    setIsConfirmingDelete(false)
     setIsEditing(true)
   }
 
@@ -209,6 +228,46 @@ function TripDetailsPage() {
     }
   }
 
+  const handleStartDelete = () => {
+    setDeleteError('')
+    setIsConfirmingDelete(true)
+  }
+
+  const handleCancelDelete = () => {
+    setDeleteError('')
+    setIsConfirmingDelete(false)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!trip?.id || !idToken || isDeleting) {
+      return
+    }
+
+    try {
+      setIsDeleting(true)
+      setDeleteError('')
+
+      await deleteTrip(trip.id, idToken)
+
+      removeTripFromCache(trip.id)
+
+      navigate('/trips', {
+        replace: true,
+      })
+    } catch (error) {
+      console.error(
+        'Failed to delete trip:',
+        error,
+      )
+
+      setDeleteError(
+        'Could not delete the trip. Please try again.',
+      )
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (isLoadingTrip) {
     return (
       <main className="trip-details-page">
@@ -248,7 +307,7 @@ function TripDetailsPage() {
       <button
         type="button"
         onClick={() => navigate('/trips')}
-        disabled={isSaving}
+        disabled={isSaving || isDeleting}
       >
         Back to My Trips
       </button>
@@ -312,12 +371,26 @@ function TripDetailsPage() {
           onCancel={handleCancelEditing}
         />
       ) : (
-        <button
-          type="button"
-          onClick={handleStartEditing}
-        >
-          Edit Trip Details
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={handleStartEditing}
+            disabled={isDeleting}
+          >
+            Edit Trip Details
+          </button>
+
+          <DeleteTripSection
+            isConfirmingDelete={
+              isConfirmingDelete
+            }
+            isDeleting={isDeleting}
+            deleteError={deleteError}
+            onStartDelete={handleStartDelete}
+            onCancelDelete={handleCancelDelete}
+            onConfirmDelete={handleConfirmDelete}
+          />
+        </>
       )}
     </main>
   )
