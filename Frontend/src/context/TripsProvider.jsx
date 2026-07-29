@@ -12,7 +12,7 @@ import {
 } from '../services/tripService'
 import { TripsContext } from './TripsContext'
 
-const TRIPS_CACHE_TTL = 3 * 60 * 60 * 1000
+const TRIPS_CACHE_TTL = 24 * 60 * 60 * 1000
 
 const activeTripsRequests = new Map()
 const activeTripDetailsRequests = new Map()
@@ -34,7 +34,7 @@ function readTripsCache(userId) {
 
   try {
     const cachedValue =
-      window.sessionStorage.getItem(cacheKey)
+      window.localStorage.getItem(cacheKey)
 
     if (!cachedValue) {
       return null
@@ -48,7 +48,7 @@ function readTripsCache(userId) {
       typeof parsedCache.isComplete === 'boolean'
 
     if (!isValidCache) {
-      window.sessionStorage.removeItem(cacheKey)
+      window.localStorage.removeItem(cacheKey)
       return null
     }
 
@@ -57,7 +57,7 @@ function readTripsCache(userId) {
       TRIPS_CACHE_TTL
 
     if (isExpired) {
-      window.sessionStorage.removeItem(cacheKey)
+      window.localStorage.removeItem(cacheKey)
       return null
     }
 
@@ -71,7 +71,7 @@ function readTripsCache(userId) {
       error,
     )
 
-    window.sessionStorage.removeItem(cacheKey)
+    window.localStorage.removeItem(cacheKey)
 
     return null
   }
@@ -89,7 +89,7 @@ function writeTripsCache(
   const cacheKey = getTripsCacheKey(userId)
 
   try {
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       cacheKey,
       JSON.stringify({
         trips,
@@ -110,7 +110,7 @@ function removeTripsCache(userId) {
     return
   }
 
-  window.sessionStorage.removeItem(
+  window.localStorage.removeItem(
     getTripsCacheKey(userId),
   )
 }
