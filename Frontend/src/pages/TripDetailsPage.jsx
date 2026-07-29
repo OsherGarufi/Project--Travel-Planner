@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react'
 import {
-    useNavigate,
-    useParams,
+  useNavigate,
+  useParams,
 } from 'react-router-dom'
 import TripEditForm from '../components/trip-details/TripEditForm'
 import { useAuth } from '../hooks/useAuth'
-import {
-    getTripById,
-    updateTrip,
-} from '../services/tripService'
+import { useTrips } from '../hooks/useTrips'
+import { updateTrip } from '../services/tripService'
 
 function TripDetailsPage() {
   const { tripId } = useParams()
   const { idToken } = useAuth()
   const navigate = useNavigate()
+
+  const {
+    loadTripById,
+    updateTripInCache,
+  } = useTrips()
 
   const [trip, setTrip] = useState(null)
   const [isLoadingTrip, setIsLoadingTrip] =
@@ -32,7 +35,7 @@ function TripDetailsPage() {
   const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
-    if (!idToken || !tripId) {
+    if (!tripId) {
       return undefined
     }
 
@@ -43,12 +46,16 @@ function TripDetailsPage() {
         setIsLoadingTrip(true)
         setTripError('')
 
-        const tripResult = await getTripById(
-          tripId,
-          idToken,
-        )
+        const tripResult =
+          await loadTripById(tripId)
 
         if (!isActive) {
+          return
+        }
+
+        if (!tripResult) {
+          setTrip(null)
+          setTripError('Trip not found.')
           return
         }
 
@@ -79,16 +86,19 @@ function TripDetailsPage() {
     return () => {
       isActive = false
     }
-  }, [idToken, tripId])
+  }, [loadTripById, tripId])
 
   const fillEditForm = (tripDetails) => {
     setEditTitle(tripDetails.title)
+
     setEditBudgetAmount(
       tripDetails.budgetAmount?.toString() ?? '',
     )
+
     setEditBudgetCurrency(
       tripDetails.budgetCurrency || 'ILS',
     )
+
     setEditNotes(tripDetails.notes || '')
   }
 
@@ -108,11 +118,13 @@ function TripDetailsPage() {
     setEditBudgetCurrency(
       event.target.value.toUpperCase(),
     )
+
     setSaveError('')
   }
 
   const handleSaveTrip = async () => {
     const normalizedTitle = editTitle.trim()
+
     const normalizedCurrency =
       editBudgetCurrency.trim().toUpperCase()
 
@@ -125,6 +137,7 @@ function TripDetailsPage() {
       setSaveError(
         'Currency must contain exactly 3 characters.',
       )
+
       return
     }
 
@@ -141,6 +154,7 @@ function TripDetailsPage() {
       setSaveError(
         'Budget must be a valid non-negative number.',
       )
+
       return
     }
 
@@ -171,16 +185,15 @@ function TripDetailsPage() {
         idToken,
       )
 
-      const updatedTrip =
-        updateResult &&
-        typeof updateResult === 'object'
-          ? updateResult
-          : {
-              ...trip,
-              ...tripData,
-            }
+      const updatedTrip = updateResult?.id
+        ? updateResult
+        : {
+            ...trip,
+            ...tripData,
+          }
 
       setTrip(updatedTrip)
+      updateTripInCache(updatedTrip)
       setIsEditing(false)
     } catch (error) {
       console.error(
@@ -282,7 +295,10 @@ function TripDetailsPage() {
             setSaveError('')
           }}
           onBudgetAmountChange={(event) => {
-            setEditBudgetAmount(event.target.value)
+            setEditBudgetAmount(
+              event.target.value,
+            )
+
             setSaveError('')
           }}
           onBudgetCurrencyChange={

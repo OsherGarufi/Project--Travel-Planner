@@ -9,6 +9,7 @@ import WeatherForecast from '../components/plan-trip/WeatherForecast'
 import useDestinationSelection from '../hooks/plan-trip/useDestinationSelection'
 import useTripWeather from '../hooks/plan-trip/useTripWeather'
 import { useAuth } from '../hooks/useAuth'
+import { useTrips } from '../hooks/useTrips'
 import { createTrip } from '../services/tripService'
 import {
   WEATHER_ATTRIBUTION,
@@ -17,6 +18,7 @@ import {
 
 function PlanTripPage() {
   const { idToken } = useAuth()
+  const { addTripToCache } = useTrips()
   const navigate = useNavigate()
 
   const {
@@ -155,6 +157,8 @@ function PlanTripPage() {
         tripData,
         idToken,
       )
+
+      addTripToCache(createdTrip)
 
       navigate(`/trips/${createdTrip.id}`)
     } catch (error) {
