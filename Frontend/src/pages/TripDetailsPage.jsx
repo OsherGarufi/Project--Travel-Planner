@@ -1,271 +1,56 @@
-import { useEffect, useState } from 'react'
-import {
-  useNavigate,
-  useParams,
-} from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import DeleteTripSection from '../components/trip-details/DeleteTripSection'
 import TripEditForm from '../components/trip-details/TripEditForm'
-import { useAuth } from '../hooks/useAuth'
-import { useTrips } from '../hooks/useTrips'
-import {
-  deleteTrip,
-  updateTrip,
-} from '../services/tripService'
+import TripSummary from '../components/trip-details/TripSummary'
+import { useTripDelete } from '../hooks/trip-details/useTripDelete'
+import { useTripDetails } from '../hooks/trip-details/useTripDetails'
+import { useTripEdit } from '../hooks/trip-details/useTripEdit'
 
 function TripDetailsPage() {
-  const { tripId } = useParams()
-  const { idToken } = useAuth()
   const navigate = useNavigate()
 
   const {
-    loadTripById,
-    updateTripInCache,
-    removeTripFromCache,
-  } = useTrips()
+    trip,
+    isLoadingTrip,
+    tripError,
+    replaceTrip,
+  } = useTripDetails()
 
-  const [trip, setTrip] = useState(null)
-  const [isLoadingTrip, setIsLoadingTrip] =
-    useState(true)
-  const [tripError, setTripError] = useState('')
+  const {
+    isEditing,
+    title,
+    budgetAmount,
+    budgetCurrency,
+    notes,
+    isSaving,
+    saveError,
+    startEditing,
+    cancelEditing,
+    saveTrip,
+    handleTitleChange,
+    handleBudgetAmountChange,
+    handleBudgetCurrencyChange,
+    handleNotesChange,
+  } = useTripEdit({
+    trip,
+    replaceTrip,
+  })
 
-  const [isEditing, setIsEditing] = useState(false)
-  const [editTitle, setEditTitle] = useState('')
-  const [editBudgetAmount, setEditBudgetAmount] =
-    useState('')
-  const [editBudgetCurrency, setEditBudgetCurrency] =
-    useState('ILS')
-  const [editNotes, setEditNotes] = useState('')
-
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
-
-  const [
+  const {
     isConfirmingDelete,
-    setIsConfirmingDelete,
-  ] = useState(false)
-
-  const [isDeleting, setIsDeleting] =
-    useState(false)
-
-  const [deleteError, setDeleteError] =
-    useState('')
-
-  useEffect(() => {
-    if (!tripId) {
-      return undefined
-    }
-
-    let isActive = true
-
-    const loadTrip = async () => {
-      try {
-        setIsLoadingTrip(true)
-        setTripError('')
-
-        const tripResult =
-          await loadTripById(tripId)
-
-        if (!isActive) {
-          return
-        }
-
-        if (!tripResult) {
-          setTrip(null)
-          setTripError('Trip not found.')
-          return
-        }
-
-        setTrip(tripResult)
-      } catch (error) {
-        if (!isActive) {
-          return
-        }
-
-        console.error(
-          'Failed to load trip details:',
-          error,
-        )
-
-        setTrip(null)
-        setTripError(
-          'Could not load this trip. Please try again.',
-        )
-      } finally {
-        if (isActive) {
-          setIsLoadingTrip(false)
-        }
-      }
-    }
-
-    loadTrip()
-
-    return () => {
-      isActive = false
-    }
-  }, [loadTripById, tripId])
-
-  const fillEditForm = (tripDetails) => {
-    setEditTitle(tripDetails.title)
-
-    setEditBudgetAmount(
-      tripDetails.budgetAmount?.toString() ?? '',
-    )
-
-    setEditBudgetCurrency(
-      tripDetails.budgetCurrency || 'ILS',
-    )
-
-    setEditNotes(tripDetails.notes || '')
-  }
+    isDeleting,
+    deleteError,
+    startDelete,
+    cancelDelete,
+    resetDelete,
+    confirmDelete,
+  } = useTripDelete({
+    trip,
+  })
 
   const handleStartEditing = () => {
-    fillEditForm(trip)
-
-    setSaveError('')
-    setDeleteError('')
-    setIsConfirmingDelete(false)
-    setIsEditing(true)
-  }
-
-  const handleCancelEditing = () => {
-    fillEditForm(trip)
-    setSaveError('')
-    setIsEditing(false)
-  }
-
-  const handleBudgetCurrencyChange = (event) => {
-    setEditBudgetCurrency(
-      event.target.value.toUpperCase(),
-    )
-
-    setSaveError('')
-  }
-
-  const handleSaveTrip = async () => {
-    const normalizedTitle = editTitle.trim()
-
-    const normalizedCurrency =
-      editBudgetCurrency.trim().toUpperCase()
-
-    if (!normalizedTitle) {
-      setSaveError('Trip title is required.')
-      return
-    }
-
-    if (normalizedCurrency.length !== 3) {
-      setSaveError(
-        'Currency must contain exactly 3 characters.',
-      )
-
-      return
-    }
-
-    const normalizedBudgetAmount =
-      editBudgetAmount === ''
-        ? null
-        : Number(editBudgetAmount)
-
-    if (
-      normalizedBudgetAmount !== null &&
-      (!Number.isFinite(normalizedBudgetAmount) ||
-        normalizedBudgetAmount < 0)
-    ) {
-      setSaveError(
-        'Budget must be a valid non-negative number.',
-      )
-
-      return
-    }
-
-    const normalizedNotes =
-      editNotes.trim() || null
-
-    const tripData = {
-      title: normalizedTitle,
-      destinationCountryCode:
-        trip.destinationCountryCode,
-      destinationCountryName:
-        trip.destinationCountryName,
-      destinationCity: trip.destinationCity,
-      startDate: trip.startDate,
-      endDate: trip.endDate,
-      budgetAmount: normalizedBudgetAmount,
-      budgetCurrency: normalizedCurrency,
-      notes: normalizedNotes,
-    }
-
-    try {
-      setIsSaving(true)
-      setSaveError('')
-
-      const updateResult = await updateTrip(
-        trip.id,
-        tripData,
-        idToken,
-      )
-
-      const updatedTrip = updateResult?.id
-        ? updateResult
-        : {
-            ...trip,
-            ...tripData,
-          }
-
-      setTrip(updatedTrip)
-      updateTripInCache(updatedTrip)
-      setIsEditing(false)
-    } catch (error) {
-      console.error(
-        'Failed to update trip:',
-        error,
-      )
-
-      setSaveError(
-        'Could not save the changes. Please try again.',
-      )
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleStartDelete = () => {
-    setDeleteError('')
-    setIsConfirmingDelete(true)
-  }
-
-  const handleCancelDelete = () => {
-    setDeleteError('')
-    setIsConfirmingDelete(false)
-  }
-
-  const handleConfirmDelete = async () => {
-    if (!trip?.id || !idToken || isDeleting) {
-      return
-    }
-
-    try {
-      setIsDeleting(true)
-      setDeleteError('')
-
-      await deleteTrip(trip.id, idToken)
-
-      removeTripFromCache(trip.id)
-
-      navigate('/trips', {
-        replace: true,
-      })
-    } catch (error) {
-      console.error(
-        'Failed to delete trip:',
-        error,
-      )
-
-      setDeleteError(
-        'Could not delete the trip. Please try again.',
-      )
-    } finally {
-      setIsDeleting(false)
-    }
+    resetDelete()
+    startEditing()
   }
 
   if (isLoadingTrip) {
@@ -312,63 +97,26 @@ function TripDetailsPage() {
         Back to My Trips
       </button>
 
-      <h1>{trip.title}</h1>
-
-      <section className="trip-details-page__summary">
-        <h2>Trip Summary</h2>
-
-        <p>
-          Destination: {trip.destinationCity},{' '}
-          {trip.destinationCountryName}
-        </p>
-
-        <p>
-          Dates: {trip.startDate} - {trip.endDate}
-        </p>
-
-        {trip.budgetAmount !== null && (
-          <p>
-            Budget: {trip.budgetAmount}{' '}
-            {trip.budgetCurrency}
-          </p>
-        )}
-
-        {trip.notes && (
-          <div>
-            <h3>Notes</h3>
-            <p>{trip.notes}</p>
-          </div>
-        )}
-      </section>
+      <TripSummary trip={trip} />
 
       {isEditing ? (
         <TripEditForm
-          title={editTitle}
-          budgetAmount={editBudgetAmount}
-          budgetCurrency={editBudgetCurrency}
-          notes={editNotes}
+          title={title}
+          budgetAmount={budgetAmount}
+          budgetCurrency={budgetCurrency}
+          notes={notes}
           isSaving={isSaving}
           saveError={saveError}
-          onTitleChange={(event) => {
-            setEditTitle(event.target.value)
-            setSaveError('')
-          }}
-          onBudgetAmountChange={(event) => {
-            setEditBudgetAmount(
-              event.target.value,
-            )
-
-            setSaveError('')
-          }}
+          onTitleChange={handleTitleChange}
+          onBudgetAmountChange={
+            handleBudgetAmountChange
+          }
           onBudgetCurrencyChange={
             handleBudgetCurrencyChange
           }
-          onNotesChange={(event) => {
-            setEditNotes(event.target.value)
-            setSaveError('')
-          }}
-          onSave={handleSaveTrip}
-          onCancel={handleCancelEditing}
+          onNotesChange={handleNotesChange}
+          onSave={saveTrip}
+          onCancel={cancelEditing}
         />
       ) : (
         <>
@@ -386,9 +134,9 @@ function TripDetailsPage() {
             }
             isDeleting={isDeleting}
             deleteError={deleteError}
-            onStartDelete={handleStartDelete}
-            onCancelDelete={handleCancelDelete}
-            onConfirmDelete={handleConfirmDelete}
+            onStartDelete={startDelete}
+            onCancelDelete={cancelDelete}
+            onConfirmDelete={confirmDelete}
           />
         </>
       )}

@@ -6,19 +6,15 @@ import DestinationForm from '../components/plan-trip/DestinationForm'
 import ForecastUnavailable from '../components/plan-trip/ForecastUnavailable'
 import HistoricalWeather from '../components/plan-trip/HistoricalWeather'
 import WeatherForecast from '../components/plan-trip/WeatherForecast'
+import { useCreateTrip } from '../hooks/plan-trip/useCreateTrip'
 import useDestinationSelection from '../hooks/plan-trip/useDestinationSelection'
 import useTripWeather from '../hooks/plan-trip/useTripWeather'
-import { useAuth } from '../hooks/useAuth'
-import { useTrips } from '../hooks/useTrips'
-import { createTrip } from '../services/tripService'
 import {
   WEATHER_ATTRIBUTION,
   WEATHER_FORECAST_DAYS,
 } from '../services/weather/weatherService'
 
 function PlanTripPage() {
-  const { idToken } = useAuth()
-  const { addTripToCache } = useTrips()
   const navigate = useNavigate()
 
   const {
@@ -55,12 +51,6 @@ function PlanTripPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  const [isCreatingTrip, setIsCreatingTrip] =
-    useState(false)
-
-  const [createTripError, setCreateTripError] =
-    useState('')
-
   const {
     weatherForecast,
     isLoadingWeather,
@@ -81,9 +71,18 @@ function PlanTripPage() {
     endDate,
   })
 
-  const clearCreateTripError = () => {
-    setCreateTripError('')
-  }
+  const {
+    isCreatingTrip,
+    createTripError,
+    isCreateTripDisabled,
+    clearCreateTripError,
+    createSelectedTrip,
+  } = useCreateTrip({
+    selectedCountry,
+    selectedCity,
+    startDate,
+    endDate,
+  })
 
   const handleCountryChange = (event) => {
     resetWeather()
@@ -100,6 +99,7 @@ function PlanTripPage() {
   const handleAdditionalCitySelection = (city) => {
     resetWeather()
     clearCreateTripError()
+
     handleDestinationAdditionalCitySelection(city)
   }
 
@@ -120,59 +120,6 @@ function PlanTripPage() {
     setEndDate(event.target.value)
     clearCreateTripError()
     resetWeather()
-  }
-
-  const isCreateTripDisabled =
-    !selectedCountry ||
-    !selectedCity ||
-    !startDate ||
-    !endDate ||
-    !idToken ||
-    isCreatingTrip
-
-  const handleCreateTrip = async () => {
-    if (isCreateTripDisabled) {
-      return
-    }
-
-    setIsCreatingTrip(true)
-    setCreateTripError('')
-
-    const tripData = {
-      title: `Trip to ${selectedCity.name}`,
-      destinationCountryCode:
-        selectedCountry.code,
-      destinationCountryName:
-        selectedCountry.name,
-      destinationCity: selectedCity.name,
-      startDate,
-      endDate,
-      budgetAmount: null,
-      budgetCurrency: 'ILS',
-      notes: null,
-    }
-
-    try {
-      const createdTrip = await createTrip(
-        tripData,
-        idToken,
-      )
-
-      addTripToCache(createdTrip)
-
-      navigate(`/trips/${createdTrip.id}`)
-    } catch (error) {
-      console.error(
-        'Failed to create trip:',
-        error,
-      )
-
-      setCreateTripError(
-        'Could not create the trip. Please try again.',
-      )
-    } finally {
-      setIsCreatingTrip(false)
-    }
   }
 
   return (
@@ -282,7 +229,7 @@ function PlanTripPage() {
         isCreatingTrip={isCreatingTrip}
         isCreateDisabled={isCreateTripDisabled}
         createTripError={createTripError}
-        onCreateTrip={handleCreateTrip}
+        onCreateTrip={createSelectedTrip}
       />
     </main>
   )

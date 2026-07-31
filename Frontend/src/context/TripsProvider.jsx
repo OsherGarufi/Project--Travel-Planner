@@ -10,110 +10,18 @@ import {
     getTripById,
     getTrips,
 } from '../services/tripService'
+import {
+    readTripsCache,
+    removeTripsCache,
+    writeTripsCache,
+} from '../services/trips/tripsCache'
+import {
+    getOrCreateTripDetailsRequest,
+    getOrCreateTripsRequest,
+    releaseTripDetailsRequest,
+    releaseTripsRequest,
+} from '../services/trips/tripsRequestManager'
 import { TripsContext } from './TripsContext'
-
-const TRIPS_CACHE_TTL = 24 * 60 * 60 * 1000
-
-const activeTripsRequests = new Map()
-const activeTripDetailsRequests = new Map()
-
-function getTripsCacheKey(userId) {
-  return `travelPlannerTrips:${userId}`
-}
-
-function getTripRequestKey(userId, tripId) {
-  return `${userId}:${tripId}`
-}
-
-function readTripsCache(userId) {
-  if (!userId) {
-    return null
-  }
-
-  const cacheKey = getTripsCacheKey(userId)
-
-  try {
-    const cachedValue =
-      window.localStorage.getItem(cacheKey)
-
-    if (!cachedValue) {
-      return null
-    }
-
-    const parsedCache = JSON.parse(cachedValue)
-
-    const isValidCache =
-      Array.isArray(parsedCache.trips) &&
-      typeof parsedCache.savedAt === 'number' &&
-      typeof parsedCache.isComplete === 'boolean'
-
-    if (!isValidCache) {
-      window.localStorage.removeItem(cacheKey)
-      return null
-    }
-
-    const isExpired =
-      Date.now() - parsedCache.savedAt >
-      TRIPS_CACHE_TTL
-
-    if (isExpired) {
-      window.localStorage.removeItem(cacheKey)
-      return null
-    }
-
-    return {
-      trips: parsedCache.trips,
-      isComplete: parsedCache.isComplete,
-    }
-  } catch (error) {
-    console.error(
-      'Failed to read trips cache:',
-      error,
-    )
-
-    window.localStorage.removeItem(cacheKey)
-
-    return null
-  }
-}
-
-function writeTripsCache(
-  userId,
-  trips,
-  isComplete,
-) {
-  if (!userId) {
-    return
-  }
-
-  const cacheKey = getTripsCacheKey(userId)
-
-  try {
-    window.localStorage.setItem(
-      cacheKey,
-      JSON.stringify({
-        trips,
-        isComplete,
-        savedAt: Date.now(),
-      }),
-    )
-  } catch (error) {
-    console.error(
-      'Failed to save trips cache:',
-      error,
-    )
-  }
-}
-
-function removeTripsCache(userId) {
-  if (!userId) {
-    return
-  }
-
-  window.localStorage.removeItem(
-    getTripsCacheKey(userId),
-  )
-}
 
 function createInitialTripsState(userId) {
   const cachedTrips = readTripsCache(userId)
@@ -137,9 +45,11 @@ function TripsProviderForUser({
   )
 
   const tripsRef = useRef(tripsState.trips)
+
   const hasLoadedTripsRef = useRef(
     tripsState.hasLoadedTrips,
   )
+
   const isMountedRef = useRef(true)
 
   useEffect(() => {
@@ -195,17 +105,11 @@ function TripsProviderForUser({
         tripsError: '',
       }))
 
-      let tripsRequest =
-        activeTripsRequests.get(userId)
-
-      if (!tripsRequest) {
-        tripsRequest = getTrips(idToken)
-
-        activeTripsRequests.set(
+      const tripsRequest =
+        getOrCreateTripsRequest(
           userId,
-          tripsRequest,
+          () => getTrips(idToken),
         )
-      }
 
       try {
         const tripsResult = await tripsRequest
@@ -231,12 +135,10 @@ function TripsProviderForUser({
 
         throw error
       } finally {
-        if (
-          activeTripsRequests.get(userId) ===
-          tripsRequest
-        ) {
-          activeTripsRequests.delete(userId)
-        }
+        releaseTripsRequest(
+          userId,
+          tripsRequest,
+        )
 
         if (isMountedRef.current) {
           setTripsState((currentState) => ({
@@ -341,25 +243,16 @@ function TripsProviderForUser({
         }
       }
 
-      const requestKey = getTripRequestKey(
-        userId,
-        tripId,
-      )
-
-      let tripRequest =
-        activeTripDetailsRequests.get(requestKey)
-
-      if (!tripRequest) {
-        tripRequest = getTripById(
+      const tripRequest =
+        getOrCreateTripDetailsRequest(
+          userId,
           tripId,
-          idToken,
+          () =>
+            getTripById(
+              tripId,
+              idToken,
+            ),
         )
-
-        activeTripDetailsRequests.set(
-          requestKey,
-          tripRequest,
-        )
-      }
 
       try {
         const tripResult = await tripRequest
@@ -373,15 +266,11 @@ function TripsProviderForUser({
 
         return tripResult ?? null
       } finally {
-        if (
-          activeTripDetailsRequests.get(
-            requestKey,
-          ) === tripRequest
-        ) {
-          activeTripDetailsRequests.delete(
-            requestKey,
-          )
-        }
+        releaseTripDetailsRequest(
+          userId,
+          tripId,
+          tripRequest,
+        )
       }
     },
     [
