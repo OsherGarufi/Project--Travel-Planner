@@ -613,20 +613,32 @@
   .login-page__visual-content {
     min-height: 13rem;
     padding: var(--tp-space-6);
+    align-items: center;
+    justify-content: center;
   }
 
-  .login-page__visual-eyebrow {
+  .login-page__brand {
+    display: inline-flex;
+    align-self: center;
+    gap: var(--tp-space-3);
+  }
+
+  .login-page__brand-mark {
+    width: 10em;
+    height:10rem;
+  }
+
+  .login-page__brand-name {
+    font-size: 1.5rem;
+    font-weight: var(--tp-font-weight-semibold);
+    letter-spacing: -0.02em;
+  }
+
+  .login-page__visual-copy {
     display: none;
   }
 
-  .login-page__visual-title {
-    max-width: 14ch;
-    margin: 0;
-    font-size: clamp(1.875rem, 9vw, 2.5rem);
-    line-height: 1.05;
-  }
-
-  .login-page__visual-description {
+  .login-page__mobile-brand {
     display: none;
   }
 
@@ -634,10 +646,6 @@
     min-height: calc(100svh - 13rem);
     padding: var(--tp-space-8) var(--tp-space-5);
     place-items: start center;
-  }
-
-  .login-page__mobile-brand {
-    margin-bottom: var(--tp-space-8);
   }
 
   .login-page__form-header {
