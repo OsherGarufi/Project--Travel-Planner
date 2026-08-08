@@ -46,6 +46,44 @@ function getEmailLoginErrorMessage(loginError) {
   return 'Login failed. Please try again.'
 }
 
+function getRegistrationErrorMessage(registerError) {
+  if (registerError.code === 'auth/email-already-in-use') {
+    return 'An account with this email already exists. Please use a different email or sign in instead.'
+  }
+
+  if (registerError.code === 'auth/invalid-email') {
+    return 'Please enter a valid email address.'
+  }
+
+  if (
+    registerError.code === 'auth/weak-password' ||
+    registerError.code ===
+      'auth/password-does-not-meet-requirements'
+  ) {
+    return 'Your password does not meet the required security requirements. Please choose a stronger password.'
+  }
+
+  if (
+    registerError.code ===
+    'auth/network-request-failed'
+  ) {
+    return 'Network error. Please check your internet connection and try again.'
+  }
+
+  if (registerError.code === 'auth/too-many-requests') {
+    return 'Too many registration attempts. Please wait a moment and try again.'
+  }
+
+  if (
+    registerError.code ===
+    'auth/operation-not-allowed'
+  ) {
+    return 'Email registration is currently unavailable. Please try again later.'
+  }
+
+  return 'We could not create your account. Please try again.'
+}
+
 export function AuthProvider({ children }) {
   const [firebaseUser, setFirebaseUser] =
     useState(null)
@@ -74,6 +112,10 @@ export function AuthProvider({ children }) {
     setFirebaseUser(null)
     setBackendUser(null)
     setIdToken(null)
+  }, [])
+
+  const clearError = useCallback(() => {
+    setError('')
   }, [])
 
   const beginAuthAction = () => {
@@ -141,7 +183,7 @@ export function AuthProvider({ children }) {
           clearAuthState()
 
           setError(
-            'Could not restore the authentication session. Check the browser console.',
+            'Could not restore the authentication session. Please try signing in again.',
           )
         } finally {
           if (
@@ -177,7 +219,7 @@ export function AuthProvider({ children }) {
       )
 
       setError(
-        'Google login failed. Check the browser console.',
+        'Google sign in failed. Please try again.',
       )
 
       throw loginError
@@ -237,7 +279,7 @@ export function AuthProvider({ children }) {
       )
 
       setError(
-        'Registration failed. Check the browser console.',
+        getRegistrationErrorMessage(registerError),
       )
 
       throw registerError
@@ -259,7 +301,7 @@ export function AuthProvider({ children }) {
       )
 
       setError(
-        'Logout failed. Check the browser console.',
+        'Logout failed. Please try again.',
       )
 
       throw logoutError
@@ -278,6 +320,7 @@ export function AuthProvider({ children }) {
     loginWithEmailAndPassword,
     register,
     logout,
+    clearError,
   }
 
   return (
