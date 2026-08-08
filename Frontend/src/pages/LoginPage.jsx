@@ -1,101 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import LoginPageImage from '../assets/loginPage.png'
-import TravelPlannerLogo from '../assets/TP_logoW.png'
+import {
+  AuthAlertIcon,
+  PasswordVisibilityIcon,
+} from '../components/auth/AuthIcons'
+import AuthLayout from '../components/auth/AuthLayout'
+import '../css/components/auth-form.css'
 import '../css/pages/login-page.css'
 import { useAuth } from '../hooks/useAuth'
-
-function AlertIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-
-      <path
-        d="M12 7.75v5.1"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-
-      <circle
-        cx="12"
-        cy="16.25"
-        r="1"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
-
-function EyeIcon({ isVisible }) {
-  if (isVisible) {
-    return (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path
-          d="M3 3 21 21"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
-
-        <path
-          d="M10.6 10.75a2 2 0 0 0 2.65 2.65"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
-
-        <path
-          d="M9.9 4.4A9.8 9.8 0 0 1 12 4.18c5.5 0 9 5.82 9 7.82a8.7 8.7 0 0 1-2.25 3.75M6.35 6.35C4.28 7.77 3 10.4 3 12c0 2 3.5 7.82 9 7.82 1.4 0 2.65-.38 3.75-1"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    )
-  }
-
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d="M3 12c0-2 3.5-7.82 9-7.82S21 10 21 12s-3.5 7.82-9 7.82S3 14 3 12Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-
-      <circle
-        cx="12"
-        cy="12"
-        r="2.75"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-    </svg>
-  )
-}
 
 function GoogleIcon() {
   return (
@@ -175,234 +87,161 @@ function LoginPage() {
   }
 
   return (
-    <main className="login-page">
-      <section
-        className="login-page__visual"
-        aria-label="Travel inspiration"
-      >
-        <img
-          className="login-page__visual-image"
-          src={LoginPageImage}
-          alt=""
-          loading="eager"
-          fetchPriority="high"
-          decoding="async"
-          aria-hidden="true"
-        />
+    <AuthLayout>
+      <div className="auth-form__shell">
+        <header className="auth-form__header">
+          <p className="auth-form__eyebrow">
+            WELCOME! we are happy to see you again.
+          </p>
 
-        <div
-          className="login-page__visual-overlay"
-          aria-hidden="true"
-        />
+          <h1 className="auth-form__title">
+            Sign in to your account
+          </h1>
 
-        <div className="login-page__visual-content">
-          <div className="login-page__brand">
-            <span
-              className="login-page__brand-mark"
-              aria-hidden="true"
-            >
-              <img
-                className="login-page__brand-logo"
-                src={TravelPlannerLogo}
-                alt=""
-                draggable="false"
-              />
-            </span>
+          <p className="auth-form__subtitle">
+            Plan your next trip.
+          </p>
+        </header>
 
-            <span className="login-page__brand-name">
-              Travel Planner
-            </span>
-          </div>
-
-          <div className="login-page__visual-copy">
-            <p className="login-page__visual-eyebrow">
-              Your trip, with easy planning
-            </p>
-
-            <h2 className="login-page__visual-title">
-              Travel with simple order and organization.
-            </h2>
-
-            <p className="login-page__visual-description">
-              Bring every destination, date and detail together in one
-              beautifully organized place.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="login-page__panel">
-        <div className="login-page__form-shell">
-          <div className="login-page__mobile-brand">
-            <span
-              className="login-page__mobile-brand-mark"
-              aria-hidden="true"
-            >
-              <img
-                className="login-page__mobile-brand-logo"
-                src={TravelPlannerLogo}
-                alt=""
-                draggable="false"
-              />
-            </span>
-
-            <span className="login-page__mobile-brand-name">
-              Travel Planner
-            </span>
-          </div>
-
-          <header className="login-page__form-header">
-            <p className="login-page__form-eyebrow">
-              WELCOME! we are happy to see you again.
-            </p>
-
-            <h1 className="login-page__title">
-              Sign in to your account
-            </h1>
-
-            <p className="login-page__subtitle">
-              Plan your next trip.
-            </p>
-          </header>
-
-          {error && (
-            <div
-              id="login-error"
-              className="login-page__alert"
-              role="alert"
-              aria-live="assertive"
-            >
-              <span className="login-page__alert-icon">
-                <AlertIcon />
-              </span>
-
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form
-            className="login-page__form"
-            onSubmit={handleEmailLogin}
-            aria-busy={isLoading}
-            aria-describedby={error ? 'login-error' : undefined}
-          >
-            <div className="login-page__field">
-              <label
-                className="login-page__label"
-                htmlFor="email"
-              >
-                Email address
-              </label>
-
-              <div className="login-page__input-wrapper">
-                <input
-                  id="email"
-                  className="login-page__input"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  inputMode="email"
-                  autoCapitalize="none"
-                  spellCheck="false"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className="login-page__field">
-              <label
-                className="login-page__label"
-                htmlFor="password"
-              >
-                Password
-              </label>
-
-              <div className="login-page__input-wrapper">
-                <input
-                  id="password"
-                  className="login-page__input login-page__input--password"
-                  type={isPasswordVisible ? 'text' : 'password'}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  required
-                  disabled={isLoading}
-                />
-
-                <button
-                  className="login-page__password-toggle"
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  aria-label={
-                    isPasswordVisible
-                      ? 'Hide password'
-                      : 'Show password'
-                  }
-                  aria-pressed={isPasswordVisible}
-                  disabled={isLoading}
-                >
-                  <EyeIcon isVisible={isPasswordVisible} />
-                </button>
-              </div>
-            </div>
-
-            <button
-              className="login-page__submit"
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading && (
-                <span
-                  className="login-page__spinner"
-                  aria-hidden="true"
-                />
-              )}
-
-              <span>
-                {isLoading ? 'Signing in...' : 'Sign in'}
-              </span>
-            </button>
-          </form>
-
+        {error && (
           <div
-            className="login-page__divider"
-            aria-hidden="true"
+            id="login-error"
+            className="auth-form__alert auth-form__alert--error"
+            role="alert"
+            aria-live="assertive"
           >
-            Or continue with
+            <span className="auth-form__alert-icon">
+              <AuthAlertIcon />
+            </span>
+
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form
+          className="auth-form__form"
+          onSubmit={handleEmailLogin}
+          aria-busy={isLoading}
+          aria-describedby={error ? 'login-error' : undefined}
+        >
+          <div className="auth-form__field">
+            <label
+              className="auth-form__label"
+              htmlFor="email"
+            >
+              Email address
+            </label>
+
+            <div className="auth-form__input-wrapper">
+              <input
+                id="email"
+                className="auth-form__input"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                spellCheck="false"
+                required
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div className="auth-form__field">
+            <label
+              className="auth-form__label"
+              htmlFor="password"
+            >
+              Password
+            </label>
+
+            <div className="auth-form__input-wrapper">
+              <input
+                id="password"
+                className="auth-form__input auth-form__input--password"
+                type={isPasswordVisible ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                required
+                disabled={isLoading}
+              />
+
+              <button
+                className="auth-form__password-toggle"
+                type="button"
+                onClick={togglePasswordVisibility}
+                aria-label={
+                  isPasswordVisible
+                    ? 'Hide password'
+                    : 'Show password'
+                }
+                aria-pressed={isPasswordVisible}
+                disabled={isLoading}
+              >
+                <PasswordVisibilityIcon
+                  isVisible={isPasswordVisible}
+                />
+              </button>
+            </div>
           </div>
 
           <button
-            className="login-page__google-button"
-            type="button"
-            onClick={handleGoogleLogin}
+            className="auth-form__submit"
+            type="submit"
             disabled={isLoading}
           >
-            <GoogleIcon />
+            {isLoading && (
+              <span
+                className="auth-form__spinner"
+                aria-hidden="true"
+              />
+            )}
 
             <span>
-              {isLoading
-                ? 'Connecting...'
-                : 'Continue with Google'}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </span>
           </button>
+        </form>
 
-          <p className="login-page__signup">
-            Don&apos;t have an account?{' '}
-
-            <Link
-              className="login-page__signup-link"
-              to="/register"
-            >
-              Create an account
-            </Link>
-          </p>
+        <div
+          className="login-page__divider"
+          aria-hidden="true"
+        >
+          Or continue with
         </div>
-      </section>
-    </main>
+
+        <button
+          className="login-page__google-button"
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+        >
+          <GoogleIcon />
+
+          <span>
+            {isLoading
+              ? 'Connecting...'
+              : 'Continue with Google'}
+          </span>
+        </button>
+
+        <p className="auth-form__footer">
+          Don&apos;t have an account?{' '}
+
+          <Link
+            className="auth-form__footer-link"
+            to="/register"
+          >
+            Create an account
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
   )
 }
 

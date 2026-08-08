@@ -1,0 +1,16 @@
+/*
+ * Register-specific adjustments only.
+ *
+ * Shared Auth form styling lives in:
+ * src/css/components/auth-form.css
+ */
+
+.register-page__submit {
+  margin-top: var(--tp-space-2);
+}
+
+@media (max-height: 52rem) and (min-width: 56.0625rem) {
+  .auth-form__shell {
+    padding-block: var(--tp-space-4);
+  }
+}
