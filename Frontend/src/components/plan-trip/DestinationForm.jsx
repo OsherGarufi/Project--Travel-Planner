@@ -1,4 +1,78 @@
+import '../../css/components/destination-form.css'
 import AdditionalCitySearch from './AdditionalCitySearch'
+
+function ArrowIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M5 12h14M14 7l5 5-5 5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function DestinationIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+
+      <circle
+        cx="12"
+        cy="10"
+        r="2"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+    </svg>
+  )
+}
+
+function CalendarIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="16"
+        rx="2.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <path
+        d="M8 3v4M16 3v4M3 10h18"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
 
 function DestinationForm({
   countries,
@@ -54,156 +128,273 @@ function DestinationForm({
       className="destination-form"
       onSubmit={(event) => event.preventDefault()}
     >
-      <div className="destination-form__field">
-        <label htmlFor="country">Country</label>
+      <section className="destination-form__section">
+        <div className="destination-form__section-header">
+          <div className="destination-form__section-icon">
+            <DestinationIcon />
+          </div>
 
-        <select
-          id="country"
-          value={selectedCountryCode}
-          onChange={onCountryChange}
-          disabled={
-            isLoadingCountries ||
-            Boolean(countriesError)
-          }
-        >
-          <option value="">
-            {isLoadingCountries
-              ? 'Loading countries...'
-              : 'Select a country'}
-          </option>
+          <div>
+            <p className="destination-form__section-step">
+              STEP 01
+            </p>
 
-          {countries.map((country) => (
-            <option
-              key={country.code}
-              value={country.code}
+            <h2 className="destination-form__section-title">
+              Choose your destination
+            </h2>
+
+            <p className="destination-form__section-description">
+              Select the country and city you would like
+              to visit.
+            </p>
+          </div>
+        </div>
+
+        <div className="destination-form__grid">
+          <div className="destination-form__field">
+            <label
+              className="destination-form__label"
+              htmlFor="country"
             >
-              {country.name}
-            </option>
-          ))}
-        </select>
+              Country
+            </label>
 
-        {countriesError && (
-          <p className="destination-form__error">
-            {countriesError}
-          </p>
-        )}
-      </div>
+            <div className="destination-form__control">
+              <select
+                id="country"
+                className="destination-form__select"
+                value={selectedCountryCode}
+                onChange={onCountryChange}
+                disabled={
+                  isLoadingCountries ||
+                  Boolean(countriesError)
+                }
+              >
+                <option value="">
+                  {isLoadingCountries
+                    ? 'Loading countries...'
+                    : 'Select a country'}
+                </option>
 
-      <div className="destination-form__field">
-        <label htmlFor="city">City</label>
+                {countries.map((country) => (
+                  <option
+                    key={country.code}
+                    value={country.code}
+                  >
+                    {country.name}
+                  </option>
+                ))}
+              </select>
 
-        <select
-          id="city"
-          value={
-            selectedCity
-              ? String(selectedCity.id)
-              : ''
-          }
-          onChange={onCityChange}
-          disabled={
-            !selectedCountryCode ||
-            isLoadingCities ||
-            Boolean(citiesError)
-          }
-        >
-          <option value="">
-            {isLoadingCities
-              ? 'Loading major cities...'
-              : 'Select a city'}
-          </option>
+              <span
+                className="destination-form__select-arrow"
+                aria-hidden="true"
+              >
+                ↓
+              </span>
+            </div>
 
-          {selectedCity &&
-            !isSelectedCityInMajorCities && (
-              <option value={selectedCity.id}>
-                {selectedCity.name}
-              </option>
+            {countriesError && (
+              <p
+                className="destination-form__error"
+                role="alert"
+              >
+                {countriesError}
+              </p>
+            )}
+          </div>
+
+          <div className="destination-form__field">
+            <label
+              className="destination-form__label"
+              htmlFor="city"
+            >
+              City
+            </label>
+
+            <div className="destination-form__control">
+              <select
+                id="city"
+                className="destination-form__select"
+                value={
+                  selectedCity
+                    ? String(selectedCity.id)
+                    : ''
+                }
+                onChange={onCityChange}
+                disabled={
+                  !selectedCountryCode ||
+                  isLoadingCities ||
+                  Boolean(citiesError)
+                }
+              >
+                <option value="">
+                  {isLoadingCities
+                    ? 'Loading major cities...'
+                    : 'Select a city'}
+                </option>
+
+                {selectedCity &&
+                  !isSelectedCityInMajorCities && (
+                    <option value={selectedCity.id}>
+                      {selectedCity.name}
+                    </option>
+                  )}
+
+                {majorCities.map((city) => (
+                  <option
+                    key={city.id}
+                    value={city.id}
+                  >
+                    {city.name}
+                  </option>
+                ))}
+              </select>
+
+              <span
+                className="destination-form__select-arrow"
+                aria-hidden="true"
+              >
+                ↓
+              </span>
+            </div>
+
+            {citiesError && (
+              <p
+                className="destination-form__error"
+                role="alert"
+              >
+                {citiesError}
+              </p>
             )}
 
-          {majorCities.map((city) => (
-            <option
-              key={city.id}
-              value={city.id}
+            {selectedCountryCode &&
+              !isLoadingCities &&
+              !citiesError && (
+                <AdditionalCitySearch
+                  isOpen={isAdditionalCitySearchOpen}
+                  query={citySearchQuery}
+                  results={citySearchResults}
+                  error={citySearchError}
+                  hasSearched={
+                    hasSearchedAdditionalCities
+                  }
+                  isSearching={
+                    isSearchingAdditionalCities
+                  }
+                  onToggle={
+                    onAdditionalCitySearchToggle
+                  }
+                  onQueryChange={
+                    onCitySearchQueryChange
+                  }
+                  onSearch={
+                    onAdditionalCitySearchSubmit
+                  }
+                  onKeyDown={
+                    onAdditionalCitySearchKeyDown
+                  }
+                  onCitySelection={
+                    onAdditionalCitySelection
+                  }
+                />
+              )}
+          </div>
+        </div>
+      </section>
+
+      <div
+        className="destination-form__divider"
+        aria-hidden="true"
+      />
+
+      <section className="destination-form__section">
+        <div className="destination-form__section-header">
+          <div className="destination-form__section-icon">
+            <CalendarIcon />
+          </div>
+
+          <div>
+            <p className="destination-form__section-step">
+              STEP 02
+            </p>
+
+            <h2 className="destination-form__section-title">
+              Set your travel dates
+            </h2>
+
+            <p className="destination-form__section-description">
+              Add the dates for your planned journey.
+            </p>
+          </div>
+        </div>
+
+        <div className="destination-form__grid">
+          <div className="destination-form__field">
+            <label
+              className="destination-form__label"
+              htmlFor="startDate"
             >
-              {city.name}
-            </option>
-          ))}
-        </select>
+              Start date
+            </label>
 
-        {citiesError && (
-          <p className="destination-form__error">
-            {citiesError}
-          </p>
-        )}
-
-        {selectedCountryCode &&
-          !isLoadingCities &&
-          !citiesError && (
-            <AdditionalCitySearch
-              isOpen={isAdditionalCitySearchOpen}
-              query={citySearchQuery}
-              results={citySearchResults}
-              error={citySearchError}
-              hasSearched={
-                hasSearchedAdditionalCities
-              }
-              isSearching={
-                isSearchingAdditionalCities
-              }
-              onToggle={
-                onAdditionalCitySearchToggle
-              }
-              onQueryChange={
-                onCitySearchQueryChange
-              }
-              onSearch={
-                onAdditionalCitySearchSubmit
-              }
-              onKeyDown={
-                onAdditionalCitySearchKeyDown
-              }
-              onCitySelection={
-                onAdditionalCitySelection
-              }
+            <input
+              id="startDate"
+              className="destination-form__input"
+              type="date"
+              value={startDate}
+              onChange={onStartDateChange}
             />
+          </div>
+
+          <div className="destination-form__field">
+            <label
+              className="destination-form__label"
+              htmlFor="endDate"
+            >
+              End date
+            </label>
+
+            <input
+              id="endDate"
+              className="destination-form__input"
+              type="date"
+              value={endDate}
+              min={startDate}
+              onChange={onEndDateChange}
+            />
+          </div>
+        </div>
+      </section>
+
+      <div className="destination-form__footer">
+        <p className="destination-form__footer-note">
+          Once your destination and dates are set, check
+          the available weather information.
+        </p>
+
+        <button
+          className="destination-form__submit"
+          type="button"
+          onClick={onCheckDestination}
+          disabled={isCheckDestinationDisabled}
+        >
+          <span>
+            {isLoadingWeather
+              ? 'Checking destination...'
+              : 'Check destination'}
+          </span>
+
+          {!isLoadingWeather && (
+            <span
+              className="destination-form__submit-icon"
+              aria-hidden="true"
+            >
+              <ArrowIcon />
+            </span>
           )}
+        </button>
       </div>
-
-      <div className="destination-form__field">
-        <label htmlFor="startDate">
-          Start date
-        </label>
-
-        <input
-          id="startDate"
-          type="date"
-          value={startDate}
-          onChange={onStartDateChange}
-        />
-      </div>
-
-      <div className="destination-form__field">
-        <label htmlFor="endDate">
-          End date
-        </label>
-
-        <input
-          id="endDate"
-          type="date"
-          value={endDate}
-          min={startDate}
-          onChange={onEndDateChange}
-        />
-      </div>
-
-      <button
-        type="button"
-        onClick={onCheckDestination}
-        disabled={isCheckDestinationDisabled}
-      >
-        {isLoadingWeather
-          ? 'Checking Destination...'
-          : 'Check Destination'}
-      </button>
     </form>
   )
 }

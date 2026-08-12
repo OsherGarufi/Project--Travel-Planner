@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import CountryDetails from '../components/CountryDetails'
 import CreateTripSection from '../components/plan-trip/CreateTripSection'
 import DestinationForm from '../components/plan-trip/DestinationForm'
@@ -13,10 +12,9 @@ import {
   WEATHER_ATTRIBUTION,
   WEATHER_FORECAST_DAYS,
 } from '../services/weather/weatherService'
+import '../css/pages/plan-trip-page.css'
 
 function PlanTripPage() {
-  const navigate = useNavigate()
-
   const {
     countries,
     selectedCountry,
@@ -123,115 +121,124 @@ function PlanTripPage() {
   }
 
   return (
-    <main className="plan-trip-page">
-      <button
-        type="button"
-        onClick={() => navigate('/home')}
-      >
-        Back to Dashboard
-      </button>
-
-      <h1>Plan a New Trip</h1>
-
-      <p>
-        Choose a destination and travel dates. You can also
-        check the weather before creating your trip.
-      </p>
-
-      <DestinationForm
-        countries={countries}
-        selectedCountryCode={selectedCountryCode}
-        selectedCity={selectedCity}
-        majorCities={majorCities}
-        startDate={startDate}
-        endDate={endDate}
-        isLoadingCountries={isLoadingCountries}
-        countriesError={countriesError}
-        isLoadingCities={isLoadingCities}
-        citiesError={citiesError}
-        isAdditionalCitySearchOpen={
-          isAdditionalCitySearchOpen
-        }
-        citySearchQuery={citySearchQuery}
-        citySearchResults={citySearchResults}
-        citySearchError={citySearchError}
-        hasSearchedAdditionalCities={
-          hasSearchedAdditionalCities
-        }
-        isSearchingAdditionalCities={
-          isSearchingAdditionalCities
-        }
-        isLoadingWeather={isLoadingWeather}
-        isLoadingHistoricalWeather={
-          isLoadingHistoricalWeather
-        }
-        onCountryChange={handleCountryChange}
-        onCityChange={handleCityChange}
-        onStartDateChange={handleStartDateChange}
-        onEndDateChange={handleEndDateChange}
-        onCheckDestination={handleCheckDestination}
-        onAdditionalCitySearchToggle={
-          handleAdditionalCitySearchToggle
-        }
-        onCitySearchQueryChange={
-          handleCitySearchQueryChange
-        }
-        onAdditionalCitySearchSubmit={
-          handleAdditionalCitySearchSubmit
-        }
-        onAdditionalCitySearchKeyDown={
-          handleAdditionalCitySearchKeyDown
-        }
-        onAdditionalCitySelection={
-          handleAdditionalCitySelection
-        }
-      />
-
-      <CountryDetails country={selectedCountry} />
-
-      {weatherError && (
-        <p className="plan-trip-page__error">
-          {weatherError}
+    <div className="plan-trip-page">
+      <header className="plan-trip-page__header">
+        <p className="plan-trip-page__eyebrow">
+          TRIP PLANNER
         </p>
-      )}
 
-      <ForecastUnavailable
-        isUnavailable={isForecastUnavailable}
-        forecastDays={WEATHER_FORECAST_DAYS}
-        isLoadingHistoricalWeather={
-          isLoadingHistoricalWeather
-        }
-        historicalWeatherError={
-          historicalWeatherError
-        }
-        onViewLastYearWeather={
-          handleViewLastYearWeather
-        }
-      />
+        <h1 className="plan-trip-page__title">
+          Plan a new trip
+        </h1>
 
-      <WeatherForecast
-        forecast={weatherForecast}
-        isPartial={isPartialForecast}
-        forecastDays={WEATHER_FORECAST_DAYS}
-        attribution={WEATHER_ATTRIBUTION}
-      />
+        <p className="plan-trip-page__description">
+          Choose your destination and travel dates,
+          explore useful destination information and
+          check the weather before creating your trip.
+        </p>
+      </header>
 
-      <HistoricalWeather
-        historicalWeather={historicalWeather}
-        attribution={WEATHER_ATTRIBUTION}
-      />
+      <div className="plan-trip-page__content">
+        <DestinationForm
+          countries={countries}
+          selectedCountryCode={selectedCountryCode}
+          selectedCity={selectedCity}
+          majorCities={majorCities}
+          startDate={startDate}
+          endDate={endDate}
+          isLoadingCountries={isLoadingCountries}
+          countriesError={countriesError}
+          isLoadingCities={isLoadingCities}
+          citiesError={citiesError}
+          isAdditionalCitySearchOpen={
+            isAdditionalCitySearchOpen
+          }
+          citySearchQuery={citySearchQuery}
+          citySearchResults={citySearchResults}
+          citySearchError={citySearchError}
+          hasSearchedAdditionalCities={
+            hasSearchedAdditionalCities
+          }
+          isSearchingAdditionalCities={
+            isSearchingAdditionalCities
+          }
+          isLoadingWeather={isLoadingWeather}
+          isLoadingHistoricalWeather={
+            isLoadingHistoricalWeather
+          }
+          onCountryChange={handleCountryChange}
+          onCityChange={handleCityChange}
+          onStartDateChange={handleStartDateChange}
+          onEndDateChange={handleEndDateChange}
+          onCheckDestination={handleCheckDestination}
+          onAdditionalCitySearchToggle={
+            handleAdditionalCitySearchToggle
+          }
+          onCitySearchQueryChange={
+            handleCitySearchQueryChange
+          }
+          onAdditionalCitySearchSubmit={
+            handleAdditionalCitySearchSubmit
+          }
+          onAdditionalCitySearchKeyDown={
+            handleAdditionalCitySearchKeyDown
+          }
+          onAdditionalCitySelection={
+            handleAdditionalCitySelection
+          }
+        />
 
-      <CreateTripSection
-        countryName={selectedCountry?.name ?? ''}
-        cityName={selectedCity?.name ?? ''}
-        startDate={startDate}
-        endDate={endDate}
-        isCreatingTrip={isCreatingTrip}
-        isCreateDisabled={isCreateTripDisabled}
-        createTripError={createTripError}
-        onCreateTrip={createSelectedTrip}
-      />
-    </main>
+        <CountryDetails
+          country={selectedCountry}
+        />
+
+        {weatherError && (
+          <p
+            className="plan-trip-page__error"
+            role="alert"
+          >
+            {weatherError}
+          </p>
+        )}
+
+        <ForecastUnavailable
+          isUnavailable={isForecastUnavailable}
+          forecastDays={WEATHER_FORECAST_DAYS}
+          isLoadingHistoricalWeather={
+            isLoadingHistoricalWeather
+          }
+          historicalWeatherError={
+            historicalWeatherError
+          }
+          onViewLastYearWeather={
+            handleViewLastYearWeather
+          }
+        />
+
+        <WeatherForecast
+          forecast={weatherForecast}
+          isPartial={isPartialForecast}
+          forecastDays={WEATHER_FORECAST_DAYS}
+          attribution={WEATHER_ATTRIBUTION}
+        />
+
+        <HistoricalWeather
+          historicalWeather={historicalWeather}
+          attribution={WEATHER_ATTRIBUTION}
+        />
+
+        <CreateTripSection
+          countryName={selectedCountry?.name ?? ''}
+          cityName={selectedCity?.name ?? ''}
+          startDate={startDate}
+          endDate={endDate}
+          isCreatingTrip={isCreatingTrip}
+          isCreateDisabled={isCreateTripDisabled}
+          createTripError={createTripError}
+          onCreateTrip={createSelectedTrip}
+        />
+      </div>
+    </div>
   )
 }
 

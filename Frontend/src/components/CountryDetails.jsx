@@ -1,3 +1,102 @@
+import '../css/components/country-details.css'
+
+function CapitalIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M4 20h16M6 20v-8h12v8M5 12l7-8 7 8M10 20v-5h4v5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function PopulationIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle
+        cx="9"
+        cy="8"
+        r="3"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <path
+        d="M3.5 19c.4-3.4 2.3-5.2 5.5-5.2s5.1 1.8 5.5 5.2"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+
+      <path
+        d="M15.5 6.3a3 3 0 0 1 0 5.4M17 14c2.1.7 3.2 2.4 3.5 5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function CurrencyIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="8.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <path
+        d="M15 8.5c-.8-.7-1.8-1-3-1-1.8 0-3 .9-3 2.2 0 3.4 6.2 1.6 6.2 4.8 0 1.4-1.3 2.3-3.2 2.3-1.3 0-2.5-.4-3.4-1.2M12 5.5v2M12 16.8v1.7"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function LanguageIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M4 5h10M9 5c-.2 5-2.2 8.5-5.5 10.8M6.5 10.5c1.5 2 3.3 3.6 5.5 4.8M14 19l3.5-9 3.5 9M15.3 16h4.4"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function CountryDetails({ country }) {
   if (!country) {
     return null
@@ -18,48 +117,112 @@ function CountryDetails({ country }) {
       ? country.population.toLocaleString()
       : 'Not available'
 
+  const details = [
+    {
+      id: 'capital',
+      label: 'Capital',
+      value: country.capital || 'Not available',
+      icon: <CapitalIcon />,
+    },
+    {
+      id: 'population',
+      label: 'Population',
+      value: population,
+      icon: <PopulationIcon />,
+    },
+    {
+      id: 'currencies',
+      label: 'Currency',
+      value: currencies,
+      icon: <CurrencyIcon />,
+    },
+    {
+      id: 'languages',
+      label: 'Languages',
+      value: languages,
+      icon: <LanguageIcon />,
+    },
+  ]
+
   return (
-    <section>
-      <h2>{country.name}</h2>
+    <section
+      className="country-details"
+      aria-labelledby="country-details-title"
+    >
+      <div className="country-details__header">
+        <div className="country-details__identity">
+          {country.flagUrl && (
+            <div className="country-details__flag-wrapper">
+              <img
+                className="country-details__flag"
+                src={country.flagUrl}
+                alt={`Flag of ${country.name}`}
+              />
+            </div>
+          )}
 
-      {country.flagUrl && (
-        <img
-          src={country.flagUrl}
-          alt={`Flag of ${country.name}`}
-          width="240"
-        />
-      )}
+          <div className="country-details__heading">
+            <p className="country-details__eyebrow">
+              COUNTRY OVERVIEW
+            </p>
 
-      <dl>
-        <div>
-          <dt>Country code</dt>
-          <dd>{country.code}</dd>
+            <h2
+              id="country-details-title"
+              className="country-details__title"
+            >
+              {country.name}
+            </h2>
+
+            <div className="country-details__meta">
+              {country.region && (
+                <span>{country.region}</span>
+              )}
+
+              {country.region && country.code && (
+                <span
+                  className="country-details__meta-divider"
+                  aria-hidden="true"
+                >
+                  •
+                </span>
+              )}
+
+              {country.code && (
+                <span>{country.code}</span>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div>
-          <dt>Capital</dt>
-          <dd>{country.capital || 'Not available'}</dd>
-        </div>
+        <span className="country-details__badge">
+          Destination selected
+        </span>
+      </div>
 
-        <div>
-          <dt>Region</dt>
-          <dd>{country.region || 'Not available'}</dd>
-        </div>
+      <dl className="country-details__grid">
+        {details.map((detail) => (
+          <div
+            key={detail.id}
+            className="country-details__item"
+          >
+            <div
+              className="country-details__item-icon"
+              aria-hidden="true"
+            >
+              {detail.icon}
+            </div>
 
-        <div>
-          <dt>Population</dt>
-          <dd>{population}</dd>
-        </div>
+            <div className="country-details__item-copy">
+              <dt className="country-details__label">
+                {detail.label}
+              </dt>
 
-        <div>
-          <dt>Currencies</dt>
-          <dd>{currencies}</dd>
-        </div>
-
-        <div>
-          <dt>Languages</dt>
-          <dd>{languages}</dd>
-        </div>
+              <dd className="country-details__value">
+                {detail.value}
+              </dd>
+            </div>
+          </div>
+        ))}
       </dl>
     </section>
   )

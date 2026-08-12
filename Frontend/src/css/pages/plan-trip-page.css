@@ -1,0 +1,104 @@
+.plan-trip-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-10);
+}
+
+.plan-trip-page__header {
+  max-width: 48rem;
+  padding-top: var(--tp-space-2);
+}
+
+.plan-trip-page__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tp-space-2);
+  margin-bottom: var(--tp-space-2);
+  color: var(--tp-color-primary-600);
+  font-size: var(--tp-font-size-xs);
+  font-weight: var(--tp-font-weight-semibold);
+  letter-spacing: 0.08em;
+}
+
+.plan-trip-page__eyebrow::before {
+  content: '';
+  width: 1.75rem;
+  height: 1px;
+  background:
+    linear-gradient(
+      90deg,
+      var(--tp-color-primary-500),
+      var(--tp-color-accent-400)
+    );
+}
+
+.plan-trip-page__title {
+  margin-bottom: var(--tp-space-3);
+  color: var(--tp-color-text-primary);
+  font-size: clamp(
+    2.25rem,
+    4vw,
+    3.5rem
+  );
+  font-weight: var(--tp-font-weight-semibold);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.plan-trip-page__description {
+  max-width: 42rem;
+  color: var(--tp-color-text-muted);
+  font-size: var(--tp-font-size-lg);
+  line-height: var(--tp-line-height-relaxed);
+}
+
+.plan-trip-page__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-8);
+}
+
+.plan-trip-page__error {
+  padding: var(--tp-space-4);
+  border: 1px solid
+    rgba(217, 45, 32, 0.2);
+  border-radius: var(--tp-radius-md);
+  color: var(--tp-color-danger);
+  background-color:
+    var(--tp-color-danger-soft);
+  font-size: var(--tp-font-size-sm);
+  line-height: var(--tp-line-height-body);
+}
+
+@media (max-width: 56rem) {
+  .plan-trip-page {
+    gap: var(--tp-space-8);
+  }
+
+  .plan-trip-page__content {
+    gap: var(--tp-space-6);
+  }
+}
+
+@media (max-width: 40rem) {
+  .plan-trip-page {
+    gap: var(--tp-space-6);
+  }
+
+  .plan-trip-page__eyebrow::before {
+    width: 1.25rem;
+  }
+
+  .plan-trip-page__title {
+    font-size: 2.25rem;
+  }
+
+  .plan-trip-page__description {
+    font-size: var(--tp-font-size-md);
+  }
+
+  .plan-trip-page__content {
+    gap: var(--tp-space-5);
+  }
+}
