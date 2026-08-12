@@ -1,0 +1,229 @@
+.travel-carousel {
+  width: 100%;
+}
+
+.travel-carousel__viewport {
+  position: relative;
+  width: 100%;
+  height: clamp(24rem, 37vw, 34rem);
+  overflow: hidden;
+  border: 1px solid
+    rgba(191, 215, 237, 0.7);
+  border-radius: var(--tp-radius-xl);
+  background-color: var(--tp-color-surface);
+  box-shadow: var(--tp-shadow-md);
+}
+
+/* Slides */
+
+.travel-carousel__slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 500ms
+      var(--tp-ease-emphasized);
+}
+
+.travel-carousel__slide--active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+ * The image always fills the carousel exactly.
+ * No cover, no crop, no zoom.
+ */
+
+.travel-carousel__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  user-select: none;
+}
+
+/* Very light overlay */
+
+.travel-carousel__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      transparent 60%,
+      rgba(13, 34, 56, 0.2) 100%
+    );
+}
+
+/* Slide label */
+
+.travel-carousel__label {
+  position: absolute;
+  left: var(--tp-space-6);
+  bottom: var(--tp-space-6);
+  z-index: 2;
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: 0 var(--tp-space-4);
+  border: 1px solid
+    rgba(255, 255, 255, 0.34);
+  border-radius: var(--tp-radius-full);
+  color: var(--tp-color-text-inverse);
+  background-color:
+    rgba(13, 34, 56, 0.46);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: var(--tp-font-size-sm);
+  font-weight: var(--tp-font-weight-semibold);
+}
+
+/* Navigation arrows */
+
+.travel-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid
+    rgba(255, 255, 255, 0.55);
+  border-radius: var(--tp-radius-full);
+  outline: none;
+  color: var(--tp-color-primary-900);
+  background-color:
+    rgba(255, 255, 255, 0.9);
+  box-shadow: var(--tp-shadow-sm);
+  transform: translateY(-50%);
+  transition:
+    background-color
+      var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    box-shadow
+      var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    transform
+      var(--tp-duration-fast)
+      var(--tp-ease-standard);
+}
+
+.travel-carousel__arrow svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.travel-carousel__arrow:hover {
+  background-color:
+    var(--tp-color-surface);
+  box-shadow: var(--tp-shadow-md);
+}
+
+.travel-carousel__arrow:active {
+  transform:
+    translateY(-50%)
+    scale(0.95);
+}
+
+.travel-carousel__arrow:focus-visible {
+  box-shadow:
+    var(--tp-focus-ring),
+    var(--tp-shadow-md);
+}
+
+.travel-carousel__arrow--previous {
+  left: var(--tp-space-5);
+}
+
+.travel-carousel__arrow--next {
+  right: var(--tp-space-5);
+}
+
+/* Indicators */
+
+.travel-carousel__indicators {
+  position: absolute;
+  left: 50%;
+  bottom: var(--tp-space-6);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--tp-space-2);
+  transform: translateX(-50%);
+}
+
+.travel-carousel__indicator {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border-radius: var(--tp-radius-full);
+  outline: none;
+  background-color:
+    rgba(255, 255, 255, 0.58);
+  transition:
+    width
+      var(--tp-duration-normal)
+      var(--tp-ease-standard),
+    background-color
+      var(--tp-duration-fast)
+      var(--tp-ease-standard);
+}
+
+.travel-carousel__indicator--active {
+  width: 1.75rem;
+  background-color:
+    var(--tp-color-surface);
+}
+
+.travel-carousel__indicator:focus-visible {
+  box-shadow:
+    0 0 0 3px
+      rgba(255, 255, 255, 0.45);
+}
+
+/* Tablet */
+
+@media (max-width: 56rem) {
+  .travel-carousel__viewport {
+    height: 24rem;
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 40rem) {
+  .travel-carousel__viewport {
+    height: 14rem;
+    border-radius: var(--tp-radius-lg);
+  }
+
+  .travel-carousel__arrow {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .travel-carousel__arrow--previous {
+    left: var(--tp-space-3);
+  }
+
+  .travel-carousel__arrow--next {
+    right: var(--tp-space-3);
+  }
+
+  .travel-carousel__label {
+    left: var(--tp-space-4);
+    bottom: var(--tp-space-4);
+    min-height: 2rem;
+    padding-inline: var(--tp-space-3);
+    font-size: var(--tp-font-size-xs);
+  }
+
+  .travel-carousel__indicators {
+    bottom: var(--tp-space-4);
+  }
+}

@@ -1,4 +1,9 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import {
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom'
+import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
@@ -26,40 +31,32 @@ function App() {
       />
 
       <Route
-        path="/home"
         element={
           <ProtectedRoute>
-            <HomePage />
+            <AppLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route
+          path="/home"
+          element={<HomePage />}
+        />
 
-      <Route
-        path="/plan"
-        element={
-          <ProtectedRoute>
-            <PlanTripPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/plan"
+          element={<PlanTripPage />}
+        />
 
-      <Route
-        path="/trips"
-        element={
-          <ProtectedRoute>
-            <TripsPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/trips"
+          element={<TripsPage />}
+        />
 
-      <Route
-        path="/trips/:tripId"
-        element={
-          <ProtectedRoute>
-            <TripDetailsPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/trips/:tripId"
+          element={<TripDetailsPage />}
+        />
+      </Route>
 
       <Route
         path="*"
