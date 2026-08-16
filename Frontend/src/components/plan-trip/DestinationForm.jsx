@@ -74,6 +74,32 @@ function CalendarIcon() {
   )
 }
 
+function WeatherIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M7.5 17.5h9a4 4 0 0 0 .6-8 5.5 5.5 0 0 0-10.4 1.7A3.2 3.2 0 0 0 7.5 17.5Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      <path
+        d="m9 20-.8 1.5M13 20l-.8 1.5M17 20l-.8 1.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 function DestinationForm({
   countries,
   selectedCountryCode,
@@ -368,10 +394,29 @@ function DestinationForm({
       </section>
 
       <div className="destination-form__footer">
-        <p className="destination-form__footer-note">
-          Once your destination and dates are set, check
-          the available weather information.
-        </p>
+        <div className="destination-form__footer-copy">
+          <div className="destination-form__footer-heading">
+            <span className="destination-form__footer-icon">
+              <WeatherIcon />
+            </span>
+
+            <div>
+              <p className="destination-form__footer-step">
+                STEP 03
+              </p>
+
+              <h3 className="destination-form__footer-title">
+                Check the weather
+              </h3>
+            </div>
+          </div>
+
+          <p className="destination-form__footer-note">
+            View the available weather forecast for your
+            selected destination and dates before
+            creating the trip.
+          </p>
+        </div>
 
         <button
           className="destination-form__submit"
@@ -380,9 +425,9 @@ function DestinationForm({
           disabled={isCheckDestinationDisabled}
         >
           <span>
-            {isLoadingWeather
-              ? 'Checking destination...'
-              : 'Check destination'}
+          {isLoadingWeather
+            ? 'Loading forecast...'
+            : 'View weather forecast'}
           </span>
 
           {!isLoadingWeather && (
