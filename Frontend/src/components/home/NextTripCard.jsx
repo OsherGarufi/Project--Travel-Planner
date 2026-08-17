@@ -56,11 +56,16 @@ function getDateOnlyValue(dateValue) {
     .split('-')
     .map(Number)
 
-  return new Date(year, month - 1, day)
+  return new Date(
+    year,
+    month - 1,
+    day,
+  )
 }
 
 function formatTripDate(dateValue) {
-  const date = getDateOnlyValue(dateValue)
+  const date =
+    getDateOnlyValue(dateValue)
 
   if (!date) {
     return ''
@@ -82,12 +87,16 @@ function getTripDestination(trip) {
     .join(', ')
 }
 
-function NextTripCard({ trip }) {
+function NextTripCard({
+  trip,
+  flagUrl,
+}) {
   if (!trip) {
     return null
   }
 
-  const destination = getTripDestination(trip)
+  const destination =
+    getTripDestination(trip)
 
   const tripName =
     trip.title ||
@@ -100,8 +109,23 @@ function NextTripCard({ trip }) {
       to={`/trips/${trip.id}`}
       aria-label={`View next trip: ${tripName}`}
     >
-      <div className="next-trip-card__icon">
-        <LocationIcon />
+      <div
+        className={`next-trip-card__icon${
+          flagUrl
+            ? ' next-trip-card__icon--flag'
+            : ''
+        }`}
+      >
+        {flagUrl ? (
+          <img
+            className="next-trip-card__flag"
+            src={flagUrl}
+            alt={`Flag of ${trip.destinationCountryName}`}
+            loading="lazy"
+          />
+        ) : (
+          <LocationIcon />
+        )}
       </div>
 
       <div className="next-trip-card__copy">

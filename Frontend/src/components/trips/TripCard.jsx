@@ -89,7 +89,8 @@ function getDateOnlyValue(dateValue) {
 }
 
 function formatTripDate(dateValue) {
-  const date = getDateOnlyValue(dateValue)
+  const date =
+    getDateOnlyValue(dateValue)
 
   if (!date) {
     return ''
@@ -148,7 +149,7 @@ function TripCard({
     <article className="trip-card">
       <div className="trip-card__top">
         <div className="trip-card__country">
-          {flagUrl ? (
+          {flagUrl && (
             <div className="trip-card__flag-wrapper">
               <img
                 className="trip-card__flag"
@@ -157,28 +158,12 @@ function TripCard({
                 loading="lazy"
               />
             </div>
-          ) : (
-            <div
-              className="trip-card__flag-fallback"
-              aria-hidden="true"
-            >
-              {trip.destinationCountryCode ||
-                'TR'}
-            </div>
           )}
 
-          <div className="trip-card__country-copy">
-            <span className="trip-card__country-name">
-              {trip.destinationCountryName ||
-                'Destination'}
-            </span>
-
-            {trip.destinationCountryCode && (
-              <span className="trip-card__country-code">
-                {trip.destinationCountryCode}
-              </span>
-            )}
-          </div>
+          <span className="trip-card__country-name">
+            {trip.destinationCountryName ||
+              'Destination'}
+          </span>
         </div>
 
         <span

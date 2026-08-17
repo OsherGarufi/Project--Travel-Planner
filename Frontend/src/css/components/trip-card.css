@@ -68,23 +68,19 @@
   gap: var(--tp-space-3);
 }
 
-.trip-card__flag-wrapper,
-.trip-card__flag-fallback {
+.trip-card__flag-wrapper {
+  display: grid;
   width: 3.5rem;
   height: 2.5rem;
   flex: 0 0 auto;
   overflow: hidden;
+  place-items: center;
   border: 1px solid
     var(--tp-color-border-subtle);
   border-radius: var(--tp-radius-sm);
   background-color:
     var(--tp-color-surface);
   box-shadow: var(--tp-shadow-xs);
-}
-
-.trip-card__flag-wrapper {
-  display: grid;
-  place-items: center;
 }
 
 .trip-card__flag {
@@ -94,38 +90,14 @@
   object-fit: contain;
 }
 
-.trip-card__flag-fallback {
-  display: grid;
-  place-items: center;
-  color: var(--tp-color-primary-600);
-  background-color:
-    var(--tp-color-primary-50);
-  font-size: var(--tp-font-size-xs);
-  font-weight: var(--tp-font-weight-semibold);
-  letter-spacing: 0.06em;
-}
-
-.trip-card__country-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-
 .trip-card__country-name {
   overflow: hidden;
   color: var(--tp-color-text-secondary);
   font-size: var(--tp-font-size-sm);
-  font-weight: var(--tp-font-weight-semibold);
+  font-weight:
+    var(--tp-font-weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.trip-card__country-code {
-  margin-top: 2px;
-  color: var(--tp-color-text-muted);
-  font-size: var(--tp-font-size-xs);
-  font-weight: var(--tp-font-weight-medium);
-  letter-spacing: 0.07em;
 }
 
 .trip-card__status {
@@ -137,7 +109,8 @@
     0 var(--tp-space-2);
   border-radius: var(--tp-radius-full);
   font-size: var(--tp-font-size-xs);
-  font-weight: var(--tp-font-weight-semibold);
+  font-weight:
+    var(--tp-font-weight-semibold);
 }
 
 .trip-card__status--current {
@@ -167,9 +140,12 @@
   overflow-wrap: anywhere;
   color: var(--tp-color-text-primary);
   font-size: var(--tp-font-size-xl);
-  font-weight: var(--tp-font-weight-semibold);
-  line-height: var(--tp-line-height-heading);
-  letter-spacing: var(--tp-letter-spacing-tight);
+  font-weight:
+    var(--tp-font-weight-semibold);
+  line-height:
+    var(--tp-line-height-heading);
+  letter-spacing:
+    var(--tp-letter-spacing-tight);
 }
 
 .trip-card__destination {
@@ -191,7 +167,8 @@
   gap: var(--tp-space-2);
   color: var(--tp-color-text-muted);
   font-size: var(--tp-font-size-xs);
-  line-height: var(--tp-line-height-body);
+  line-height:
+    var(--tp-line-height-body);
 }
 
 .trip-card__detail-icon {
@@ -217,7 +194,8 @@
   border-radius: var(--tp-radius-sm);
   color: var(--tp-color-primary-700);
   font-size: var(--tp-font-size-sm);
-  font-weight: var(--tp-font-weight-semibold);
+  font-weight:
+    var(--tp-font-weight-semibold);
 }
 
 .trip-card__link:hover {
@@ -255,8 +233,7 @@
     padding: var(--tp-space-5);
   }
 
-  .trip-card__flag-wrapper,
-  .trip-card__flag-fallback {
+  .trip-card__flag-wrapper {
     width: 3.25rem;
     height: 2.25rem;
   }

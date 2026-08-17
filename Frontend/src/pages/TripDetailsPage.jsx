@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -84,8 +85,8 @@ function TripDetailsLoadingState() {
 function TripDetailsPage() {
   const navigate = useNavigate()
 
-  const [flagUrl, setFlagUrl] =
-    useState('')
+  const [countries, setCountries] =
+    useState([])
 
   const {
     trip,
@@ -127,42 +128,44 @@ function TripDetailsPage() {
   })
 
   useEffect(() => {
-    if (!trip?.destinationCountryCode) {
-      setFlagUrl('')
-      return
-    }
-
     let isActive = true
 
     getCountries()
-      .then((countries) => {
-        if (!isActive) {
-          return
+      .then((countriesResult) => {
+        if (isActive) {
+          setCountries(countriesResult)
         }
-
-        const countryCode =
-          trip.destinationCountryCode.toUpperCase()
-
-        const country = countries.find(
-          (item) =>
-            item.code?.toUpperCase() ===
-            countryCode,
-        )
-
-        setFlagUrl(
-          country?.flagUrl ?? '',
-        )
       })
       .catch(() => {
-        if (isActive) {
-          setFlagUrl('')
-        }
+        // Trip details can still be shown
+        // if country metadata is unavailable.
       })
 
     return () => {
       isActive = false
     }
-  }, [trip?.destinationCountryCode])
+  }, [])
+
+  const flagUrl = useMemo(() => {
+    const countryCode =
+      trip?.destinationCountryCode
+        ?.toUpperCase()
+
+    if (!countryCode) {
+      return ''
+    }
+
+    const country = countries.find(
+      (item) =>
+        item.code?.toUpperCase() ===
+        countryCode,
+    )
+
+    return country?.flagUrl ?? ''
+  }, [
+    countries,
+    trip?.destinationCountryCode,
+  ])
 
   const handleStartEditing = () => {
     resetDelete()

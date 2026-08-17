@@ -130,7 +130,8 @@ function getToday() {
 }
 
 function formatTripDate(dateValue) {
-  const date = getDateOnlyValue(dateValue)
+  const date =
+    getDateOnlyValue(dateValue)
 
   if (!date) {
     return ''
@@ -222,21 +223,13 @@ function TripSummary({
       >
         <div className="trip-summary__header">
           <div className="trip-summary__destination-header">
-            {flagUrl ? (
+            {flagUrl && (
               <div className="trip-summary__flag-wrapper">
                 <img
                   className="trip-summary__flag"
                   src={flagUrl}
                   alt={`Flag of ${trip.destinationCountryName}`}
                 />
-              </div>
-            ) : (
-              <div
-                className="trip-summary__flag-fallback"
-                aria-hidden="true"
-              >
-                {trip.destinationCountryCode ||
-                  'TR'}
               </div>
             )}
 

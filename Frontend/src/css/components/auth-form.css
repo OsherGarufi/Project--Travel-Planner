@@ -51,12 +51,6 @@
   background-color: var(--tp-color-danger-soft);
 }
 
-.auth-form__alert--success {
-  color: var(--tp-color-success);
-  border-color: rgba(21, 128, 61, 0.2);
-  background-color: var(--tp-color-success-soft);
-}
-
 .auth-form__alert-icon {
   display: grid;
   flex: 0 0 auto;

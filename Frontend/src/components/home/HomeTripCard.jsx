@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import '../../css/components/trip-card.css'
 
 function ArrowIcon() {
   return (
@@ -19,32 +20,6 @@ function ArrowIcon() {
   )
 }
 
-function LocationIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-
-      <circle
-        cx="12"
-        cy="10"
-        r="2"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-    </svg>
-  )
-}
-
 function formatTripDate(dateValue) {
   if (!dateValue) {
     return ''
@@ -55,7 +30,11 @@ function formatTripDate(dateValue) {
     .split('-')
     .map(Number)
 
-  const date = new Date(year, month - 1, day)
+  const date = new Date(
+    year,
+    month - 1,
+    day,
+  )
 
   return new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -64,7 +43,10 @@ function formatTripDate(dateValue) {
   }).format(date)
 }
 
-function HomeTripCard({ trip }) {
+function HomeTripCard({
+  trip,
+  flagUrl,
+}) {
   const destination = [
     trip.destinationCity,
     trip.destinationCountryName,
@@ -72,27 +54,39 @@ function HomeTripCard({ trip }) {
     .filter(Boolean)
     .join(', ')
 
-  const startDate = formatTripDate(trip.startDate)
-  const endDate = formatTripDate(trip.endDate)
+  const startDate =
+    formatTripDate(trip.startDate)
+
+  const endDate =
+    formatTripDate(trip.endDate)
 
   return (
     <article className="home-page__trip-card">
       <div className="home-page__trip-card-top">
-        <span
-          className="home-page__trip-icon"
-          aria-hidden="true"
-        >
-          <LocationIcon />
-        </span>
+        <div className="trip-card__country">
+          {flagUrl && (
+            <div className="trip-card__flag-wrapper">
+              <img
+                className="trip-card__flag"
+                src={flagUrl}
+                alt={`Flag of ${trip.destinationCountryName}`}
+                loading="lazy"
+              />
+            </div>
+          )}
 
-        <span className="home-page__trip-country-code">
-          {trip.destinationCountryCode || 'TRIP'}
-        </span>
+          <span className="trip-card__country-name">
+            {trip.destinationCountryName ||
+              'Destination'}
+          </span>
+        </div>
       </div>
 
       <div className="home-page__trip-card-content">
         <h3 className="home-page__trip-title">
-          {trip.title || destination || 'Saved trip'}
+          {trip.title ||
+            destination ||
+            'Saved trip'}
         </h3>
 
         {destination && (
@@ -113,7 +107,11 @@ function HomeTripCard({ trip }) {
       <Link
         className="home-page__trip-link"
         to={`/trips/${trip.id}`}
-        aria-label={`View ${trip.title || destination || 'trip'}`}
+        aria-label={`View ${
+          trip.title ||
+          destination ||
+          'trip'
+        }`}
       >
         <span>View trip</span>
 

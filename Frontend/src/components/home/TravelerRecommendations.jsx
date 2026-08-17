@@ -1,3 +1,7 @@
+import {
+  useRef,
+  useState,
+} from 'react'
 import '../../css/components/traveler-recommendations.css'
 
 const recommendations = [
@@ -34,14 +38,131 @@ function QuoteIcon() {
   )
 }
 
+function ChevronIcon({
+  direction,
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d={
+          direction === 'left'
+            ? 'M15 6 9 12l6 6'
+            : 'm9 6 6 6-6 6'
+        }
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function TravelerRecommendations() {
+  const trackRef = useRef(null)
+
+  const [activeIndex, setActiveIndex] =
+    useState(0)
+
+  const getCardStep = () => {
+    const track = trackRef.current
+
+    if (!track) {
+      return 0
+    }
+
+    const firstCard =
+      track.firstElementChild
+
+    if (!firstCard) {
+      return 0
+    }
+
+    const cardWidth =
+      firstCard.getBoundingClientRect().width
+
+    const styles =
+      window.getComputedStyle(track)
+
+    const gap =
+      Number.parseFloat(styles.gap) || 0
+
+    return cardWidth + gap
+  }
+
+  const scrollToIndex = (index) => {
+    const track = trackRef.current
+    const step = getCardStep()
+
+    if (!track || !step) {
+      return
+    }
+
+    track.scrollTo({
+      left: index * step,
+      behavior: 'smooth',
+    })
+  }
+
+  const handlePrevious = () => {
+    const nextIndex = Math.max(
+      0,
+      activeIndex - 1,
+    )
+
+    scrollToIndex(nextIndex)
+  }
+
+  const handleNext = () => {
+    const nextIndex = Math.min(
+      recommendations.length - 1,
+      activeIndex + 1,
+    )
+
+    scrollToIndex(nextIndex)
+  }
+
+  const handleScroll = () => {
+    const track = trackRef.current
+    const step = getCardStep()
+
+    if (!track || !step) {
+      return
+    }
+
+    const nextIndex = Math.min(
+      recommendations.length - 1,
+      Math.max(
+        0,
+        Math.round(
+          track.scrollLeft / step,
+        ),
+      ),
+    )
+
+    setActiveIndex((currentIndex) =>
+      currentIndex === nextIndex
+        ? currentIndex
+        : nextIndex,
+    )
+  }
+
   return (
     <section className="traveler-recommendations">
       <h2 className="traveler-recommendations__title">
         Traveler recommendations
       </h2>
 
-      <div className="traveler-recommendations__grid">
+      <div
+        ref={trackRef}
+        className="traveler-recommendations__grid"
+        onScroll={handleScroll}
+      >
         {recommendations.map(
           (recommendation) => (
             <article
@@ -89,6 +210,39 @@ function TravelerRecommendations() {
             </article>
           ),
         )}
+      </div>
+
+      <div className="traveler-recommendations__navigation">
+        <button
+          className="traveler-recommendations__arrow"
+          type="button"
+          onClick={handlePrevious}
+          disabled={activeIndex === 0}
+          aria-label="Previous recommendation"
+        >
+          <ChevronIcon direction="left" />
+        </button>
+
+        <span
+          className="traveler-recommendations__counter"
+          aria-live="polite"
+        >
+          {activeIndex + 1} /{' '}
+          {recommendations.length}
+        </span>
+
+        <button
+          className="traveler-recommendations__arrow"
+          type="button"
+          onClick={handleNext}
+          disabled={
+            activeIndex ===
+            recommendations.length - 1
+          }
+          aria-label="Next recommendation"
+        >
+          <ChevronIcon direction="right" />
+        </button>
       </div>
     </section>
   )

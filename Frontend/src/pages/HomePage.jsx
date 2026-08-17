@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useState,
 } from 'react'
 import { Link } from 'react-router-dom'
 import HomeTripCard from '../components/home/HomeTripCard'
@@ -10,6 +11,7 @@ import TravelerRecommendations from '../components/home/TravelerRecommendations'
 import '../css/pages/home-page.css'
 import { useAuth } from '../hooks/useAuth'
 import { useTrips } from '../hooks/useTrips'
+import { getCountries } from '../services/countryService'
 
 function ArrowIcon() {
   return (
@@ -73,6 +75,9 @@ function getToday() {
 }
 
 function HomePage() {
+  const [countries, setCountries] =
+    useState([])
+
   const {
     firebaseUser,
     backendUser,
@@ -104,6 +109,34 @@ function HomePage() {
       // TripsProvider exposes the user-facing error state.
     })
   }, [hasLoadedTrips, loadTrips])
+
+  useEffect(() => {
+    let isActive = true
+
+    getCountries()
+      .then((countriesResult) => {
+        if (isActive) {
+          setCountries(countriesResult)
+        }
+      })
+      .catch(() => {
+        // Flags are decorative.
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  const countriesByCode =
+    useMemo(() => {
+      return new Map(
+        countries.map((country) => [
+          country.code?.toUpperCase(),
+          country,
+        ]),
+      )
+    }, [countries])
 
   const {
     nextTrip,
@@ -146,6 +179,21 @@ function HomePage() {
   }, [trips])
 
   const hasTrips = trips.length > 0
+
+  const getFlagUrl = (trip) => {
+    const countryCode =
+      trip.destinationCountryCode
+        ?.toUpperCase()
+
+    if (!countryCode) {
+      return ''
+    }
+
+    return (
+      countriesByCode.get(countryCode)
+        ?.flagUrl ?? ''
+    )
+  }
 
   return (
     <div className="home-page">
@@ -214,7 +262,10 @@ function HomePage() {
       </section>
 
       {nextTrip && (
-        <NextTripCard trip={nextTrip} />
+        <NextTripCard
+          trip={nextTrip}
+          flagUrl={getFlagUrl(nextTrip)}
+        />
       )}
 
       <section
@@ -308,6 +359,7 @@ function HomePage() {
               <HomeTripCard
                 key={trip.id}
                 trip={trip}
+                flagUrl={getFlagUrl(trip)}
               />
             ))}
           </div>

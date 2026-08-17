@@ -366,7 +366,7 @@ function TripsPage() {
               <LocationIcon />
             </div>
 
-            <div className="trips-page__empty-content">
+            <div>
               <p className="trips-page__empty-eyebrow">
                 START YOUR TRIPS
               </p>
