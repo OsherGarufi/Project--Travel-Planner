@@ -1,3 +1,24 @@
+import '../../css/components/trip-edit-form.css'
+
+function EditIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="m14.5 5.5 4 4M5 19l3.2-.7L18.5 8a2.1 2.1 0 0 0-3-3L5.2 15.3 5 19Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function TripEditForm({
   title,
   budgetAmount,
@@ -17,95 +38,163 @@ function TripEditForm({
     budgetCurrency.trim().length !== 3 ||
     isSaving
 
+  const handleSubmit = (event) => {
+    event.preventDefault()
+
+    if (!isSaveDisabled) {
+      onSave()
+    }
+  }
+
   return (
-    <section className="trip-edit-form">
-      <h2>Edit Trip Details</h2>
-
-      <div className="trip-edit-form__field">
-        <label htmlFor="editTripTitle">
-          Trip title
-        </label>
-
-        <input
-          id="editTripTitle"
-          type="text"
-          value={title}
-          onChange={onTitleChange}
-          maxLength={100}
-          autoComplete="off"
-        />
-      </div>
-
-      <div className="trip-edit-form__field">
-        <label htmlFor="editTripBudget">
-          Planned budget
-        </label>
-
-        <input
-          id="editTripBudget"
-          type="number"
-          value={budgetAmount}
-          onChange={onBudgetAmountChange}
-          min="0"
-          step="0.01"
-          placeholder="Optional"
-        />
-      </div>
-
-      <div className="trip-edit-form__field">
-        <label htmlFor="editTripCurrency">
-          Currency
-        </label>
-
-        <input
-          id="editTripCurrency"
-          type="text"
-          value={budgetCurrency}
-          onChange={onBudgetCurrencyChange}
-          minLength={3}
-          maxLength={3}
-          placeholder="ILS"
-          autoComplete="off"
-        />
-      </div>
-
-      <div className="trip-edit-form__field">
-        <label htmlFor="editTripNotes">
-          Notes
-        </label>
-
-        <textarea
-          id="editTripNotes"
-          value={notes}
-          onChange={onNotesChange}
-          rows={5}
-          placeholder="Add notes about your trip"
-        />
-      </div>
-
-      <div className="trip-edit-form__actions">
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={isSaveDisabled}
+    <section
+      className="trip-edit-form"
+      aria-labelledby="trip-edit-title"
+    >
+      <div className="trip-edit-form__header">
+        <span
+          className="trip-edit-form__header-icon"
+          aria-hidden="true"
         >
-          {isSaving ? 'Saving Changes...' : 'Save Changes'}
-        </button>
+          <EditIcon />
+        </span>
 
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isSaving}
-        >
-          Cancel
-        </button>
+        <div>
+          <p className="trip-edit-form__eyebrow">
+            EDIT TRIP
+          </p>
+
+          <h2
+            id="trip-edit-title"
+            className="trip-edit-form__title"
+          >
+            Update trip details
+          </h2>
+
+          <p className="trip-edit-form__description">
+            Change the trip name, planned budget or
+            personal notes.
+          </p>
+        </div>
       </div>
 
-      {saveError && (
-        <p className="trip-edit-form__error">
-          {saveError}
-        </p>
-      )}
+      <form
+        className="trip-edit-form__form"
+        onSubmit={handleSubmit}
+      >
+        <div className="trip-edit-form__field trip-edit-form__field--full">
+          <label
+            className="trip-edit-form__label"
+            htmlFor="editTripTitle"
+          >
+            Trip title
+          </label>
+
+          <input
+            id="editTripTitle"
+            className="trip-edit-form__input"
+            type="text"
+            value={title}
+            onChange={onTitleChange}
+            maxLength={100}
+            autoComplete="off"
+          />
+        </div>
+
+        <div className="trip-edit-form__field">
+          <label
+            className="trip-edit-form__label"
+            htmlFor="editTripBudget"
+          >
+            Planned budget
+          </label>
+
+          <input
+            id="editTripBudget"
+            className="trip-edit-form__input"
+            type="number"
+            value={budgetAmount}
+            onChange={onBudgetAmountChange}
+            min="0"
+            step="0.01"
+            placeholder="Optional"
+          />
+        </div>
+
+        <div className="trip-edit-form__field">
+          <label
+            className="trip-edit-form__label"
+            htmlFor="editTripCurrency"
+          >
+            Currency
+          </label>
+
+          <input
+            id="editTripCurrency"
+            className="trip-edit-form__input trip-edit-form__input--currency"
+            type="text"
+            value={budgetCurrency}
+            onChange={onBudgetCurrencyChange}
+            minLength={3}
+            maxLength={3}
+            placeholder="ILS"
+            autoComplete="off"
+          />
+
+          <p className="trip-edit-form__hint">
+            Use a 3-letter currency code, for example
+            ILS, USD or EUR.
+          </p>
+        </div>
+
+        <div className="trip-edit-form__field trip-edit-form__field--full">
+          <label
+            className="trip-edit-form__label"
+            htmlFor="editTripNotes"
+          >
+            Notes
+          </label>
+
+          <textarea
+            id="editTripNotes"
+            className="trip-edit-form__textarea"
+            value={notes}
+            onChange={onNotesChange}
+            rows={6}
+            placeholder="Add notes about your trip"
+          />
+        </div>
+
+        {saveError && (
+          <p
+            className="trip-edit-form__error"
+            role="alert"
+          >
+            {saveError}
+          </p>
+        )}
+
+        <div className="trip-edit-form__actions">
+          <button
+            className="trip-edit-form__cancel"
+            type="button"
+            onClick={onCancel}
+            disabled={isSaving}
+          >
+            Cancel
+          </button>
+
+          <button
+            className="trip-edit-form__save"
+            type="submit"
+            disabled={isSaveDisabled}
+          >
+            {isSaving
+              ? 'Saving changes...'
+              : 'Save changes'}
+          </button>
+        </div>
+      </form>
     </section>
   )
 }
