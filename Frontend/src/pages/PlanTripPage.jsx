@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import {
+  useRef,
+  useState,
+} from 'react'
 import CountryDetails from '../components/CountryDetails'
 import CreateTripSection from '../components/plan-trip/CreateTripSection'
 import DestinationForm from '../components/plan-trip/DestinationForm'
@@ -15,6 +18,8 @@ import {
 import '../css/pages/plan-trip-page.css'
 
 function PlanTripPage() {
+  const weatherSectionRef = useRef(null)
+
   const {
     countries,
     selectedCountry,
@@ -107,7 +112,10 @@ function PlanTripPage() {
     setStartDate(newStartDate)
     clearCreateTripError()
 
-    if (endDate && newStartDate > endDate) {
+    if (
+      endDate &&
+      newStartDate > endDate
+    ) {
       setEndDate('')
     }
 
@@ -118,6 +126,25 @@ function PlanTripPage() {
     setEndDate(event.target.value)
     clearCreateTripError()
     resetWeather()
+  }
+
+  const handleViewWeatherForecast = () => {
+    if (
+      !selectedCity ||
+      !startDate ||
+      !endDate
+    ) {
+      return
+    }
+
+    handleCheckDestination()
+
+    requestAnimationFrame(() => {
+      weatherSectionRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
   }
 
   return (
@@ -170,7 +197,9 @@ function PlanTripPage() {
           onCityChange={handleCityChange}
           onStartDateChange={handleStartDateChange}
           onEndDateChange={handleEndDateChange}
-          onCheckDestination={handleCheckDestination}
+          onCheckDestination={
+            handleViewWeatherForecast
+          }
           onAdditionalCitySearchToggle={
             handleAdditionalCitySearchToggle
           }
@@ -188,8 +217,10 @@ function PlanTripPage() {
           }
         />
 
-        <CountryDetails
-          country={selectedCountry}
+        <div
+          ref={weatherSectionRef}
+          className="plan-trip-page__weather-anchor"
+          aria-hidden="true"
         />
 
         {weatherError && (
@@ -227,13 +258,23 @@ function PlanTripPage() {
           attribution={WEATHER_ATTRIBUTION}
         />
 
+        <CountryDetails
+          country={selectedCountry}
+        />
+
         <CreateTripSection
-          countryName={selectedCountry?.name ?? ''}
-          cityName={selectedCity?.name ?? ''}
+          countryName={
+            selectedCountry?.name ?? ''
+          }
+          cityName={
+            selectedCity?.name ?? ''
+          }
           startDate={startDate}
           endDate={endDate}
           isCreatingTrip={isCreatingTrip}
-          isCreateDisabled={isCreateTripDisabled}
+          isCreateDisabled={
+            isCreateTripDisabled
+          }
           createTripError={createTripError}
           onCreateTrip={createSelectedTrip}
         />

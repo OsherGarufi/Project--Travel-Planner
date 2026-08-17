@@ -17,7 +17,8 @@
   margin-bottom: var(--tp-space-2);
   color: var(--tp-color-primary-600);
   font-size: var(--tp-font-size-xs);
-  font-weight: var(--tp-font-weight-semibold);
+  font-weight:
+    var(--tp-font-weight-semibold);
   letter-spacing: 0.08em;
 }
 
@@ -41,7 +42,8 @@
     4vw,
     3.5rem
   );
-  font-weight: var(--tp-font-weight-semibold);
+  font-weight:
+    var(--tp-font-weight-semibold);
   line-height: 1.05;
   letter-spacing: -0.05em;
 }
@@ -50,13 +52,26 @@
   max-width: 42rem;
   color: var(--tp-color-text-muted);
   font-size: var(--tp-font-size-lg);
-  line-height: var(--tp-line-height-relaxed);
+  line-height:
+    var(--tp-line-height-relaxed);
 }
 
 .plan-trip-page__content {
   display: flex;
   flex-direction: column;
   gap: var(--tp-space-8);
+}
+
+/*
+ * Invisible scroll target.
+ * scroll-margin keeps the forecast comfortably
+ * below the application header after navigation.
+ */
+
+.plan-trip-page__weather-anchor {
+  height: 0;
+  margin: 0;
+  scroll-margin-top: 6rem;
 }
 
 .plan-trip-page__error {
@@ -68,7 +83,8 @@
   background-color:
     var(--tp-color-danger-soft);
   font-size: var(--tp-font-size-sm);
-  line-height: var(--tp-line-height-body);
+  line-height:
+    var(--tp-line-height-body);
 }
 
 @media (max-width: 56rem) {
@@ -78,6 +94,10 @@
 
   .plan-trip-page__content {
     gap: var(--tp-space-6);
+  }
+
+  .plan-trip-page__weather-anchor {
+    scroll-margin-top: 5rem;
   }
 }
 
@@ -100,5 +120,9 @@
 
   .plan-trip-page__content {
     gap: var(--tp-space-5);
+  }
+
+  .plan-trip-page__weather-anchor {
+    scroll-margin-top: 4.5rem;
   }
 }
