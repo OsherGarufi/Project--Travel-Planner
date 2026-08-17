@@ -199,11 +199,11 @@ function HomePage() {
     <div className="home-page">
       <section className="home-page__intro">
         <p className="home-page__eyebrow">
-          YOUR TRAVEL SPACE
+          YOUR TRIP SPACE
         </p>
 
         <h1 className="home-page__title">
-          Welcome back, {firstName}.
+          Welcome {firstName}
         </h1>
 
         <p className="home-page__description">
