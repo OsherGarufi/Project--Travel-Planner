@@ -3,6 +3,17 @@ import { updateTrip } from '../../services/tripService'
 import { useAuth } from '../useAuth'
 import { useTrips } from '../useTrips'
 
+function normalizeCurrencyInput(value) {
+  if (typeof value !== 'string') {
+    return ''
+  }
+
+  return value
+    .replace(/[^a-zA-Z]/g, '')
+    .toUpperCase()
+    .slice(0, 3)
+}
+
 export function useTripEdit({
   trip,
   replaceTrip,
@@ -30,7 +41,9 @@ export function useTripEdit({
     )
 
     setBudgetCurrency(
-      tripDetails.budgetCurrency || 'ILS',
+      normalizeCurrencyInput(
+        tripDetails.budgetCurrency || 'ILS',
+      ),
     )
 
     setNotes(tripDetails.notes || '')
@@ -65,9 +78,9 @@ export function useTripEdit({
     setSaveError('')
   }
 
-  const handleBudgetCurrencyChange = (event) => {
+  const handleBudgetCurrencyChange = (value) => {
     setBudgetCurrency(
-      event.target.value.toUpperCase(),
+      normalizeCurrencyInput(value),
     )
 
     setSaveError('')
@@ -82,7 +95,7 @@ export function useTripEdit({
     const normalizedTitle = title.trim()
 
     const normalizedCurrency =
-      budgetCurrency.trim().toUpperCase()
+      normalizeCurrencyInput(budgetCurrency)
 
     if (!normalizedTitle) {
       return {
@@ -90,26 +103,25 @@ export function useTripEdit({
       }
     }
 
-    if (normalizedCurrency.length !== 3) {
-      return {
-        error:
-          'Currency must contain exactly 3 characters.',
-      }
-    }
-
     const normalizedBudgetAmount =
-      budgetAmount === ''
-        ? null
-        : Number(budgetAmount)
+      Number(budgetAmount)
 
     if (
-      normalizedBudgetAmount !== null &&
-      (!Number.isFinite(normalizedBudgetAmount) ||
-        normalizedBudgetAmount < 0)
+      !Number.isFinite(normalizedBudgetAmount) ||
+      normalizedBudgetAmount <= 0
     ) {
       return {
         error:
-          'Budget must be a valid non-negative number.',
+          'Budget must be a valid amount greater than zero.',
+      }
+    }
+
+    if (
+      !/^[A-Z]{3}$/.test(normalizedCurrency)
+    ) {
+      return {
+        error:
+          'Currency must be a valid 3-letter code.',
       }
     }
 

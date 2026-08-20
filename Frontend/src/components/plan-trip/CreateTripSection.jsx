@@ -54,6 +54,41 @@ function CalendarIcon() {
   )
 }
 
+function BudgetIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="14"
+        rx="3"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <path
+        d="M16 10h5v4h-5a2 2 0 1 1 0-4Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+
+      <circle
+        cx="16.5"
+        cy="12"
+        r=".7"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
 function CheckIcon() {
   return (
     <svg
@@ -96,21 +131,46 @@ function formatTripDate(dateValue) {
   }).format(date)
 }
 
+function formatBudgetAmount(amount) {
+  if (
+    typeof amount !== 'number' ||
+    !Number.isFinite(amount)
+  ) {
+    return ''
+  }
+
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
 function CreateTripSection({
   countryName,
   cityName,
   startDate,
   endDate,
+  budgetAmount,
+  budgetCurrency,
   isCreatingTrip,
   isCreateDisabled,
   createTripError,
   onCreateTrip,
 }) {
-  const hasTripSummary =
+  const hasValidBudget =
+    typeof budgetAmount === 'number' &&
+    Number.isFinite(budgetAmount) &&
+    budgetAmount > 0 &&
+    typeof budgetCurrency === 'string' &&
+    /^[A-Z]{3}$/.test(budgetCurrency)
+
+  const hasTripSummary = Boolean(
     countryName &&
-    cityName &&
-    startDate &&
-    endDate
+      cityName &&
+      startDate &&
+      endDate &&
+      hasValidBudget,
+  )
 
   return (
     <section
@@ -135,8 +195,8 @@ function CreateTripSection({
           </h2>
 
           <p className="create-trip-section__description">
-            Review your destination and travel dates
-            before saving the trip.
+            Review your destination, travel dates and
+            planned budget before saving the trip.
           </p>
         </div>
 
@@ -195,6 +255,26 @@ function CreateTripSection({
               </p>
             </div>
           </div>
+
+          <div className="create-trip-section__summary-item">
+            <span
+              className="create-trip-section__summary-icon"
+              aria-hidden="true"
+            >
+              <BudgetIcon />
+            </span>
+
+            <div>
+              <p className="create-trip-section__summary-label">
+                Planned budget
+              </p>
+
+              <p className="create-trip-section__summary-value">
+                {formatBudgetAmount(budgetAmount)}{' '}
+                {budgetCurrency}
+              </p>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="create-trip-section__pending">
@@ -211,8 +291,8 @@ function CreateTripSection({
             </p>
 
             <p className="create-trip-section__pending-description">
-              Choose a country, city and travel dates to
-              unlock trip creation.
+              Choose a country, city, travel dates and
+              planned budget to unlock trip creation.
             </p>
           </div>
         </div>

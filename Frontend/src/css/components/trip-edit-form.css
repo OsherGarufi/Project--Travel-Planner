@@ -1,5 +1,5 @@
 .trip-edit-form {
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid
     rgba(191, 215, 237, 0.62);
   border-radius: var(--tp-radius-xl);
@@ -15,6 +15,11 @@
   padding: var(--tp-space-6);
   border-bottom: 1px solid
     var(--tp-color-border-subtle);
+  border-radius:
+    var(--tp-radius-xl)
+    var(--tp-radius-xl)
+    0
+    0;
   background:
     linear-gradient(
       90deg,
@@ -73,8 +78,13 @@
   min-width: 0;
 }
 
-.trip-edit-form__field--full {
+.trip-edit-form__field--full,
+.trip-edit-form__budget {
   grid-column: 1 / -1;
+}
+
+.trip-edit-form__budget {
+  min-width: 0;
 }
 
 .trip-edit-form__label {
@@ -112,10 +122,6 @@
     0 var(--tp-space-4);
 }
 
-.trip-edit-form__input--currency {
-  text-transform: uppercase;
-}
-
 .trip-edit-form__textarea {
   min-height: 9rem;
   padding: var(--tp-space-4);
@@ -145,15 +151,10 @@
     var(--tp-color-surface-muted);
 }
 
-.trip-edit-form__hint {
-  margin-top: var(--tp-space-2);
-  color: var(--tp-color-text-muted);
-  font-size: var(--tp-font-size-xs);
-}
-
 .trip-edit-form__error {
   grid-column: 1 / -1;
-  padding: var(--tp-space-3)
+  padding:
+    var(--tp-space-3)
     var(--tp-space-4);
   border: 1px solid
     rgba(217, 45, 32, 0.16);
@@ -261,6 +262,11 @@
 
   .trip-edit-form__header {
     gap: var(--tp-space-3);
+    border-radius:
+      var(--tp-radius-lg)
+      var(--tp-radius-lg)
+      0
+      0;
   }
 
   .trip-edit-form__header-icon {
@@ -277,6 +283,7 @@
   }
 
   .trip-edit-form__field--full,
+  .trip-edit-form__budget,
   .trip-edit-form__error,
   .trip-edit-form__actions {
     grid-column: auto;

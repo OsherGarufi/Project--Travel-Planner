@@ -3,19 +3,22 @@ import {
   useState,
 } from 'react'
 import CountryDetails from '../components/CountryDetails'
+import BudgetSection from '../components/plan-trip/BudgetSection'
 import CreateTripSection from '../components/plan-trip/CreateTripSection'
 import DestinationForm from '../components/plan-trip/DestinationForm'
 import ForecastUnavailable from '../components/plan-trip/ForecastUnavailable'
 import HistoricalWeather from '../components/plan-trip/HistoricalWeather'
 import WeatherForecast from '../components/plan-trip/WeatherForecast'
+import '../css/pages/plan-trip-page.css'
 import { useCreateTrip } from '../hooks/plan-trip/useCreateTrip'
 import useDestinationSelection from '../hooks/plan-trip/useDestinationSelection'
+import { useTripBudget } from '../hooks/plan-trip/useTripBudget'
 import useTripWeather from '../hooks/plan-trip/useTripWeather'
 import {
   WEATHER_ATTRIBUTION,
   WEATHER_FORECAST_DAYS,
 } from '../services/weather/weatherService'
-import '../css/pages/plan-trip-page.css'
+import { getPreferredLocalCurrency } from '../utils/currencyUtils'
 
 function PlanTripPage() {
   const weatherSectionRef = useRef(null)
@@ -55,6 +58,19 @@ function PlanTripPage() {
   const [endDate, setEndDate] = useState('')
 
   const {
+    budgetAmount,
+    parsedBudgetAmount,
+    budgetCurrency,
+    handleBudgetAmountChange,
+    handleBudgetCurrencyChange,
+  } = useTripBudget()
+
+  const localCurrency =
+    getPreferredLocalCurrency(
+      selectedCountry?.currencies,
+    )
+
+  const {
     weatherForecast,
     isLoadingWeather,
     weatherError,
@@ -85,6 +101,8 @@ function PlanTripPage() {
     selectedCity,
     startDate,
     endDate,
+    budgetAmount: parsedBudgetAmount,
+    budgetCurrency,
   })
 
   const handleCountryChange = (event) => {
@@ -160,8 +178,9 @@ function PlanTripPage() {
 
         <p className="plan-trip-page__description">
           Choose your destination and travel dates,
-          explore useful destination information and
-          check the weather before creating your trip.
+          explore useful destination information,
+          check the weather and set your planned
+          budget before creating your trip.
         </p>
       </header>
 
@@ -262,6 +281,18 @@ function PlanTripPage() {
           country={selectedCountry}
         />
 
+        <BudgetSection
+          budgetAmount={budgetAmount}
+          budgetCurrency={budgetCurrency}
+          localCurrency={localCurrency}
+          onBudgetAmountChange={
+            handleBudgetAmountChange
+          }
+          onBudgetCurrencyChange={
+            handleBudgetCurrencyChange
+          }
+        />
+
         <CreateTripSection
           countryName={
             selectedCountry?.name ?? ''
@@ -271,6 +302,8 @@ function PlanTripPage() {
           }
           startDate={startDate}
           endDate={endDate}
+          budgetAmount={parsedBudgetAmount}
+          budgetCurrency={budgetCurrency}
           isCreatingTrip={isCreatingTrip}
           isCreateDisabled={
             isCreateTripDisabled

@@ -1,3 +1,4 @@
+import BudgetSection from '../plan-trip/BudgetSection'
 import '../../css/components/trip-edit-form.css'
 
 function EditIcon() {
@@ -23,6 +24,7 @@ function TripEditForm({
   title,
   budgetAmount,
   budgetCurrency,
+  localCurrency,
   notes,
   isSaving,
   saveError,
@@ -33,9 +35,20 @@ function TripEditForm({
   onSave,
   onCancel,
 }) {
+  const numericBudgetAmount =
+    Number(budgetAmount)
+
+  const hasValidBudget =
+    Number.isFinite(numericBudgetAmount) &&
+    numericBudgetAmount > 0
+
+  const hasValidCurrency =
+    /^[A-Z]{3}$/.test(budgetCurrency)
+
   const isSaveDisabled =
     !title.trim() ||
-    budgetCurrency.trim().length !== 3 ||
+    !hasValidBudget ||
+    !hasValidCurrency ||
     isSaving
 
   const handleSubmit = (event) => {
@@ -101,50 +114,18 @@ function TripEditForm({
           />
         </div>
 
-        <div className="trip-edit-form__field">
-          <label
-            className="trip-edit-form__label"
-            htmlFor="editTripBudget"
-          >
-            Planned budget
-          </label>
-
-          <input
-            id="editTripBudget"
-            className="trip-edit-form__input"
-            type="number"
-            value={budgetAmount}
-            onChange={onBudgetAmountChange}
-            min="0"
-            step="0.01"
-            placeholder="Optional"
+        <div className="trip-edit-form__budget">
+          <BudgetSection
+            budgetAmount={budgetAmount}
+            budgetCurrency={budgetCurrency}
+            localCurrency={localCurrency}
+            onBudgetAmountChange={
+              onBudgetAmountChange
+            }
+            onBudgetCurrencyChange={
+              onBudgetCurrencyChange
+            }
           />
-        </div>
-
-        <div className="trip-edit-form__field">
-          <label
-            className="trip-edit-form__label"
-            htmlFor="editTripCurrency"
-          >
-            Currency
-          </label>
-
-          <input
-            id="editTripCurrency"
-            className="trip-edit-form__input trip-edit-form__input--currency"
-            type="text"
-            value={budgetCurrency}
-            onChange={onBudgetCurrencyChange}
-            minLength={3}
-            maxLength={3}
-            placeholder="ILS"
-            autoComplete="off"
-          />
-
-          <p className="trip-edit-form__hint">
-            Use a 3-letter currency code, for example
-            ILS, USD or EUR.
-          </p>
         </div>
 
         <div className="trip-edit-form__field trip-edit-form__field--full">

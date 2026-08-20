@@ -9,6 +9,8 @@ export function useCreateTrip({
   selectedCity,
   startDate,
   endDate,
+  budgetAmount,
+  budgetCurrency,
 }) {
   const { idToken } = useAuth()
   const { addTripToCache } = useTrips()
@@ -20,11 +22,22 @@ export function useCreateTrip({
   const [createTripError, setCreateTripError] =
     useState('')
 
+  const hasValidBudget =
+    typeof budgetAmount === 'number' &&
+    Number.isFinite(budgetAmount) &&
+    budgetAmount > 0
+
+  const hasValidBudgetCurrency =
+    typeof budgetCurrency === 'string' &&
+    /^[A-Z]{3}$/.test(budgetCurrency)
+
   const isCreateTripDisabled =
     !selectedCountry ||
     !selectedCity ||
     !startDate ||
     !endDate ||
+    !hasValidBudget ||
+    !hasValidBudgetCurrency ||
     !idToken ||
     isCreatingTrip
 
@@ -49,8 +62,8 @@ export function useCreateTrip({
       destinationCity: selectedCity.name,
       startDate,
       endDate,
-      budgetAmount: null,
-      budgetCurrency: 'ILS',
+      budgetAmount,
+      budgetCurrency,
       notes: null,
     }
 

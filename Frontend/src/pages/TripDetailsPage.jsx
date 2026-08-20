@@ -12,6 +12,7 @@ import { useTripDelete } from '../hooks/trip-details/useTripDelete'
 import { useTripDetails } from '../hooks/trip-details/useTripDetails'
 import { useTripEdit } from '../hooks/trip-details/useTripEdit'
 import { getCountries } from '../services/countryService'
+import { getPreferredLocalCurrency } from '../utils/currencyUtils'
 
 function ArrowLeftIcon() {
   return (
@@ -146,26 +147,34 @@ function TripDetailsPage() {
     }
   }, [])
 
-  const flagUrl = useMemo(() => {
+  const destinationCountry = useMemo(() => {
     const countryCode =
       trip?.destinationCountryCode
         ?.toUpperCase()
 
     if (!countryCode) {
-      return ''
+      return null
     }
 
-    const country = countries.find(
-      (item) =>
-        item.code?.toUpperCase() ===
-        countryCode,
+    return (
+      countries.find(
+        (item) =>
+          item.code?.toUpperCase() ===
+          countryCode,
+      ) ?? null
     )
-
-    return country?.flagUrl ?? ''
   }, [
     countries,
     trip?.destinationCountryCode,
   ])
+
+  const flagUrl =
+    destinationCountry?.flagUrl ?? ''
+
+  const localCurrency =
+    getPreferredLocalCurrency(
+      destinationCountry?.currencies,
+    )
 
   const handleStartEditing = () => {
     resetDelete()
@@ -271,6 +280,7 @@ function TripDetailsPage() {
       <TripSummary
         trip={trip}
         flagUrl={flagUrl}
+        localCurrency={localCurrency}
       />
 
       {isEditing ? (
@@ -278,6 +288,7 @@ function TripDetailsPage() {
           title={title}
           budgetAmount={budgetAmount}
           budgetCurrency={budgetCurrency}
+          localCurrency={localCurrency}
           notes={notes}
           isSaving={isSaving}
           saveError={saveError}

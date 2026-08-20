@@ -1,4 +1,5 @@
 import '../../css/components/trip-summary.css'
+import CurrencyConversion from '../currency/CurrencyConversion'
 
 function LocationIcon() {
   return (
@@ -196,6 +197,7 @@ function getTripStatus(
 function TripSummary({
   trip,
   flagUrl,
+  localCurrency,
 }) {
   const status = getTripStatus(
     trip.startDate,
@@ -214,6 +216,29 @@ function TripSummary({
   ]
     .filter(Boolean)
     .join(', ')
+
+  const hasBudget =
+    trip.budgetAmount !== null &&
+    trip.budgetAmount !== undefined &&
+    Number.isFinite(Number(trip.budgetAmount)) &&
+    Number(trip.budgetAmount) > 0
+
+  const normalizedBudgetCurrency =
+    typeof trip.budgetCurrency === 'string'
+      ? trip.budgetCurrency
+          .trim()
+          .toUpperCase()
+      : ''
+
+  const hasValidBudgetCurrency =
+    /^[A-Z]{3}$/.test(
+      normalizedBudgetCurrency,
+    )
+
+  const canShowConversion =
+    hasBudget &&
+    hasValidBudgetCurrency &&
+    localCurrency
 
   return (
     <div className="trip-summary">
@@ -311,21 +336,38 @@ function TripSummary({
               <WalletIcon />
             </span>
 
-            <div>
+            <div className="trip-summary__budget-content">
               <p className="trip-summary__detail-label">
                 Planned budget
               </p>
 
-              <p className="trip-summary__detail-value">
-                {trip.budgetAmount !== null &&
-                trip.budgetAmount !== undefined
-                  ? `${formatBudget(
-                      trip.budgetAmount,
-                    )} ${
-                      trip.budgetCurrency
-                    }`
-                  : 'Not set'}
-              </p>
+              <div className="trip-summary__budget-row">
+                <p className="trip-summary__detail-value">
+                  {hasBudget
+                    ? `${formatBudget(
+                        trip.budgetAmount,
+                      )} ${
+                        normalizedBudgetCurrency
+                      }`
+                    : 'Not set'}
+                </p>
+
+                {canShowConversion &&
+                  normalizedBudgetCurrency !==
+                    localCurrency && (
+                    <div className="trip-summary__budget-conversion">
+                      <CurrencyConversion
+                        amount={trip.budgetAmount}
+                        fromCurrency={
+                          normalizedBudgetCurrency
+                        }
+                        toCurrency={
+                          localCurrency
+                        }
+                      />
+                    </div>
+                  )}
+              </div>
             </div>
           </div>
         </div>
