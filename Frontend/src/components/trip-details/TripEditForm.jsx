@@ -1,5 +1,5 @@
-import BudgetSection from '../plan-trip/BudgetSection'
 import '../../css/components/trip-edit-form.css'
+import BudgetSection from '../plan-trip/BudgetSection'
 
 function EditIcon() {
   return (
@@ -22,13 +22,20 @@ function EditIcon() {
 
 function TripEditForm({
   title,
+  startDate,
+  endDate,
+  startDateMinimum,
+  endDateMinimum,
   budgetAmount,
   budgetCurrency,
   localCurrency,
   notes,
+  hasChanges,
   isSaving,
   saveError,
   onTitleChange,
+  onStartDateChange,
+  onEndDateChange,
   onBudgetAmountChange,
   onBudgetCurrencyChange,
   onNotesChange,
@@ -45,10 +52,17 @@ function TripEditForm({
   const hasValidCurrency =
     /^[A-Z]{3}$/.test(budgetCurrency)
 
+  const hasValidDates =
+    Boolean(startDate) &&
+    Boolean(endDate) &&
+    endDate >= startDate
+
   const isSaveDisabled =
     !title.trim() ||
+    !hasValidDates ||
     !hasValidBudget ||
     !hasValidCurrency ||
+    !hasChanges ||
     isSaving
 
   const handleSubmit = (event) => {
@@ -85,8 +99,8 @@ function TripEditForm({
           </h2>
 
           <p className="trip-edit-form__description">
-            Change the trip name, planned budget or
-            personal notes.
+            Change the trip name, travel dates,
+            planned budget or personal notes.
           </p>
         </div>
       </div>
@@ -111,6 +125,42 @@ function TripEditForm({
             onChange={onTitleChange}
             maxLength={100}
             autoComplete="off"
+          />
+        </div>
+
+        <div className="trip-edit-form__field">
+          <label
+            className="trip-edit-form__label"
+            htmlFor="editTripStartDate"
+          >
+            Start date
+          </label>
+
+          <input
+            id="editTripStartDate"
+            className="trip-edit-form__input"
+            type="date"
+            value={startDate}
+            min={startDateMinimum}
+            onChange={onStartDateChange}
+          />
+        </div>
+
+        <div className="trip-edit-form__field">
+          <label
+            className="trip-edit-form__label"
+            htmlFor="editTripEndDate"
+          >
+            End date
+          </label>
+
+          <input
+            id="editTripEndDate"
+            className="trip-edit-form__input"
+            type="date"
+            value={endDate}
+            min={endDateMinimum}
+            onChange={onEndDateChange}
           />
         </div>
 

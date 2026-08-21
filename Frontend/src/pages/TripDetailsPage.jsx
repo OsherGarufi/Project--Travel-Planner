@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -86,6 +87,8 @@ function TripDetailsLoadingState() {
 function TripDetailsPage() {
   const navigate = useNavigate()
 
+  const editFormRef = useRef(null)
+
   const [countries, setCountries] =
     useState([])
 
@@ -98,7 +101,12 @@ function TripDetailsPage() {
 
   const {
     isEditing,
+    hasChanges,
     title,
+    startDate,
+    endDate,
+    startDateMinimum,
+    endDateMinimum,
     budgetAmount,
     budgetCurrency,
     notes,
@@ -108,6 +116,8 @@ function TripDetailsPage() {
     cancelEditing,
     saveTrip,
     handleTitleChange,
+    handleStartDateChange,
+    handleEndDateChange,
     handleBudgetAmountChange,
     handleBudgetCurrencyChange,
     handleNotesChange,
@@ -175,6 +185,17 @@ function TripDetailsPage() {
     getPreferredLocalCurrency(
       destinationCountry?.currencies,
     )
+
+  useEffect(() => {
+    if (!isEditing) {
+      return
+    }
+
+    editFormRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }, [isEditing])
 
   const handleStartEditing = () => {
     resetDelete()
@@ -284,25 +305,46 @@ function TripDetailsPage() {
       />
 
       {isEditing ? (
-        <TripEditForm
-          title={title}
-          budgetAmount={budgetAmount}
-          budgetCurrency={budgetCurrency}
-          localCurrency={localCurrency}
-          notes={notes}
-          isSaving={isSaving}
-          saveError={saveError}
-          onTitleChange={handleTitleChange}
-          onBudgetAmountChange={
-            handleBudgetAmountChange
-          }
-          onBudgetCurrencyChange={
-            handleBudgetCurrencyChange
-          }
-          onNotesChange={handleNotesChange}
-          onSave={saveTrip}
-          onCancel={cancelEditing}
-        />
+        <div ref={editFormRef}>
+          <TripEditForm
+            title={title}
+            startDate={startDate}
+            endDate={endDate}
+            startDateMinimum={
+              startDateMinimum
+            }
+            endDateMinimum={
+              endDateMinimum
+            }
+            budgetAmount={budgetAmount}
+            budgetCurrency={budgetCurrency}
+            localCurrency={localCurrency}
+            notes={notes}
+            hasChanges={hasChanges}
+            isSaving={isSaving}
+            saveError={saveError}
+            onTitleChange={
+              handleTitleChange
+            }
+            onStartDateChange={
+              handleStartDateChange
+            }
+            onEndDateChange={
+              handleEndDateChange
+            }
+            onBudgetAmountChange={
+              handleBudgetAmountChange
+            }
+            onBudgetCurrencyChange={
+              handleBudgetCurrencyChange
+            }
+            onNotesChange={
+              handleNotesChange
+            }
+            onSave={saveTrip}
+            onCancel={cancelEditing}
+          />
+        </div>
       ) : (
         <DeleteTripSection
           isConfirmingDelete={

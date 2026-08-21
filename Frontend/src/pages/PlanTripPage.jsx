@@ -20,6 +20,20 @@ import {
 } from '../services/weather/weatherService'
 import { getPreferredLocalCurrency } from '../utils/currencyUtils'
 
+function getTodayDateInputValue() {
+  const today = new Date()
+
+  const year = today.getFullYear()
+  const month = String(
+    today.getMonth() + 1,
+  ).padStart(2, '0')
+  const day = String(
+    today.getDate(),
+  ).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
 function PlanTripPage() {
   const weatherSectionRef = useRef(null)
 
@@ -54,8 +68,11 @@ function PlanTripPage() {
       handleDestinationAdditionalCitySelection,
   } = useDestinationSelection()
 
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [startDate, setStartDate] =
+    useState('')
+
+  const [endDate, setEndDate] =
+    useState('')
 
   const {
     budgetAmount,
@@ -64,6 +81,9 @@ function PlanTripPage() {
     handleBudgetAmountChange,
     handleBudgetCurrencyChange,
   } = useTripBudget()
+
+  const minimumTravelDate =
+    getTodayDateInputValue()
 
   const localCurrency =
     getPreferredLocalCurrency(
@@ -108,24 +128,38 @@ function PlanTripPage() {
   const handleCountryChange = (event) => {
     resetWeather()
     clearCreateTripError()
+
     handleDestinationCountryChange(event)
   }
 
   const handleCityChange = (event) => {
     resetWeather()
     clearCreateTripError()
+
     handleDestinationCityChange(event)
   }
 
-  const handleAdditionalCitySelection = (city) => {
+  const handleAdditionalCitySelection = (
+    city,
+  ) => {
     resetWeather()
     clearCreateTripError()
 
-    handleDestinationAdditionalCitySelection(city)
+    handleDestinationAdditionalCitySelection(
+      city,
+    )
   }
 
   const handleStartDateChange = (event) => {
-    const newStartDate = event.target.value
+    const newStartDate =
+      event.target.value
+
+    if (
+      newStartDate &&
+      newStartDate < minimumTravelDate
+    ) {
+      return
+    }
 
     setStartDate(newStartDate)
     clearCreateTripError()
@@ -141,7 +175,23 @@ function PlanTripPage() {
   }
 
   const handleEndDateChange = (event) => {
-    setEndDate(event.target.value)
+    const newEndDate =
+      event.target.value
+
+    if (
+      newEndDate &&
+      (
+        newEndDate < minimumTravelDate ||
+        (
+          startDate &&
+          newEndDate < startDate
+        )
+      )
+    ) {
+      return
+    }
+
+    setEndDate(newEndDate)
     clearCreateTripError()
     resetWeather()
   }
@@ -150,7 +200,9 @@ function PlanTripPage() {
     if (
       !selectedCity ||
       !startDate ||
-      !endDate
+      !endDate ||
+      startDate < minimumTravelDate ||
+      endDate < startDate
     ) {
       return
     }
@@ -187,12 +239,19 @@ function PlanTripPage() {
       <div className="plan-trip-page__content">
         <DestinationForm
           countries={countries}
-          selectedCountryCode={selectedCountryCode}
+          selectedCountryCode={
+            selectedCountryCode
+          }
           selectedCity={selectedCity}
           majorCities={majorCities}
           startDate={startDate}
           endDate={endDate}
-          isLoadingCountries={isLoadingCountries}
+          minimumTravelDate={
+            minimumTravelDate
+          }
+          isLoadingCountries={
+            isLoadingCountries
+          }
           countriesError={countriesError}
           isLoadingCities={isLoadingCities}
           citiesError={citiesError}
@@ -200,7 +259,9 @@ function PlanTripPage() {
             isAdditionalCitySearchOpen
           }
           citySearchQuery={citySearchQuery}
-          citySearchResults={citySearchResults}
+          citySearchResults={
+            citySearchResults
+          }
           citySearchError={citySearchError}
           hasSearchedAdditionalCities={
             hasSearchedAdditionalCities
@@ -208,14 +269,22 @@ function PlanTripPage() {
           isSearchingAdditionalCities={
             isSearchingAdditionalCities
           }
-          isLoadingWeather={isLoadingWeather}
+          isLoadingWeather={
+            isLoadingWeather
+          }
           isLoadingHistoricalWeather={
             isLoadingHistoricalWeather
           }
-          onCountryChange={handleCountryChange}
+          onCountryChange={
+            handleCountryChange
+          }
           onCityChange={handleCityChange}
-          onStartDateChange={handleStartDateChange}
-          onEndDateChange={handleEndDateChange}
+          onStartDateChange={
+            handleStartDateChange
+          }
+          onEndDateChange={
+            handleEndDateChange
+          }
           onCheckDestination={
             handleViewWeatherForecast
           }
@@ -252,8 +321,12 @@ function PlanTripPage() {
         )}
 
         <ForecastUnavailable
-          isUnavailable={isForecastUnavailable}
-          forecastDays={WEATHER_FORECAST_DAYS}
+          isUnavailable={
+            isForecastUnavailable
+          }
+          forecastDays={
+            WEATHER_FORECAST_DAYS
+          }
           isLoadingHistoricalWeather={
             isLoadingHistoricalWeather
           }
@@ -268,12 +341,16 @@ function PlanTripPage() {
         <WeatherForecast
           forecast={weatherForecast}
           isPartial={isPartialForecast}
-          forecastDays={WEATHER_FORECAST_DAYS}
+          forecastDays={
+            WEATHER_FORECAST_DAYS
+          }
           attribution={WEATHER_ATTRIBUTION}
         />
 
         <HistoricalWeather
-          historicalWeather={historicalWeather}
+          historicalWeather={
+            historicalWeather
+          }
           attribution={WEATHER_ATTRIBUTION}
         />
 
@@ -302,14 +379,24 @@ function PlanTripPage() {
           }
           startDate={startDate}
           endDate={endDate}
-          budgetAmount={parsedBudgetAmount}
-          budgetCurrency={budgetCurrency}
-          isCreatingTrip={isCreatingTrip}
+          budgetAmount={
+            parsedBudgetAmount
+          }
+          budgetCurrency={
+            budgetCurrency
+          }
+          isCreatingTrip={
+            isCreatingTrip
+          }
           isCreateDisabled={
             isCreateTripDisabled
           }
-          createTripError={createTripError}
-          onCreateTrip={createSelectedTrip}
+          createTripError={
+            createTripError
+          }
+          onCreateTrip={
+            createSelectedTrip
+          }
         />
       </div>
     </div>
