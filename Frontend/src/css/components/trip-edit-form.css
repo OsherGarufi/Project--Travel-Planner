@@ -151,6 +151,181 @@
     var(--tp-color-surface-muted);
 }
 
+
+/* Weather prompt */
+
+.trip-edit-form__weather {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tp-space-4);
+  padding: var(--tp-space-4);
+  border: 1px solid
+    var(--tp-color-border-subtle);
+  border-radius: var(--tp-radius-md);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(237, 244, 251, 0.52),
+      rgba(236, 253, 251, 0.34)
+    );
+}
+
+.trip-edit-form__weather-copy {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--tp-space-3);
+}
+
+.trip-edit-form__weather-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--tp-radius-sm);
+  color: var(--tp-color-primary-700);
+  background-color:
+    var(--tp-color-primary-50);
+}
+
+.trip-edit-form__weather-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.trip-edit-form__weather-title {
+  color: var(--tp-color-text-primary);
+  font-size: var(--tp-font-size-sm);
+  font-weight:
+    var(--tp-font-weight-semibold);
+}
+
+.trip-edit-form__weather-description {
+  margin-top: 2px;
+  color: var(--tp-color-text-muted);
+  font-size: var(--tp-font-size-xs);
+}
+
+.trip-edit-form__weather-button {
+  min-height:
+    var(--tp-control-height-md);
+  flex: 0 0 auto;
+  padding:
+    0 var(--tp-space-4);
+  border: 1px solid
+    var(--tp-color-primary-200);
+  border-radius: var(--tp-radius-md);
+  outline: none;
+  color: var(--tp-color-primary-700);
+  background-color:
+    var(--tp-color-surface);
+  font-size: var(--tp-font-size-sm);
+  font-weight:
+    var(--tp-font-weight-semibold);
+  transition:
+    border-color var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    background-color var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    box-shadow var(--tp-duration-fast)
+      var(--tp-ease-standard);
+}
+
+.trip-edit-form__weather-button:hover:not(:disabled) {
+  border-color:
+    var(--tp-color-primary-400);
+  background-color:
+    var(--tp-color-primary-50);
+}
+
+.trip-edit-form__weather-button:focus-visible {
+  box-shadow: var(--tp-focus-ring);
+}
+
+.trip-edit-form__weather-button:disabled {
+  cursor: not-allowed;
+  color:
+    var(--tp-color-text-disabled);
+  background-color:
+    var(--tp-color-surface-muted);
+}
+
+.trip-edit-form__weather-error {
+  width: 100%;
+  color: var(--tp-color-danger);
+  font-size: var(--tp-font-size-xs);
+}
+
+
+/* Expanded weather */
+
+.trip-edit-form__weather-expanded {
+  min-width: 0;
+}
+
+.trip-edit-form__weather-expanded-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--tp-space-3);
+}
+
+.trip-edit-form__weather-close {
+  display: inline-flex;
+  min-height:
+    var(--tp-control-height-md);
+  align-items: center;
+  gap: var(--tp-space-2);
+  padding:
+    0 var(--tp-space-3);
+  border: 1px solid
+    var(--tp-color-border);
+  border-radius: var(--tp-radius-md);
+  outline: none;
+  color: var(--tp-color-text-secondary);
+  background-color:
+    var(--tp-color-surface);
+  font-size: var(--tp-font-size-sm);
+  font-weight:
+    var(--tp-font-weight-medium);
+  transition:
+    border-color var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    background-color var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    box-shadow var(--tp-duration-fast)
+      var(--tp-ease-standard);
+}
+
+.trip-edit-form__weather-close svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.trip-edit-form__weather-close:hover {
+  border-color:
+    var(--tp-color-border-strong);
+  background-color:
+    var(--tp-color-surface-hover);
+}
+
+.trip-edit-form__weather-close:focus-visible {
+  box-shadow: var(--tp-focus-ring);
+}
+
+.trip-edit-form__weather-content {
+  min-width: 0;
+}
+
+.trip-edit-form__weather-content > * {
+  margin-top: 0;
+}
+
+
+/* Error */
+
 .trip-edit-form__error {
   grid-column: 1 / -1;
   padding:
@@ -164,6 +339,9 @@
     var(--tp-color-danger-soft);
   font-size: var(--tp-font-size-sm);
 }
+
+
+/* Actions */
 
 .trip-edit-form__actions {
   grid-column: 1 / -1;
@@ -250,6 +428,7 @@
   box-shadow: none;
 }
 
+
 @media (max-width: 40rem) {
   .trip-edit-form {
     border-radius: var(--tp-radius-lg);
@@ -287,6 +466,30 @@
   .trip-edit-form__error,
   .trip-edit-form__actions {
     grid-column: auto;
+  }
+
+  .trip-edit-form__weather {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .trip-edit-form__weather-button {
+    width: 100%;
+  }
+
+  .trip-edit-form__weather-expanded-actions {
+    margin-bottom: var(--tp-space-2);
+  }
+
+  .trip-edit-form__weather-close span {
+    display: none;
+  }
+
+  .trip-edit-form__weather-close {
+    width: 2.5rem;
+    min-height: 2.5rem;
+    justify-content: center;
+    padding: 0;
   }
 
   .trip-edit-form__actions {

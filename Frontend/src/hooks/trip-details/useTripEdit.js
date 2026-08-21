@@ -232,6 +232,14 @@ export function useTripEdit({
     setSaveError('')
   }
 
+  const hasDateChanges =
+    Boolean(trip) &&
+    isEditing &&
+    (
+      startDate !== originalStartDate ||
+      endDate !== originalEndDate
+    )
+
   const hasChanges =
     Boolean(trip) &&
     isEditing &&
@@ -239,9 +247,7 @@ export function useTripEdit({
       title.trim() !==
         (trip.title || '').trim() ||
 
-      startDate !== originalStartDate ||
-
-      endDate !== originalEndDate ||
+      hasDateChanges ||
 
       Number(budgetAmount) !==
         Number(trip.budgetAmount) ||
@@ -438,6 +444,7 @@ export function useTripEdit({
   return {
     isEditing,
     hasChanges,
+    hasDateChanges,
 
     title,
     startDate,

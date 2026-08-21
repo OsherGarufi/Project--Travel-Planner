@@ -20,6 +20,43 @@ function EditIcon() {
   )
 }
 
+function WeatherIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M7.5 17.5h9a4 4 0 0 0 .6-8 5.5 5.5 0 0 0-10.4 1.7A3.2 3.2 0 0 0 7.5 17.5Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M7 7l10 10M17 7 7 17"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 function TripEditForm({
   title,
   startDate,
@@ -30,15 +67,27 @@ function TripEditForm({
   budgetCurrency,
   localCurrency,
   notes,
+
   hasChanges,
+  hasDateChanges,
+
   isSaving,
   saveError,
+
+  isCheckingWeather,
+  weatherLookupError,
+  isWeatherOpen,
+  weatherContent,
+
   onTitleChange,
   onStartDateChange,
   onEndDateChange,
   onBudgetAmountChange,
   onBudgetCurrencyChange,
   onNotesChange,
+
+  onCheckWeather,
+  onCloseWeather,
   onSave,
   onCancel,
 }) {
@@ -163,6 +212,76 @@ function TripEditForm({
             onChange={onEndDateChange}
           />
         </div>
+
+        {hasDateChanges &&
+          hasValidDates &&
+          !isWeatherOpen && (
+            <div className="trip-edit-form__weather trip-edit-form__field--full">
+              <div className="trip-edit-form__weather-copy">
+                <span
+                  className="trip-edit-form__weather-icon"
+                  aria-hidden="true"
+                >
+                  <WeatherIcon />
+                </span>
+
+                <div>
+                  <p className="trip-edit-form__weather-title">
+                    Travel dates changed
+                  </p>
+
+                  <p className="trip-edit-form__weather-description">
+                    Check the weather forecast for your
+                    updated travel dates before saving.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                className="trip-edit-form__weather-button"
+                type="button"
+                onClick={onCheckWeather}
+                disabled={isCheckingWeather}
+              >
+                {isCheckingWeather
+                  ? 'Checking weather...'
+                  : 'View weather forecast'}
+              </button>
+
+              {weatherLookupError && (
+                <p
+                  className="trip-edit-form__weather-error"
+                  role="alert"
+                >
+                  {weatherLookupError}
+                </p>
+              )}
+            </div>
+          )}
+
+        {hasDateChanges &&
+          hasValidDates &&
+          isWeatherOpen && (
+            <div className="trip-edit-form__weather-expanded trip-edit-form__field--full">
+              <div className="trip-edit-form__weather-expanded-actions">
+                <button
+                  className="trip-edit-form__weather-close"
+                  type="button"
+                  onClick={onCloseWeather}
+                >
+                  <CloseIcon />
+
+                  <span>
+                    Close forecast
+                  </span>
+                </button>
+              </div>
+
+              <div className="trip-edit-form__weather-content">
+                {weatherContent}
+              </div>
+            </div>
+          )}
 
         <div className="trip-edit-form__budget">
           <BudgetSection

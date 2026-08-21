@@ -58,9 +58,14 @@ function useTripWeather({
     setHistoricalState(INITIAL_HISTORICAL_STATE)
   }
 
-  const handleCheckDestination = async () => {
+  const handleCheckDestination = async (
+    cityOverride = null,
+  ) => {
+    const weatherCity =
+      cityOverride || selectedCity
+
     if (
-      !selectedCity ||
+      !weatherCity ||
       !startDate ||
       !endDate
     ) {
@@ -81,7 +86,8 @@ function useTripWeather({
         1,
     )
 
-    const todayValue = formatDateForInput(today)
+    const todayValue =
+      formatDateForInput(today)
 
     const lastForecastDateValue =
       formatDateForInput(lastForecastDate)
@@ -103,7 +109,8 @@ function useTripWeather({
 
     const controller = new AbortController()
 
-    weatherControllerRef.current = controller
+    weatherControllerRef.current =
+      controller
 
     setForecastState({
       status: 'loading',
@@ -115,14 +122,15 @@ function useTripWeather({
     try {
       const forecastResult =
         await getWeatherForecast(
-          selectedCity.latitude,
-          selectedCity.longitude,
+          weatherCity.latitude,
+          weatherCity.longitude,
           controller.signal,
         )
 
       if (
         controller.signal.aborted ||
-        weatherControllerRef.current !== controller
+        weatherControllerRef.current !==
+          controller
       ) {
         return
       }
@@ -188,97 +196,114 @@ function useTripWeather({
       })
     } finally {
       if (
-        weatherControllerRef.current === controller
+        weatherControllerRef.current ===
+        controller
       ) {
         weatherControllerRef.current = null
       }
     }
   }
 
-  const handleViewLastYearWeather = async () => {
-    if (
-      !selectedCity ||
-      !startDate ||
-      !endDate
-    ) {
-      return
-    }
-
-    cancelActiveWeatherRequest()
-
-    const controller = new AbortController()
-
-    weatherControllerRef.current = controller
-
-    setHistoricalState({
-      status: 'loading',
-      data: null,
-      error: '',
-    })
-
-    try {
-      const historicalResult =
-        await getHistoricalWeather(
-          selectedCity.latitude,
-          selectedCity.longitude,
-          startDate,
-          endDate,
-          controller.signal,
-        )
-
+  const handleViewLastYearWeather =
+    async () => {
       if (
-        controller.signal.aborted ||
-        weatherControllerRef.current !== controller
+        !selectedCity ||
+        !startDate ||
+        !endDate
       ) {
         return
       }
 
+      cancelActiveWeatherRequest()
+
+      const controller =
+        new AbortController()
+
+      weatherControllerRef.current =
+        controller
+
       setHistoricalState({
-        status: 'success',
-        data: historicalResult,
+        status: 'loading',
+        data: null,
         error: '',
       })
-    } catch (error) {
-      if (
-        error.name === 'AbortError' ||
-        controller.signal.aborted
-      ) {
-        return
-      }
 
-      console.error(
-        'Failed to load historical weather:',
-        error,
-      )
+      try {
+        const historicalResult =
+          await getHistoricalWeather(
+            selectedCity.latitude,
+            selectedCity.longitude,
+            startDate,
+            endDate,
+            controller.signal,
+          )
 
-      setHistoricalState({
-        status: 'error',
-        data: null,
-        error:
-          'Could not load last year’s weather. Please try again.',
-      })
-    } finally {
-      if (
-        weatherControllerRef.current === controller
-      ) {
-        weatherControllerRef.current = null
+        if (
+          controller.signal.aborted ||
+          weatherControllerRef.current !==
+            controller
+        ) {
+          return
+        }
+
+        setHistoricalState({
+          status: 'success',
+          data: historicalResult,
+          error: '',
+        })
+      } catch (error) {
+        if (
+          error.name === 'AbortError' ||
+          controller.signal.aborted
+        ) {
+          return
+        }
+
+        console.error(
+          'Failed to load historical weather:',
+          error,
+        )
+
+        setHistoricalState({
+          status: 'error',
+          data: null,
+          error:
+            'Could not load last year’s weather. Please try again.',
+        })
+      } finally {
+        if (
+          weatherControllerRef.current ===
+          controller
+        ) {
+          weatherControllerRef.current = null
+        }
       }
     }
-  }
 
   return {
-    weatherForecast: forecastState.data,
+    weatherForecast:
+      forecastState.data,
+
     isLoadingWeather:
       forecastState.status === 'loading',
-    weatherError: forecastState.error,
+
+    weatherError:
+      forecastState.error,
+
     isForecastUnavailable:
-      forecastState.status === 'unavailable',
+      forecastState.status ===
+      'unavailable',
+
     isPartialForecast:
       forecastState.isPartial,
 
-    historicalWeather: historicalState.data,
+    historicalWeather:
+      historicalState.data,
+
     isLoadingHistoricalWeather:
-      historicalState.status === 'loading',
+      historicalState.status ===
+      'loading',
+
     historicalWeatherError:
       historicalState.error,
 

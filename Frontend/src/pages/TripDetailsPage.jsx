@@ -5,14 +5,23 @@ import {
   useState,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ForecastUnavailable from '../components/plan-trip/ForecastUnavailable'
+import HistoricalWeather from '../components/plan-trip/HistoricalWeather'
+import WeatherForecast from '../components/plan-trip/WeatherForecast'
 import DeleteTripSection from '../components/trip-details/DeleteTripSection'
 import TripEditForm from '../components/trip-details/TripEditForm'
 import TripSummary from '../components/trip-details/TripSummary'
 import '../css/pages/trip-details-page.css'
+import useTripWeather from '../hooks/plan-trip/useTripWeather'
 import { useTripDelete } from '../hooks/trip-details/useTripDelete'
 import { useTripDetails } from '../hooks/trip-details/useTripDetails'
 import { useTripEdit } from '../hooks/trip-details/useTripEdit'
+import { searchCities } from '../services/city/cityService'
 import { getCountries } from '../services/countryService'
+import {
+  WEATHER_ATTRIBUTION,
+  WEATHER_FORECAST_DAYS,
+} from '../services/weather/weatherService'
 import { getPreferredLocalCurrency } from '../utils/currencyUtils'
 
 function ArrowLeftIcon() {
@@ -92,6 +101,26 @@ function TripDetailsPage() {
   const [countries, setCountries] =
     useState([])
 
+  const [
+    editWeatherCity,
+    setEditWeatherCity,
+  ] = useState(null)
+
+  const [
+    isResolvingWeatherCity,
+    setIsResolvingWeatherCity,
+  ] = useState(false)
+
+  const [
+    weatherLookupError,
+    setWeatherLookupError,
+  ] = useState('')
+
+  const [
+    isEditWeatherOpen,
+    setIsEditWeatherOpen,
+  ] = useState(false)
+
   const {
     trip,
     isLoadingTrip,
@@ -102,19 +131,25 @@ function TripDetailsPage() {
   const {
     isEditing,
     hasChanges,
+    hasDateChanges,
+
     title,
     startDate,
     endDate,
     startDateMinimum,
     endDateMinimum,
+
     budgetAmount,
     budgetCurrency,
     notes,
+
     isSaving,
     saveError,
+
     startEditing,
     cancelEditing,
     saveTrip,
+
     handleTitleChange,
     handleStartDateChange,
     handleEndDateChange,
@@ -124,6 +159,26 @@ function TripDetailsPage() {
   } = useTripEdit({
     trip,
     replaceTrip,
+  })
+
+  const {
+    weatherForecast,
+    isLoadingWeather,
+    weatherError,
+    isForecastUnavailable,
+    isPartialForecast,
+
+    historicalWeather,
+    isLoadingHistoricalWeather,
+    historicalWeatherError,
+
+    resetWeather,
+    handleCheckDestination,
+    handleViewLastYearWeather,
+  } = useTripWeather({
+    selectedCity: editWeatherCity,
+    startDate,
+    endDate,
   })
 
   const {
@@ -197,10 +252,161 @@ function TripDetailsPage() {
     })
   }, [isEditing])
 
+  const clearEditWeather = () => {
+    resetWeather()
+    setEditWeatherCity(null)
+    setWeatherLookupError('')
+    setIsEditWeatherOpen(false)
+  }
+
   const handleStartEditing = () => {
     resetDelete()
+    clearEditWeather()
     startEditing()
   }
+
+  const handleCancelEditing = () => {
+    clearEditWeather()
+    cancelEditing()
+  }
+
+  const handleEditStartDateChange = (
+    event,
+  ) => {
+    clearEditWeather()
+    handleStartDateChange(event)
+  }
+
+  const handleEditEndDateChange = (
+    event,
+  ) => {
+    clearEditWeather()
+    handleEndDateChange(event)
+  }
+
+  const handleCloseEditedWeather = () => {
+    clearEditWeather()
+  }
+
+  const handleCheckEditedWeather =
+    async () => {
+      if (
+        !trip?.destinationCountryCode ||
+        !trip?.destinationCity ||
+        !startDate ||
+        !endDate ||
+        isResolvingWeatherCity
+      ) {
+        return
+      }
+
+      try {
+        setIsResolvingWeatherCity(true)
+        setWeatherLookupError('')
+        resetWeather()
+
+        const cityResults =
+          await searchCities(
+            trip.destinationCountryCode,
+            trip.destinationCity,
+          )
+
+        const normalizedCityName =
+          trip.destinationCity
+            .trim()
+            .toLowerCase()
+
+        const matchedCity =
+          cityResults.find(
+            (city) =>
+              city.name
+                ?.trim()
+                .toLowerCase() ===
+              normalizedCityName,
+          )
+
+        if (!matchedCity) {
+          setIsEditWeatherOpen(false)
+
+          setWeatherLookupError(
+            'Could not locate this city for the weather forecast.',
+          )
+
+          return
+        }
+
+        setEditWeatherCity(matchedCity)
+        setIsEditWeatherOpen(true)
+
+        await handleCheckDestination(
+          matchedCity,
+        )
+      } catch (error) {
+        console.error(
+          'Failed to resolve city for weather:',
+          error,
+        )
+
+        setIsEditWeatherOpen(false)
+
+        setWeatherLookupError(
+          'Could not load the weather forecast. Please try again.',
+        )
+      } finally {
+        setIsResolvingWeatherCity(false)
+      }
+    }
+
+  const editWeatherContent = (
+    <>
+      {weatherError && (
+        <p
+          className="trip-details-page__error"
+          role="alert"
+        >
+          {weatherError}
+        </p>
+      )}
+
+      <ForecastUnavailable
+        isUnavailable={
+          isForecastUnavailable
+        }
+        forecastDays={
+          WEATHER_FORECAST_DAYS
+        }
+        isLoadingHistoricalWeather={
+          isLoadingHistoricalWeather
+        }
+        historicalWeatherError={
+          historicalWeatherError
+        }
+        onViewLastYearWeather={
+          handleViewLastYearWeather
+        }
+      />
+
+      <WeatherForecast
+        forecast={weatherForecast}
+        isPartial={isPartialForecast}
+        forecastDays={
+          WEATHER_FORECAST_DAYS
+        }
+        attribution={
+          WEATHER_ATTRIBUTION
+        }
+      />
+
+      <HistoricalWeather
+        historicalWeather={
+          historicalWeather
+        }
+        attribution={
+          WEATHER_ATTRIBUTION
+        }
+      />
+    </>
+  )
 
   if (isLoadingTrip) {
     return (
@@ -253,7 +459,8 @@ function TripDetailsPage() {
           </h1>
 
           <p className="trip-details-page__error-description">
-            {tripError || 'Trip not found.'}
+            {tripError ||
+              'Trip not found.'}
           </p>
         </section>
       </div>
@@ -321,16 +528,30 @@ function TripDetailsPage() {
             localCurrency={localCurrency}
             notes={notes}
             hasChanges={hasChanges}
+            hasDateChanges={hasDateChanges}
             isSaving={isSaving}
             saveError={saveError}
+            isCheckingWeather={
+              isResolvingWeatherCity ||
+              isLoadingWeather
+            }
+            weatherLookupError={
+              weatherLookupError
+            }
+            isWeatherOpen={
+              isEditWeatherOpen
+            }
+            weatherContent={
+              editWeatherContent
+            }
             onTitleChange={
               handleTitleChange
             }
             onStartDateChange={
-              handleStartDateChange
+              handleEditStartDateChange
             }
             onEndDateChange={
-              handleEndDateChange
+              handleEditEndDateChange
             }
             onBudgetAmountChange={
               handleBudgetAmountChange
@@ -341,8 +562,14 @@ function TripDetailsPage() {
             onNotesChange={
               handleNotesChange
             }
+            onCheckWeather={
+              handleCheckEditedWeather
+            }
+            onCloseWeather={
+              handleCloseEditedWeather
+            }
             onSave={saveTrip}
-            onCancel={cancelEditing}
+            onCancel={handleCancelEditing}
           />
         </div>
       ) : (
