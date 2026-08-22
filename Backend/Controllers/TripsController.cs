@@ -1,8 +1,6 @@
 ﻿using Backend.DAL;
 using Backend.Dtos;
-using Backend.Models;
 using Backend.Services;
-using FirebaseAdmin.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -12,18 +10,21 @@ namespace Backend.Controllers;
 public class TripsController : ControllerBase
 {
     private readonly DbService _dbService;
-    private readonly FirebaseAuthService _firebaseAuthService;
+    private readonly CurrentUserService _currentUserService;
 
-    public TripsController(DbService dbService,FirebaseAuthService firebaseAuthService)
+    public TripsController(
+        DbService dbService,
+        CurrentUserService currentUserService
+    )
     {
         _dbService = dbService;
-        _firebaseAuthService = firebaseAuthService;
+        _currentUserService = currentUserService;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetTrips()
     {
-        var user = await GetAuthenticatedUserAsync();
+        var user = await _currentUserService.GetCurrentUserAsync();
 
         if (user is null)
         {
@@ -39,7 +40,7 @@ public class TripsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetTripById(Guid id)
     {
-        var user = await GetAuthenticatedUserAsync();
+        var user = await _currentUserService.GetCurrentUserAsync();
 
         if (user is null)
         {
@@ -59,7 +60,7 @@ public class TripsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateTrip([FromBody] CreateTripRequest request)
     {
-        var user = await GetAuthenticatedUserAsync();
+        var user = await _currentUserService.GetCurrentUserAsync();
 
         if (user is null)
         {
@@ -74,9 +75,12 @@ public class TripsController : ControllerBase
 
     /// <summary>Updates an existing trip only if it belongs to the authenticated user.</summary>
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateTrip(Guid id,[FromBody] UpdateTripRequest request)
+    public async Task<IActionResult> UpdateTrip(
+        Guid id,
+        [FromBody] UpdateTripRequest request
+    )
     {
-        var user = await GetAuthenticatedUserAsync();
+        var user = await _currentUserService.GetCurrentUserAsync();
 
         if (user is null)
         {
@@ -84,7 +88,11 @@ public class TripsController : ControllerBase
         }
 
         var updatedTrip =
-            await _dbService.UpdateTripForUserAsync(id, user.Id, request);
+            await _dbService.UpdateTripForUserAsync(
+                id,
+                user.Id,
+                request
+            );
 
         if (updatedTrip is null)
         {
@@ -98,14 +106,18 @@ public class TripsController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteTrip(Guid id)
     {
-        var user = await GetAuthenticatedUserAsync();
+        var user = await _currentUserService.GetCurrentUserAsync();
 
         if (user is null)
         {
             return Unauthorized("Invalid or missing Firebase ID token.");
         }
 
-        var wasDeleted = await _dbService.DeleteTripForUserAsync(id, user.Id);
+        var wasDeleted =
+            await _dbService.DeleteTripForUserAsync(
+                id,
+                user.Id
+            );
 
         if (!wasDeleted)
         {
@@ -113,49 +125,5 @@ public class TripsController : ControllerBase
         }
 
         return NoContent();
-    }
-
-    private async Task<AppUser?> GetAuthenticatedUserAsync()
-    {
-        if (!Request.Headers.TryGetValue("Authorization", out var authorizationValues))
-        {
-            return null;
-        }
-
-        var authorizationHeader = authorizationValues.ToString();
-
-        if (string.IsNullOrWhiteSpace(authorizationHeader))
-        {
-            return null;
-        }
-
-        if (!authorizationHeader.StartsWith(
-                "Bearer ",
-                StringComparison.OrdinalIgnoreCase
-            ))
-        {
-            return null;
-        }
-
-        var idToken = authorizationHeader["Bearer ".Length..].Trim();
-
-        if (string.IsNullOrWhiteSpace(idToken))
-        {
-            return null;
-        }
-
-        FirebaseToken firebaseToken;
-
-        try
-        {
-            firebaseToken =
-                await _firebaseAuthService.VerifyIdTokenAsync(idToken);
-        }
-        catch
-        {
-            return null;
-        }
-
-        return await _dbService.GetUserByFirebaseUidAsync(firebaseToken.Uid);
     }
 }

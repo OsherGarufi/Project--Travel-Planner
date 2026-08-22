@@ -29,8 +29,11 @@ FirebaseApp.Create(new AppOptions
 // Add services to the container.
 builder.Services.AddControllers();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<DbService>();
 builder.Services.AddScoped<FirebaseAuthService>();
+builder.Services.AddScoped<CurrentUserService>();
 
 builder.Services.AddMemoryCache();
 
