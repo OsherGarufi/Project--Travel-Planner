@@ -1,46 +1,83 @@
-const FRANKFURTER_BASE_URL = 'https://api.frankfurter.dev/v2'
+const FRANKFURTER_BASE_URL =
+  'https://api.frankfurter.dev/v2'
 
-const CACHE_PREFIX = 'travelPlannerCurrencyRate'
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000
+const CACHE_PREFIX =
+  'travelPlannerCurrencyRate'
+
+const CACHE_TTL_MS =
+  6 * 60 * 60 * 1000
+
 const REQUEST_TIMEOUT_MS = 5000
+
+const activeRateRequests = new Map()
 
 function normalizeCurrency(currency) {
   if (typeof currency !== 'string') {
     return null
   }
 
-  const normalizedCurrency = currency.trim().toUpperCase()
+  const normalizedCurrency =
+    currency.trim().toUpperCase()
 
-  if (!/^[A-Z]{3}$/.test(normalizedCurrency)) {
+  if (
+    !/^[A-Z]{3}$/.test(
+      normalizedCurrency,
+    )
+  ) {
     return null
   }
 
   return normalizedCurrency
 }
 
-function getCacheKey(fromCurrency, toCurrency) {
+function getCacheKey(
+  fromCurrency,
+  toCurrency,
+) {
   return `${CACHE_PREFIX}:${fromCurrency}:${toCurrency}`
 }
 
-function readCachedRate(fromCurrency, toCurrency) {
-  const cacheKey = getCacheKey(fromCurrency, toCurrency)
+function getRateRequestKey(
+  fromCurrency,
+  toCurrency,
+) {
+  return `${fromCurrency}:${toCurrency}`
+}
+
+function readCachedRate(
+  fromCurrency,
+  toCurrency,
+) {
+  const cacheKey = getCacheKey(
+    fromCurrency,
+    toCurrency,
+  )
 
   try {
-    const cachedValue = sessionStorage.getItem(cacheKey)
+    const cachedValue =
+      sessionStorage.getItem(cacheKey)
 
     if (!cachedValue) {
       return null
     }
 
-    const parsedValue = JSON.parse(cachedValue)
+    const parsedValue =
+      JSON.parse(cachedValue)
 
     if (
-      typeof parsedValue.rate !== 'number' ||
-      !Number.isFinite(parsedValue.rate) ||
+      typeof parsedValue.rate !==
+        'number' ||
+      !Number.isFinite(
+        parsedValue.rate,
+      ) ||
       parsedValue.rate <= 0 ||
-      typeof parsedValue.cachedAt !== 'number'
+      typeof parsedValue.cachedAt !==
+        'number'
     ) {
-      sessionStorage.removeItem(cacheKey)
+      sessionStorage.removeItem(
+        cacheKey,
+      )
+
       return null
     }
 
@@ -50,8 +87,15 @@ function readCachedRate(fromCurrency, toCurrency) {
   }
 }
 
-function writeCachedRate(fromCurrency, toCurrency, rateData) {
-  const cacheKey = getCacheKey(fromCurrency, toCurrency)
+function writeCachedRate(
+  fromCurrency,
+  toCurrency,
+  rateData,
+) {
+  const cacheKey = getCacheKey(
+    fromCurrency,
+    toCurrency,
+  )
 
   const cacheValue = {
     ...rateData,
@@ -59,18 +103,31 @@ function writeCachedRate(fromCurrency, toCurrency, rateData) {
   }
 
   try {
-    sessionStorage.setItem(cacheKey, JSON.stringify(cacheValue))
+    sessionStorage.setItem(
+      cacheKey,
+      JSON.stringify(cacheValue),
+    )
   } catch {
-    // Currency conversion should continue working even if storage is unavailable.
+    // Currency conversion should continue
+    // working even if storage is unavailable.
   }
 }
 
 function isFreshCache(cachedRate) {
-  return Date.now() - cachedRate.cachedAt < CACHE_TTL_MS
+  return (
+    Date.now() -
+      cachedRate.cachedAt <
+    CACHE_TTL_MS
+  )
 }
 
-async function fetchRateFromFrankfurter(fromCurrency, toCurrency) {
-  const controller = new AbortController()
+async function fetchRateFromFrankfurter(
+  fromCurrency,
+  toCurrency,
+) {
+  const controller =
+    new AbortController()
+
   const timeoutId = setTimeout(
     () => controller.abort(),
     REQUEST_TIMEOUT_MS,
@@ -85,17 +142,22 @@ async function fetchRateFromFrankfurter(fromCurrency, toCurrency) {
     )
 
     if (!response.ok) {
-      throw new Error('Currency API request failed')
+      throw new Error(
+        'Currency API request failed',
+      )
     }
 
-    const data = await response.json()
+    const data =
+      await response.json()
 
     if (
       typeof data.rate !== 'number' ||
       !Number.isFinite(data.rate) ||
       data.rate <= 0
     ) {
-      throw new Error('Currency API returned an invalid rate')
+      throw new Error(
+        'Currency API returned an invalid rate',
+      )
     }
 
     return {
@@ -109,11 +171,61 @@ async function fetchRateFromFrankfurter(fromCurrency, toCurrency) {
   }
 }
 
-export async function getExchangeRate(fromCurrency, toCurrency) {
-  const normalizedFromCurrency = normalizeCurrency(fromCurrency)
-  const normalizedToCurrency = normalizeCurrency(toCurrency)
+function getOrCreateRateRequest(
+  fromCurrency,
+  toCurrency,
+) {
+  const requestKey =
+    getRateRequestKey(
+      fromCurrency,
+      toCurrency,
+    )
 
-  if (!normalizedFromCurrency || !normalizedToCurrency) {
+  const activeRequest =
+    activeRateRequests.get(requestKey)
+
+  if (activeRequest) {
+    return activeRequest
+  }
+
+  const newRequest =
+    fetchRateFromFrankfurter(
+      fromCurrency,
+      toCurrency,
+    ).finally(() => {
+      if (
+        activeRateRequests.get(
+          requestKey,
+        ) === newRequest
+      ) {
+        activeRateRequests.delete(
+          requestKey,
+        )
+      }
+    })
+
+  activeRateRequests.set(
+    requestKey,
+    newRequest,
+  )
+
+  return newRequest
+}
+
+export async function getExchangeRate(
+  fromCurrency,
+  toCurrency,
+) {
+  const normalizedFromCurrency =
+    normalizeCurrency(fromCurrency)
+
+  const normalizedToCurrency =
+    normalizeCurrency(toCurrency)
+
+  if (
+    !normalizedFromCurrency ||
+    !normalizedToCurrency
+  ) {
     return {
       status: 'unavailable',
       from: normalizedFromCurrency,
@@ -123,7 +235,10 @@ export async function getExchangeRate(fromCurrency, toCurrency) {
     }
   }
 
-  if (normalizedFromCurrency === normalizedToCurrency) {
+  if (
+    normalizedFromCurrency ===
+    normalizedToCurrency
+  ) {
     return {
       status: 'success',
       source: 'same-currency',
@@ -134,27 +249,33 @@ export async function getExchangeRate(fromCurrency, toCurrency) {
     }
   }
 
-  const cachedRate = readCachedRate(
-    normalizedFromCurrency,
-    normalizedToCurrency,
-  )
+  const cachedRate =
+    readCachedRate(
+      normalizedFromCurrency,
+      normalizedToCurrency,
+    )
 
-  if (cachedRate && isFreshCache(cachedRate)) {
+  if (
+    cachedRate &&
+    isFreshCache(cachedRate)
+  ) {
     return {
       status: 'success',
       source: 'cache',
       from: normalizedFromCurrency,
       to: normalizedToCurrency,
       rate: cachedRate.rate,
-      date: cachedRate.date ?? null,
+      date:
+        cachedRate.date ?? null,
     }
   }
 
   try {
-    const rateData = await fetchRateFromFrankfurter(
-      normalizedFromCurrency,
-      normalizedToCurrency,
-    )
+    const rateData =
+      await getOrCreateRateRequest(
+        normalizedFromCurrency,
+        normalizedToCurrency,
+      )
 
     writeCachedRate(
       normalizedFromCurrency,
@@ -172,17 +293,21 @@ export async function getExchangeRate(fromCurrency, toCurrency) {
       return {
         status: 'stale',
         source: 'cache',
-        from: normalizedFromCurrency,
+        from:
+          normalizedFromCurrency,
         to: normalizedToCurrency,
         rate: cachedRate.rate,
-        date: cachedRate.date ?? null,
+        date:
+          cachedRate.date ?? null,
       }
     }
 
     return {
       status: 'unavailable',
-      from: normalizedFromCurrency,
-      to: normalizedToCurrency,
+      from:
+        normalizedFromCurrency,
+      to:
+        normalizedToCurrency,
       rate: null,
       date: null,
     }

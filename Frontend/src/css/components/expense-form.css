@@ -1,0 +1,203 @@
+.expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-5);
+  padding: var(--tp-space-6);
+  border: 1px solid
+    var(--tp-color-border-subtle);
+  border-radius: var(--tp-radius-lg);
+  background-color:
+    var(--tp-color-surface-muted);
+}
+
+.expense-form__grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: var(--tp-space-4);
+}
+
+.expense-form__field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--tp-space-2);
+}
+
+.expense-form__field--wide,
+.expense-form__field--full {
+  grid-column: 1 / -1;
+}
+
+.expense-form__label {
+  display: flex;
+  align-items: center;
+  gap: var(--tp-space-2);
+  color: var(--tp-color-text-secondary);
+  font-size: var(--tp-font-size-xs);
+  font-weight:
+    var(--tp-font-weight-semibold);
+}
+
+.expense-form__optional {
+  color: var(--tp-color-text-muted);
+  font-weight:
+    var(--tp-font-weight-regular);
+}
+
+.expense-form__control,
+.expense-form__textarea {
+  width: 100%;
+  border: 1px solid
+    var(--tp-color-border);
+  border-radius: var(--tp-radius-md);
+  outline: none;
+  color: var(--tp-color-text-primary);
+  background-color:
+    var(--tp-color-surface);
+  font-family: inherit;
+  font-size: var(--tp-font-size-sm);
+  transition:
+    border-color var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    box-shadow var(--tp-duration-fast)
+      var(--tp-ease-standard);
+}
+
+.expense-form__control {
+  min-height:
+    var(--tp-control-height-lg);
+  padding:
+    0 var(--tp-space-4);
+}
+
+.expense-form__textarea {
+  min-height: 7rem;
+  padding: var(--tp-space-3)
+    var(--tp-space-4);
+  resize: vertical;
+}
+
+.expense-form__control:hover,
+.expense-form__textarea:hover {
+  border-color:
+    var(--tp-color-primary-300);
+}
+
+.expense-form__control:focus,
+.expense-form__textarea:focus {
+  border-color:
+    var(--tp-color-primary-500);
+  box-shadow: var(--tp-focus-ring);
+}
+
+.expense-form__control::placeholder,
+.expense-form__textarea::placeholder {
+  color: var(--tp-color-text-disabled);
+}
+
+.expense-form__validation {
+  color: var(--tp-color-danger);
+  font-size: var(--tp-font-size-xs);
+}
+
+.expense-form__error {
+  padding: var(--tp-space-3)
+    var(--tp-space-4);
+  border-radius: var(--tp-radius-md);
+  color: var(--tp-color-danger);
+  background-color:
+    var(--tp-color-danger-soft);
+  font-size: var(--tp-font-size-sm);
+}
+
+.expense-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tp-space-3);
+}
+
+.expense-form__cancel,
+.expense-form__submit {
+  min-height:
+    var(--tp-control-height-md);
+  padding:
+    0 var(--tp-space-5);
+  border-radius: var(--tp-radius-md);
+  outline: none;
+  font-size: var(--tp-font-size-sm);
+  font-weight:
+    var(--tp-font-weight-semibold);
+  transition:
+    background-color
+      var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    border-color
+      var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    transform
+      var(--tp-duration-fast)
+      var(--tp-ease-standard);
+}
+
+.expense-form__cancel {
+  border: 1px solid
+    var(--tp-color-border);
+  color: var(--tp-color-text-secondary);
+  background-color:
+    var(--tp-color-surface);
+}
+
+.expense-form__submit {
+  border: 1px solid transparent;
+  color: var(--tp-color-text-inverse);
+  background-color:
+    var(--tp-color-primary-700);
+}
+
+.expense-form__cancel:hover:not(:disabled) {
+  background-color:
+    var(--tp-color-surface-hover);
+}
+
+.expense-form__submit:hover:not(:disabled) {
+  background-color:
+    var(--tp-color-primary-800);
+  transform: translateY(-1px);
+}
+
+.expense-form__cancel:focus-visible,
+.expense-form__submit:focus-visible {
+  box-shadow: var(--tp-focus-ring);
+}
+
+.expense-form__cancel:disabled,
+.expense-form__submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+@media (max-width: 40rem) {
+  .expense-form {
+    padding: var(--tp-space-4);
+  }
+
+  .expense-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .expense-form__field--wide,
+  .expense-form__field--full {
+    grid-column: auto;
+  }
+
+  .expense-form__actions {
+    flex-direction: column-reverse;
+  }
+
+  .expense-form__cancel,
+  .expense-form__submit {
+    width: 100%;
+  }
+}

@@ -11,6 +11,7 @@ import WeatherForecast from '../components/plan-trip/WeatherForecast'
 import DeleteTripSection from '../components/trip-details/DeleteTripSection'
 import TripEditForm from '../components/trip-details/TripEditForm'
 import TripSummary from '../components/trip-details/TripSummary'
+import TripExpensesSection from '../components/trip-expenses/TripExpensesSection'
 import '../css/pages/trip-details-page.css'
 import useTripWeather from '../hooks/plan-trip/useTripWeather'
 import { useTripDelete } from '../hooks/trip-details/useTripDelete'
@@ -511,7 +512,7 @@ function TripDetailsPage() {
         localCurrency={localCurrency}
       />
 
-      {isEditing ? (
+      {isEditing && (
         <div ref={editFormRef}>
           <TripEditForm
             title={title}
@@ -572,7 +573,13 @@ function TripDetailsPage() {
             onCancel={handleCancelEditing}
           />
         </div>
-      ) : (
+      )}
+
+      <TripExpensesSection
+        trip={trip}
+      />
+
+      {!isEditing && (
         <DeleteTripSection
           isConfirmingDelete={
             isConfirmingDelete

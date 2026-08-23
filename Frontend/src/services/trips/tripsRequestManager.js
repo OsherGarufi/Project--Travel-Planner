@@ -1,7 +1,15 @@
 const activeTripsRequests = new Map()
 const activeTripDetailsRequests = new Map()
+const activeTripExpensesRequests = new Map()
 
 function getTripDetailsRequestKey(
+  userId,
+  tripId,
+) {
+  return `${userId}:${tripId}`
+}
+
+function getTripExpensesRequestKey(
   userId,
   tripId,
 ) {
@@ -82,5 +90,50 @@ export function releaseTripDetailsRequest(
     request
   ) {
     activeTripDetailsRequests.delete(requestKey)
+  }
+}
+
+export function getOrCreateTripExpensesRequest(
+  userId,
+  tripId,
+  requestFactory,
+) {
+  const requestKey = getTripExpensesRequestKey(
+    userId,
+    tripId,
+  )
+
+  const activeRequest =
+    activeTripExpensesRequests.get(requestKey)
+
+  if (activeRequest) {
+    return activeRequest
+  }
+
+  const newRequest = requestFactory()
+
+  activeTripExpensesRequests.set(
+    requestKey,
+    newRequest,
+  )
+
+  return newRequest
+}
+
+export function releaseTripExpensesRequest(
+  userId,
+  tripId,
+  request,
+) {
+  const requestKey = getTripExpensesRequestKey(
+    userId,
+    tripId,
+  )
+
+  if (
+    activeTripExpensesRequests.get(requestKey) ===
+    request
+  ) {
+    activeTripExpensesRequests.delete(requestKey)
   }
 }

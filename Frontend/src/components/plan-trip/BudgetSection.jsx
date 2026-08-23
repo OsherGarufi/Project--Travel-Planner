@@ -1,13 +1,6 @@
-import { useState } from 'react'
-import CurrencyConversion from '../currency/CurrencyConversion'
 import '../../css/components/budget-section.css'
-
-const POPULAR_CURRENCIES = [
-  'ILS',
-  'USD',
-  'EUR',
-  'GBP',
-]
+import CurrencyConversion from '../currency/CurrencyConversion'
+import CurrencySelector from '../currency/CurrencySelector'
 
 function WalletIcon() {
   return (
@@ -42,39 +35,6 @@ function WalletIcon() {
   )
 }
 
-function InfoIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
-
-      <path
-        d="M12 10.5V17"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-
-      <circle
-        cx="12"
-        cy="7.5"
-        r="1"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
-
 function BudgetSection({
   budgetAmount,
   budgetCurrency,
@@ -82,41 +42,17 @@ function BudgetSection({
   onBudgetAmountChange,
   onBudgetCurrencyChange,
 }) {
-  const [isCustomCurrency, setIsCustomCurrency] =
-    useState(
-      !POPULAR_CURRENCIES.includes(
-        budgetCurrency,
-      ),
-    )
-
   const hasBudget =
     Number.isFinite(Number(budgetAmount)) &&
     Number(budgetAmount) > 0
 
   const hasValidBudgetCurrency =
-    /^[A-Z]{3}$/.test(budgetCurrency)
+    /^[A-Z]{3}$/.test(
+      budgetCurrency.trim().toUpperCase(),
+    )
 
-  const handleCurrencyOptionChange = (event) => {
-    const selectedCurrency = event.target.value
-
-    if (selectedCurrency === 'OTHER') {
-      setIsCustomCurrency(true)
-      onBudgetCurrencyChange('')
-      return
-    }
-
-    setIsCustomCurrency(false)
-    onBudgetCurrencyChange(selectedCurrency)
-  }
-
-  const handleCustomCurrencyChange = (event) => {
-    onBudgetCurrencyChange(event.target.value)
-  }
-
-  const selectedCurrencyOption =
-    isCustomCurrency
-      ? 'OTHER'
-      : budgetCurrency
+  const normalizedBudgetCurrency =
+    budgetCurrency.trim().toUpperCase()
 
   return (
     <section
@@ -175,76 +111,12 @@ function BudgetSection({
         </div>
 
         <div className="budget-section__field">
-          <div className="budget-section__currency-label-row">
-            <label
-              className="budget-section__label"
-              htmlFor="trip-budget-currency-option"
-            >
-              Budget currency
-            </label>
-
-            <span className="budget-section__info">
-              <button
-                className="budget-section__info-button"
-                type="button"
-                aria-label="About budget currency"
-                aria-describedby="budget-currency-help"
-              >
-                <InfoIcon />
-              </button>
-
-              <span
-                id="budget-currency-help"
-                className="budget-section__tooltip"
-                role="tooltip"
-              >
-                Choose a common currency or select
-                Other currency to enter any 3-letter
-                currency code. Uppercase and lowercase
-                letters are accepted automatically.
-              </span>
-            </span>
-          </div>
-
-          <div className="budget-section__currency-controls">
-            <select
-              id="trip-budget-currency-option"
-              className="budget-section__select"
-              value={selectedCurrencyOption}
-              onChange={handleCurrencyOptionChange}
-            >
-              {POPULAR_CURRENCIES.map(
-                (currency) => (
-                  <option
-                    key={currency}
-                    value={currency}
-                  >
-                    {currency}
-                  </option>
-                ),
-              )}
-
-              <option value="OTHER">
-                Other currency
-              </option>
-            </select>
-
-            {isCustomCurrency && (
-              <input
-                className="budget-section__input budget-section__custom-currency-input"
-                type="text"
-                inputMode="text"
-                autoComplete="off"
-                autoCapitalize="characters"
-                spellCheck="false"
-                maxLength="3"
-                placeholder="JPY"
-                value={budgetCurrency}
-                onChange={handleCustomCurrencyChange}
-                aria-label="Custom budget currency"
-              />
-            )}
-          </div>
+          <CurrencySelector
+            id="trip-budget-currency"
+            label="Budget currency"
+            value={budgetCurrency}
+            onChange={onBudgetCurrencyChange}
+          />
         </div>
       </div>
 
@@ -262,17 +134,21 @@ function BudgetSection({
 
           {hasBudget &&
             hasValidBudgetCurrency &&
-            budgetCurrency !== localCurrency && (
+            normalizedBudgetCurrency !==
+              localCurrency && (
               <CurrencyConversion
                 amount={budgetAmount}
-                fromCurrency={budgetCurrency}
+                fromCurrency={
+                  normalizedBudgetCurrency
+                }
                 toCurrency={localCurrency}
               />
             )}
 
           {hasBudget &&
             hasValidBudgetCurrency &&
-            budgetCurrency === localCurrency && (
+            normalizedBudgetCurrency ===
+              localCurrency && (
               <p className="budget-section__same-currency">
                 Your budget is already in the local
                 currency.
