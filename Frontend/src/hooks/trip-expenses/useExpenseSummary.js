@@ -144,15 +144,16 @@ export function useExpenseSummary({
 
         setRateState({
           requestKey: rateRequestKey,
-          results: conversionCurrencies.map(
-            (fromCurrency) => ({
-              fromCurrency,
-              result: {
-                status: 'unavailable',
-                rate: null,
-              },
-            }),
-          ),
+          results:
+            conversionCurrencies.map(
+              (fromCurrency) => ({
+                fromCurrency,
+                result: {
+                  status: 'unavailable',
+                  rate: null,
+                },
+              }),
+            ),
         })
       })
 
@@ -195,28 +196,53 @@ export function useExpenseSummary({
         result.status === 'stale',
     ) ?? false
 
+  const ratesByCurrency =
+    useMemo(() => {
+      if (
+        !targetCurrency ||
+        expenseTotals.hasInvalidExpense ||
+        isLoading ||
+        hasUnavailableRate
+      ) {
+        return null
+      }
+
+      const rates = new Map([
+        [targetCurrency, 1],
+      ])
+
+      for (const {
+        fromCurrency,
+        result,
+      } of currentRateResults ?? []) {
+        if (
+          typeof result.rate !==
+            'number' ||
+          !Number.isFinite(result.rate) ||
+          result.rate <= 0
+        ) {
+          return null
+        }
+
+        rates.set(
+          fromCurrency,
+          result.rate,
+        )
+      }
+
+      return rates
+    }, [
+      currentRateResults,
+      expenseTotals.hasInvalidExpense,
+      hasUnavailableRate,
+      isLoading,
+      targetCurrency,
+    ])
+
   const spentAmount = useMemo(() => {
-    if (
-      !targetCurrency ||
-      expenseTotals.hasInvalidExpense ||
-      isLoading ||
-      hasUnavailableRate
-    ) {
+    if (!ratesByCurrency) {
       return null
     }
-
-    const ratesByCurrency =
-      new Map(
-        (currentRateResults ?? []).map(
-          ({
-            fromCurrency,
-            result,
-          }) => [
-            fromCurrency,
-            result.rate,
-          ],
-        ),
-      )
 
     let total = 0
 
@@ -226,20 +252,11 @@ export function useExpenseSummary({
         amount,
       ] of expenseTotals.totals
     ) {
-      if (
-        currency === targetCurrency
-      ) {
-        total += amount
-        continue
-      }
-
       const rate =
         ratesByCurrency.get(currency)
 
       if (
-        typeof rate !== 'number' ||
-        !Number.isFinite(rate) ||
-        rate <= 0
+        typeof rate !== 'number'
       ) {
         return null
       }
@@ -249,12 +266,57 @@ export function useExpenseSummary({
 
     return total
   }, [
-    currentRateResults,
-    expenseTotals,
-    hasUnavailableRate,
-    isLoading,
-    targetCurrency,
+    expenseTotals.totals,
+    ratesByCurrency,
   ])
+
+  const convertedAmountsByExpenseId =
+    useMemo(() => {
+      const convertedAmounts =
+        new Map()
+
+      if (!ratesByCurrency) {
+        return convertedAmounts
+      }
+
+      for (const expense of expenses) {
+        const currency =
+          normalizeCurrency(
+            expense?.currency,
+          )
+
+        const amount =
+          Number(expense?.amount)
+
+        if (
+          !expense?.id ||
+          !currency ||
+          !Number.isFinite(amount) ||
+          amount <= 0
+        ) {
+          continue
+        }
+
+        const rate =
+          ratesByCurrency.get(currency)
+
+        if (
+          typeof rate !== 'number'
+        ) {
+          continue
+        }
+
+        convertedAmounts.set(
+          expense.id,
+          amount * rate,
+        )
+      }
+
+      return convertedAmounts
+    }, [
+      expenses,
+      ratesByCurrency,
+    ])
 
   const numericBudgetAmount =
     Number(budgetAmount)
@@ -296,6 +358,13 @@ export function useExpenseSummary({
     status = 'stale'
   }
 
+  const canSortByAmount =
+    Boolean(
+      ratesByCurrency &&
+      convertedAmountsByExpenseId.size ===
+        expenses.length,
+    )
+
   return {
     status,
     isLoading,
@@ -318,5 +387,8 @@ export function useExpenseSummary({
       conversionCurrencies.length > 0,
 
     hasStaleRate,
+
+    canSortByAmount,
+    convertedAmountsByExpenseId,
   }
 }

@@ -25,10 +25,6 @@ function ExpenseSummary({
   percentageUsed,
   isEstimated,
 }) {
-  if (!hasExpenses) {
-    return null
-  }
-
   if (status === 'loading') {
     return (
       <div
@@ -76,40 +72,49 @@ function ExpenseSummary({
         )
       : 0
 
+  const spentLabel =
+    hasExpenses && isEstimated
+      ? 'Estimated spent'
+      : 'Spent'
+
   return (
     <div className="expense-summary">
       <div className="expense-summary__grid">
-        {hasBudget && (
-          <div className="expense-summary__stat">
-            <p className="expense-summary__label">
-              Planned budget
-            </p>
+        <div className="expense-summary__stat">
+          <p className="expense-summary__label">
+            Planned budget
+          </p>
 
+          {hasBudget ? (
             <p className="expense-summary__value">
               {formatMoney(budgetAmount)}
+
               <span>
                 {currency}
               </span>
             </p>
-          </div>
-        )}
+          ) : (
+            <p className="expense-summary__value">
+              Not set
+            </p>
+          )}
+        </div>
 
         <div className="expense-summary__stat">
           <p className="expense-summary__label">
-            {isEstimated
-              ? 'Estimated spent'
-              : 'Spent'}
+            {spentLabel}
           </p>
 
           <p className="expense-summary__value">
-            {isEstimated && (
-              <span
-                className="expense-summary__approx"
-                aria-hidden="true"
-              >
-                ≈
-              </span>
-            )}
+            {hasExpenses &&
+              isEstimated && (
+                <span
+                  className="expense-summary__approx"
+                  aria-hidden="true"
+                >
+                  ≈
+                </span>
+              )}
 
             {formatMoney(spentAmount)}
 
@@ -135,14 +140,15 @@ function ExpenseSummary({
                     : 'expense-summary__value'
                 }
               >
-                {isEstimated && (
-                  <span
-                    className="expense-summary__approx"
-                    aria-hidden="true"
-                  >
-                    ≈
-                  </span>
-                )}
+                {hasExpenses &&
+                  isEstimated && (
+                    <span
+                      className="expense-summary__approx"
+                      aria-hidden="true"
+                    >
+                      ≈
+                    </span>
+                  )}
 
                 {formatMoney(
                   remainingAmount,
@@ -193,11 +199,12 @@ function ExpenseSummary({
           </div>
         )}
 
-      {isEstimated && (
-        <p className="expense-summary__note">
-          Approximate total based on available exchange rates.
-        </p>
-      )}
+      {hasExpenses &&
+        isEstimated && (
+          <p className="expense-summary__note">
+            Approximate total based on available exchange rates.
+          </p>
+        )}
     </div>
   )
 }
