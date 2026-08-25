@@ -1,20 +1,28 @@
 import {
-    useEffect,
-    useState,
+  useEffect,
+  useRef,
+  useState,
 } from 'react'
 import {
-    createTripExpense,
-    deleteTripExpense,
-    getTripExpenses,
-    updateTripExpense,
+  clearCachedTripExpenses,
+  getCachedTripExpenses,
+  setCachedTripExpenses,
+} from '../../services/expenseCacheService'
+import {
+  createTripExpense,
+  deleteTripExpense,
+  getTripExpenses,
+  updateTripExpense,
 } from '../../services/expenseService'
 import {
-    getOrCreateTripExpensesRequest,
-    releaseTripExpensesRequest,
+  getOrCreateTripExpensesRequest,
+  releaseTripExpensesRequest,
 } from '../../services/trips/tripsRequestManager'
 import { useAuth } from '../useAuth'
 
-export function useTripExpenses(tripId) {
+export function useTripExpenses(
+  tripId,
+) {
   const {
     firebaseUser,
     idToken,
@@ -25,6 +33,9 @@ export function useTripExpenses(tripId) {
 
   const [expenses, setExpenses] =
     useState([])
+
+  const expensesRef =
+    useRef([])
 
   const [
     loadedTripId,
@@ -61,6 +72,23 @@ export function useTripExpenses(tripId) {
     setDeletingExpenseId,
   ] = useState(null)
 
+  const applyExpenses = (
+    nextExpenses,
+  ) => {
+    expensesRef.current =
+      nextExpenses
+
+    setExpenses(nextExpenses)
+
+    if (userId && tripId) {
+      setCachedTripExpenses(
+        userId,
+        tripId,
+        nextExpenses,
+      )
+    }
+  }
+
   useEffect(() => {
     if (
       !tripId ||
@@ -71,56 +99,108 @@ export function useTripExpenses(tripId) {
     }
 
     let isActive = true
+    let expensesRequest = null
 
-    const expensesRequest =
-      getOrCreateTripExpensesRequest(
-        userId,
-        tripId,
-        () =>
-          getTripExpenses(
+    const loadExpenses =
+      async () => {
+        /*
+         * Keep cache/server loading behind
+         * the same asynchronous boundary.
+         * This avoids synchronous setState
+         * calls directly inside the effect.
+         */
+        await Promise.resolve()
+
+        if (!isActive) {
+          return
+        }
+
+        const cachedExpenses =
+          getCachedTripExpenses(
+            userId,
             tripId,
-            idToken,
-          ),
-      )
+          )
 
-    expensesRequest
-      .then((result) => {
-        if (!isActive) {
+        if (cachedExpenses) {
+          expensesRef.current =
+            cachedExpenses
+
+          setExpenses(
+            cachedExpenses,
+          )
+
+          setExpensesError('')
+          setLoadedTripId(tripId)
+
           return
         }
 
-        setExpenses(
-          Array.isArray(result)
-            ? result
-            : [],
-        )
+        expensesRequest =
+          getOrCreateTripExpensesRequest(
+            userId,
+            tripId,
+            () =>
+              getTripExpenses(
+                tripId,
+                idToken,
+              ),
+          )
 
-        setExpensesError('')
-        setLoadedTripId(tripId)
-      })
-      .catch((error) => {
-        if (!isActive) {
-          return
+        try {
+          const result =
+            await expensesRequest
+
+          if (!isActive) {
+            return
+          }
+
+          const loadedExpenses =
+            Array.isArray(result)
+              ? result
+              : []
+
+          expensesRef.current =
+            loadedExpenses
+
+          setExpenses(
+            loadedExpenses,
+          )
+
+          setCachedTripExpenses(
+            userId,
+            tripId,
+            loadedExpenses,
+          )
+
+          setExpensesError('')
+          setLoadedTripId(tripId)
+        } catch (error) {
+          if (!isActive) {
+            return
+          }
+
+          console.error(
+            'Failed to load trip expenses:',
+            error,
+          )
+
+          setExpensesError(
+            'Could not load trip expenses. Please try again.',
+          )
+
+          setLoadedTripId(tripId)
+        } finally {
+          if (expensesRequest) {
+            releaseTripExpensesRequest(
+              userId,
+              tripId,
+              expensesRequest,
+            )
+          }
         }
+      }
 
-        console.error(
-          'Failed to load trip expenses:',
-          error,
-        )
-
-        setExpensesError(
-          'Could not load trip expenses. Please try again.',
-        )
-
-        setLoadedTripId(tripId)
-      })
-      .finally(() => {
-        releaseTripExpensesRequest(
-          userId,
-          tripId,
-          expensesRequest,
-        )
-      })
+    loadExpenses()
 
     return () => {
       isActive = false
@@ -157,6 +237,14 @@ export function useTripExpenses(tripId) {
       return
     }
 
+    clearCachedTripExpenses(
+      userId,
+      tripId,
+    )
+
+    expensesRef.current = []
+
+    setExpenses([])
     setExpensesError('')
     setLoadedTripId(null)
 
@@ -171,6 +259,7 @@ export function useTripExpenses(tripId) {
   ) => {
     if (
       !tripId ||
+      !userId ||
       !idToken ||
       isCreatingExpense
     ) {
@@ -188,11 +277,13 @@ export function useTripExpenses(tripId) {
           idToken,
         )
 
-      setExpenses(
-        (currentExpenses) => [
-          createdExpense,
-          ...currentExpenses,
-        ],
+      const nextExpenses = [
+        createdExpense,
+        ...expensesRef.current,
+      ]
+
+      applyExpenses(
+        nextExpenses,
       )
 
       return createdExpense
@@ -218,6 +309,7 @@ export function useTripExpenses(tripId) {
   ) => {
     if (
       !tripId ||
+      !userId ||
       !expenseId ||
       !idToken ||
       updatingExpenseId
@@ -226,7 +318,10 @@ export function useTripExpenses(tripId) {
     }
 
     try {
-      setUpdatingExpenseId(expenseId)
+      setUpdatingExpenseId(
+        expenseId,
+      )
+
       setExpenseActionError('')
 
       const updatedExpense =
@@ -237,14 +332,17 @@ export function useTripExpenses(tripId) {
           idToken,
         )
 
-      setExpenses(
-        (currentExpenses) =>
-          currentExpenses.map(
-            (expense) =>
-              expense.id === expenseId
-                ? updatedExpense
-                : expense,
-          ),
+      const nextExpenses =
+        expensesRef.current.map(
+          (expense) =>
+            expense.id ===
+            expenseId
+              ? updatedExpense
+              : expense,
+        )
+
+      applyExpenses(
+        nextExpenses,
       )
 
       return updatedExpense
@@ -269,6 +367,7 @@ export function useTripExpenses(tripId) {
   ) => {
     if (
       !tripId ||
+      !userId ||
       !expenseId ||
       !idToken ||
       deletingExpenseId
@@ -277,7 +376,10 @@ export function useTripExpenses(tripId) {
     }
 
     try {
-      setDeletingExpenseId(expenseId)
+      setDeletingExpenseId(
+        expenseId,
+      )
+
       setExpenseActionError('')
 
       await deleteTripExpense(
@@ -286,12 +388,15 @@ export function useTripExpenses(tripId) {
         idToken,
       )
 
-      setExpenses(
-        (currentExpenses) =>
-          currentExpenses.filter(
-            (expense) =>
-              expense.id !== expenseId,
-          ),
+      const nextExpenses =
+        expensesRef.current.filter(
+          (expense) =>
+            expense.id !==
+            expenseId,
+        )
+
+      applyExpenses(
+        nextExpenses,
       )
 
       return true
@@ -311,9 +416,10 @@ export function useTripExpenses(tripId) {
     }
   }
 
-  const clearExpenseActionError = () => {
-    setExpenseActionError('')
-  }
+  const clearExpenseActionError =
+    () => {
+      setExpenseActionError('')
+    }
 
   return {
     expenses: visibleExpenses,
