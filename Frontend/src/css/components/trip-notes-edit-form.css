@@ -1,0 +1,200 @@
+.trip-notes-edit-form {
+  padding: var(--tp-space-8);
+  border: 1px solid
+    var(--tp-color-border-subtle);
+  border-radius: var(--tp-radius-xl);
+  background-color:
+    var(--tp-color-surface);
+  box-shadow: var(--tp-shadow-sm);
+}
+
+.trip-notes-edit-form__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tp-space-4);
+}
+
+.trip-notes-edit-form__header-icon {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--tp-radius-md);
+  color: var(--tp-color-primary-700);
+  background-color:
+    var(--tp-color-primary-50);
+}
+
+.trip-notes-edit-form__header-icon svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.trip-notes-edit-form__eyebrow {
+  margin-bottom: var(--tp-space-1);
+  color: var(--tp-color-primary-500);
+  font-size: var(--tp-font-size-xs);
+  font-weight:
+    var(--tp-font-weight-semibold);
+  letter-spacing: 0.08em;
+}
+
+.trip-notes-edit-form__title {
+  color: var(--tp-color-text-primary);
+  font-size: var(--tp-font-size-xl);
+}
+
+.trip-notes-edit-form__description {
+  margin-top: var(--tp-space-2);
+  color: var(--tp-color-text-secondary);
+  font-size: var(--tp-font-size-sm);
+}
+
+.trip-notes-edit-form__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-5);
+  margin-top: var(--tp-space-6);
+}
+
+.trip-notes-edit-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-2);
+}
+
+.trip-notes-edit-form__label {
+  color: var(--tp-color-text-secondary);
+  font-size: var(--tp-font-size-sm);
+  font-weight:
+    var(--tp-font-weight-semibold);
+}
+
+.trip-notes-edit-form__textarea {
+  width: 100%;
+  min-height: 14rem;
+  resize: vertical;
+  padding: var(--tp-space-4);
+  border: 1px solid
+    var(--tp-color-border);
+  border-radius: var(--tp-radius-md);
+  outline: none;
+  color: var(--tp-color-text-primary);
+  background-color:
+    var(--tp-color-surface);
+  font: inherit;
+  line-height:
+    var(--tp-line-height-relaxed);
+  transition:
+    border-color
+      var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    box-shadow
+      var(--tp-duration-fast)
+      var(--tp-ease-standard);
+}
+
+.trip-notes-edit-form__textarea:hover {
+  border-color:
+    var(--tp-color-primary-300);
+}
+
+.trip-notes-edit-form__textarea:focus {
+  border-color:
+    var(--tp-color-primary-500);
+  box-shadow: var(--tp-focus-ring);
+}
+
+.trip-notes-edit-form__error {
+  color: var(--tp-color-danger);
+  font-size: var(--tp-font-size-sm);
+}
+
+.trip-notes-edit-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--tp-space-3);
+}
+
+.trip-notes-edit-form__cancel,
+.trip-notes-edit-form__save {
+  min-height:
+    var(--tp-control-height-md);
+  padding:
+    0 var(--tp-space-5);
+  border-radius: var(--tp-radius-md);
+  outline: none;
+  font-size: var(--tp-font-size-sm);
+  font-weight:
+    var(--tp-font-weight-semibold);
+  cursor: pointer;
+}
+
+.trip-notes-edit-form__cancel {
+  border: 1px solid
+    var(--tp-color-border);
+  color: var(--tp-color-text-secondary);
+  background-color:
+    var(--tp-color-surface);
+}
+
+.trip-notes-edit-form__cancel:hover:not(:disabled) {
+  background-color:
+    var(--tp-color-surface-hover);
+}
+
+.trip-notes-edit-form__save {
+  border: 1px solid transparent;
+  color: var(--tp-color-text-inverse);
+  background-color:
+    var(--tp-color-primary-700);
+}
+
+.trip-notes-edit-form__save:hover:not(:disabled) {
+  background-color:
+    var(--tp-color-primary-800);
+}
+
+.trip-notes-edit-form__cancel:focus-visible,
+.trip-notes-edit-form__save:focus-visible {
+  box-shadow: var(--tp-focus-ring);
+}
+
+.trip-notes-edit-form__cancel:disabled,
+.trip-notes-edit-form__save:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 40rem) {
+  .trip-notes-edit-form {
+    padding: var(--tp-space-5);
+    border-radius: var(--tp-radius-lg);
+  }
+
+  .trip-notes-edit-form__header {
+    gap: var(--tp-space-3);
+  }
+
+  .trip-notes-edit-form__header-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .trip-notes-edit-form__textarea {
+    min-height: 12rem;
+  }
+
+  .trip-notes-edit-form__actions {
+    width: 100%;
+  }
+
+  .trip-notes-edit-form__cancel,
+  .trip-notes-edit-form__save {
+    flex: 1;
+    padding-inline:
+      var(--tp-space-3);
+  }
+}

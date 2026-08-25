@@ -103,6 +103,25 @@ function NotesIcon() {
   )
 }
 
+function EditIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="m14.5 5.5 4 4M5 19l3.2-.7L18.5 8a2.1 2.1 0 0 0-3-3L5.2 15.3 5 19Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function getDateOnlyValue(dateValue) {
   if (!dateValue) {
     return null
@@ -138,23 +157,34 @@ function formatTripDate(dateValue) {
     return ''
   }
 
-  return new Intl.DateTimeFormat('en', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(date)
+  return new Intl.DateTimeFormat(
+    'en',
+    {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    },
+  ).format(date)
 }
 
 function formatBudget(amount) {
-  const numericAmount = Number(amount)
+  const numericAmount =
+    Number(amount)
 
-  if (!Number.isFinite(numericAmount)) {
+  if (
+    !Number.isFinite(
+      numericAmount,
+    )
+  ) {
     return amount
   }
 
-  return new Intl.NumberFormat('en', {
-    maximumFractionDigits: 2,
-  }).format(numericAmount)
+  return new Intl.NumberFormat(
+    'en',
+    {
+      maximumFractionDigits: 2,
+    },
+  ).format(numericAmount)
 }
 
 function getTripStatus(
@@ -164,10 +194,14 @@ function getTripStatus(
   const today = getToday()
 
   const startDate =
-    getDateOnlyValue(startDateValue)
+    getDateOnlyValue(
+      startDateValue,
+    )
 
   const endDate =
-    getDateOnlyValue(endDateValue)
+    getDateOnlyValue(
+      endDateValue,
+    )
 
   if (
     startDate &&
@@ -181,7 +215,10 @@ function getTripStatus(
     }
   }
 
-  if (startDate && startDate > today) {
+  if (
+    startDate &&
+    startDate > today
+  ) {
     return {
       key: 'upcoming',
       label: 'Upcoming',
@@ -198,17 +235,26 @@ function TripSummary({
   trip,
   flagUrl,
   localCurrency,
+  onEditTrip,
+  onEditNotes,
+  isTripEditDisabled = false,
+  isNotesEditDisabled = false,
 }) {
-  const status = getTripStatus(
-    trip.startDate,
-    trip.endDate,
-  )
+  const status =
+    getTripStatus(
+      trip.startDate,
+      trip.endDate,
+    )
 
   const startDate =
-    formatTripDate(trip.startDate)
+    formatTripDate(
+      trip.startDate,
+    )
 
   const endDate =
-    formatTripDate(trip.endDate)
+    formatTripDate(
+      trip.endDate,
+    )
 
   const destination = [
     trip.destinationCity,
@@ -219,12 +265,20 @@ function TripSummary({
 
   const hasBudget =
     trip.budgetAmount !== null &&
-    trip.budgetAmount !== undefined &&
-    Number.isFinite(Number(trip.budgetAmount)) &&
-    Number(trip.budgetAmount) > 0
+    trip.budgetAmount !==
+      undefined &&
+    Number.isFinite(
+      Number(
+        trip.budgetAmount,
+      ),
+    ) &&
+    Number(
+      trip.budgetAmount,
+    ) > 0
 
   const normalizedBudgetCurrency =
-    typeof trip.budgetCurrency === 'string'
+    typeof trip.budgetCurrency ===
+    'string'
       ? trip.budgetCurrency
           .trim()
           .toUpperCase()
@@ -269,11 +323,31 @@ function TripSummary({
             </div>
           </div>
 
-          <span
-            className={`trip-summary__status trip-summary__status--${status.key}`}
-          >
-            {status.label}
-          </span>
+          <div className="trip-summary__header-actions">
+            <span
+              className={`trip-summary__status trip-summary__status--${status.key}`}
+            >
+              {status.label}
+            </span>
+
+            <button
+              className="trip-summary__edit-trip"
+              type="button"
+              onClick={onEditTrip}
+              disabled={
+                isTripEditDisabled
+              }
+            >
+              <span
+                className="trip-summary__edit-trip-icon"
+                aria-hidden="true"
+              >
+                <EditIcon />
+              </span>
+
+              <span>Edit trip</span>
+            </button>
+          </div>
         </div>
 
         <div className="trip-summary__hero">
@@ -346,9 +420,7 @@ function TripSummary({
                   {hasBudget
                     ? `${formatBudget(
                         trip.budgetAmount,
-                      )} ${
-                        normalizedBudgetCurrency
-                      }`
+                      )} ${normalizedBudgetCurrency}`
                     : 'Not set'}
                 </p>
 
@@ -357,7 +429,9 @@ function TripSummary({
                     localCurrency && (
                     <div className="trip-summary__budget-conversion">
                       <CurrencyConversion
-                        amount={trip.budgetAmount}
+                        amount={
+                          trip.budgetAmount
+                        }
                         fromCurrency={
                           normalizedBudgetCurrency
                         }
@@ -377,26 +451,46 @@ function TripSummary({
         className="trip-summary__notes"
         aria-labelledby="trip-notes-title"
       >
-        <div className="trip-summary__notes-header">
-          <span
-            className="trip-summary__notes-icon"
-            aria-hidden="true"
-          >
-            <NotesIcon />
-          </span>
-
-          <div>
-            <p className="trip-summary__notes-eyebrow">
-              PERSONAL NOTES
-            </p>
-
-            <h2
-              id="trip-notes-title"
-              className="trip-summary__notes-title"
+        <div className="trip-summary__notes-top">
+          <div className="trip-summary__notes-header">
+            <span
+              className="trip-summary__notes-icon"
+              aria-hidden="true"
             >
-              Trip notes
-            </h2>
+              <NotesIcon />
+            </span>
+
+            <div>
+              <p className="trip-summary__notes-eyebrow">
+                PERSONAL NOTES
+              </p>
+
+              <h2
+                id="trip-notes-title"
+                className="trip-summary__notes-title"
+              >
+                Trip notes
+              </h2>
+            </div>
           </div>
+
+          <button
+            className="trip-summary__notes-edit"
+            type="button"
+            onClick={onEditNotes}
+            disabled={
+              isNotesEditDisabled
+            }
+          >
+            <span
+              className="trip-summary__notes-edit-icon"
+              aria-hidden="true"
+            >
+              <EditIcon />
+            </span>
+
+            <span>Edit notes</span>
+          </button>
         </div>
 
         {trip.notes ? (
@@ -405,7 +499,8 @@ function TripSummary({
           </p>
         ) : (
           <p className="trip-summary__notes-empty">
-            No notes have been added to this trip yet.
+            No notes have been added
+            to this trip yet.
           </p>
         )}
       </section>

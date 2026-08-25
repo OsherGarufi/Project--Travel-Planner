@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { updateTrip } from '../../services/tripService'
+import { buildTripUpdatePayload } from '../../utils/tripUpdateUtils'
 import { useAuth } from '../useAuth'
 import { useTrips } from '../useTrips'
 
@@ -45,9 +46,6 @@ export function useTripEdit({
   const { idToken } = useAuth()
   const { updateTripInCache } = useTrips()
 
-  const [isEditing, setIsEditing] =
-    useState(false)
-
   const [title, setTitle] = useState('')
 
   const [startDate, setStartDate] =
@@ -56,13 +54,15 @@ export function useTripEdit({
   const [endDate, setEndDate] =
     useState('')
 
-  const [budgetAmount, setBudgetAmount] =
-    useState('')
+  const [
+    budgetAmount,
+    setBudgetAmount,
+  ] = useState('')
 
-  const [budgetCurrency, setBudgetCurrency] =
-    useState('ILS')
-
-  const [notes, setNotes] = useState('')
+  const [
+    budgetCurrency,
+    setBudgetCurrency,
+  ] = useState('ILS')
 
   const [isSaving, setIsSaving] =
     useState(false)
@@ -94,11 +94,14 @@ export function useTripEdit({
     startDate >= minimumTravelDate
       ? startDate
       : originalEndDate &&
-          originalEndDate < minimumTravelDate
+          originalEndDate <
+            minimumTravelDate
         ? originalEndDate
         : minimumTravelDate
 
-  const fillEditForm = (tripDetails) => {
+  const fillEditForm = (
+    tripDetails,
+  ) => {
     setTitle(tripDetails.title)
 
     setStartDate(
@@ -114,8 +117,8 @@ export function useTripEdit({
     )
 
     setBudgetAmount(
-      tripDetails.budgetAmount?.toString() ??
-        '',
+      tripDetails.budgetAmount
+        ?.toString() ?? '',
     )
 
     setBudgetCurrency(
@@ -124,8 +127,6 @@ export function useTripEdit({
           'ILS',
       ),
     )
-
-    setNotes(tripDetails.notes || '')
   }
 
   const startEditing = () => {
@@ -135,7 +136,6 @@ export function useTripEdit({
 
     fillEditForm(trip)
     setSaveError('')
-    setIsEditing(true)
   }
 
   const cancelEditing = () => {
@@ -144,22 +144,27 @@ export function useTripEdit({
     }
 
     setSaveError('')
-    setIsEditing(false)
   }
 
-  const handleTitleChange = (event) => {
+  const handleTitleChange = (
+    event,
+  ) => {
     setTitle(event.target.value)
     setSaveError('')
   }
 
-  const handleStartDateChange = (event) => {
+  const handleStartDateChange = (
+    event,
+  ) => {
     const nextStartDate =
       event.target.value
 
     if (
       nextStartDate &&
-      nextStartDate !== originalStartDate &&
-      nextStartDate < minimumTravelDate
+      nextStartDate !==
+        originalStartDate &&
+      nextStartDate <
+        minimumTravelDate
     ) {
       setSaveError(
         'Start date cannot be before today.',
@@ -180,14 +185,18 @@ export function useTripEdit({
     }
   }
 
-  const handleEndDateChange = (event) => {
+  const handleEndDateChange = (
+    event,
+  ) => {
     const nextEndDate =
       event.target.value
 
     if (
       nextEndDate &&
-      nextEndDate !== originalEndDate &&
-      nextEndDate < minimumTravelDate
+      nextEndDate !==
+        originalEndDate &&
+      nextEndDate <
+        minimumTravelDate
     ) {
       setSaveError(
         'End date cannot be before today.',
@@ -212,8 +221,13 @@ export function useTripEdit({
     setSaveError('')
   }
 
-  const handleBudgetAmountChange = (event) => {
-    setBudgetAmount(event.target.value)
+  const handleBudgetAmountChange = (
+    event,
+  ) => {
+    setBudgetAmount(
+      event.target.value,
+    )
+
     setSaveError('')
   }
 
@@ -227,22 +241,16 @@ export function useTripEdit({
     setSaveError('')
   }
 
-  const handleNotesChange = (event) => {
-    setNotes(event.target.value)
-    setSaveError('')
-  }
-
   const hasDateChanges =
     Boolean(trip) &&
-    isEditing &&
     (
-      startDate !== originalStartDate ||
+      startDate !==
+        originalStartDate ||
       endDate !== originalEndDate
     )
 
   const hasChanges =
     Boolean(trip) &&
-    isEditing &&
     (
       title.trim() !==
         (trip.title || '').trim() ||
@@ -250,15 +258,15 @@ export function useTripEdit({
       hasDateChanges ||
 
       Number(budgetAmount) !==
-        Number(trip.budgetAmount) ||
+        Number(
+          trip.budgetAmount,
+        ) ||
 
       budgetCurrency !==
         normalizeCurrencyInput(
-          trip.budgetCurrency || 'ILS',
-        ) ||
-
-      notes.trim() !==
-        (trip.notes || '').trim()
+          trip.budgetCurrency ||
+            'ILS',
+        )
     )
 
   const validateTripDetails = () => {
@@ -285,8 +293,10 @@ export function useTripEdit({
     }
 
     if (
-      startDate !== originalStartDate &&
-      startDate < minimumTravelDate
+      startDate !==
+        originalStartDate &&
+      startDate <
+        minimumTravelDate
     ) {
       return {
         error:
@@ -347,8 +357,6 @@ export function useTripEdit({
           normalizedBudgetAmount,
         budgetCurrency:
           normalizedCurrency,
-        notes:
-          notes.trim() || null,
       },
     }
   }
@@ -360,50 +368,47 @@ export function useTripEdit({
       isSaving ||
       !hasChanges
     ) {
-      return
+      return false
     }
 
     const validationResult =
       validateTripDetails()
 
-    if (validationResult.error) {
+    if (
+      validationResult.error
+    ) {
       setSaveError(
         validationResult.error,
       )
 
-      return
+      return false
     }
 
-    const tripData = {
-      title:
-        validationResult.values.title,
+    const tripData =
+      buildTripUpdatePayload(
+        trip,
+        {
+          title:
+            validationResult.values
+              .title,
 
-      destinationCountryCode:
-        trip.destinationCountryCode,
+          startDate:
+            validationResult.values
+              .startDate,
 
-      destinationCountryName:
-        trip.destinationCountryName,
+          endDate:
+            validationResult.values
+              .endDate,
 
-      destinationCity:
-        trip.destinationCity,
+          budgetAmount:
+            validationResult.values
+              .budgetAmount,
 
-      startDate:
-        validationResult.values.startDate,
-
-      endDate:
-        validationResult.values.endDate,
-
-      budgetAmount:
-        validationResult.values
-          .budgetAmount,
-
-      budgetCurrency:
-        validationResult.values
-          .budgetCurrency,
-
-      notes:
-        validationResult.values.notes,
-    }
+          budgetCurrency:
+            validationResult.values
+              .budgetCurrency,
+        },
+      )
 
     try {
       setIsSaving(true)
@@ -425,8 +430,11 @@ export function useTripEdit({
             }
 
       replaceTrip(updatedTrip)
-      updateTripInCache(updatedTrip)
-      setIsEditing(false)
+      updateTripInCache(
+        updatedTrip,
+      )
+
+      return true
     } catch (error) {
       console.error(
         'Failed to update trip:',
@@ -436,13 +444,14 @@ export function useTripEdit({
       setSaveError(
         'Could not save the changes. Please try again.',
       )
+
+      return false
     } finally {
       setIsSaving(false)
     }
   }
 
   return {
-    isEditing,
     hasChanges,
     hasDateChanges,
 
@@ -454,7 +463,6 @@ export function useTripEdit({
 
     budgetAmount,
     budgetCurrency,
-    notes,
 
     isSaving,
     saveError,
@@ -468,6 +476,5 @@ export function useTripEdit({
     handleEndDateChange,
     handleBudgetAmountChange,
     handleBudgetCurrencyChange,
-    handleNotesChange,
   }
 }

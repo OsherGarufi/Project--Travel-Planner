@@ -66,7 +66,6 @@ function TripEditForm({
   budgetAmount,
   budgetCurrency,
   localCurrency,
-  notes,
 
   hasChanges,
   hasDateChanges,
@@ -84,7 +83,6 @@ function TripEditForm({
   onEndDateChange,
   onBudgetAmountChange,
   onBudgetCurrencyChange,
-  onNotesChange,
 
   onCheckWeather,
   onCloseWeather,
@@ -95,11 +93,15 @@ function TripEditForm({
     Number(budgetAmount)
 
   const hasValidBudget =
-    Number.isFinite(numericBudgetAmount) &&
+    Number.isFinite(
+      numericBudgetAmount,
+    ) &&
     numericBudgetAmount > 0
 
   const hasValidCurrency =
-    /^[A-Z]{3}$/.test(budgetCurrency)
+    /^[A-Z]{3}$/.test(
+      budgetCurrency,
+    )
 
   const hasValidDates =
     Boolean(startDate) &&
@@ -114,7 +116,9 @@ function TripEditForm({
     !hasChanges ||
     isSaving
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (
+    event,
+  ) => {
     event.preventDefault()
 
     if (!isSaveDisabled) {
@@ -148,8 +152,9 @@ function TripEditForm({
           </h2>
 
           <p className="trip-edit-form__description">
-            Change the trip name, travel dates,
-            planned budget or personal notes.
+            Change the trip name,
+            travel dates or planned
+            budget.
           </p>
         </div>
       </div>
@@ -191,7 +196,9 @@ function TripEditForm({
             type="date"
             value={startDate}
             min={startDateMinimum}
-            onChange={onStartDateChange}
+            onChange={
+              onStartDateChange
+            }
           />
         </div>
 
@@ -231,8 +238,10 @@ function TripEditForm({
                   </p>
 
                   <p className="trip-edit-form__weather-description">
-                    Check the weather forecast for your
-                    updated travel dates before saving.
+                    Check the weather
+                    forecast for your
+                    updated travel dates
+                    before saving.
                   </p>
                 </div>
               </div>
@@ -240,8 +249,12 @@ function TripEditForm({
               <button
                 className="trip-edit-form__weather-button"
                 type="button"
-                onClick={onCheckWeather}
-                disabled={isCheckingWeather}
+                onClick={
+                  onCheckWeather
+                }
+                disabled={
+                  isCheckingWeather
+                }
               >
                 {isCheckingWeather
                   ? 'Checking weather...'
@@ -253,7 +266,9 @@ function TripEditForm({
                   className="trip-edit-form__weather-error"
                   role="alert"
                 >
-                  {weatherLookupError}
+                  {
+                    weatherLookupError
+                  }
                 </p>
               )}
             </div>
@@ -267,7 +282,9 @@ function TripEditForm({
                 <button
                   className="trip-edit-form__weather-close"
                   type="button"
-                  onClick={onCloseWeather}
+                  onClick={
+                    onCloseWeather
+                  }
                 >
                   <CloseIcon />
 
@@ -285,33 +302,21 @@ function TripEditForm({
 
         <div className="trip-edit-form__budget">
           <BudgetSection
-            budgetAmount={budgetAmount}
-            budgetCurrency={budgetCurrency}
-            localCurrency={localCurrency}
+            budgetAmount={
+              budgetAmount
+            }
+            budgetCurrency={
+              budgetCurrency
+            }
+            localCurrency={
+              localCurrency
+            }
             onBudgetAmountChange={
               onBudgetAmountChange
             }
             onBudgetCurrencyChange={
               onBudgetCurrencyChange
             }
-          />
-        </div>
-
-        <div className="trip-edit-form__field trip-edit-form__field--full">
-          <label
-            className="trip-edit-form__label"
-            htmlFor="editTripNotes"
-          >
-            Notes
-          </label>
-
-          <textarea
-            id="editTripNotes"
-            className="trip-edit-form__textarea"
-            value={notes}
-            onChange={onNotesChange}
-            rows={6}
-            placeholder="Add notes about your trip"
           />
         </div>
 
@@ -337,7 +342,9 @@ function TripEditForm({
           <button
             className="trip-edit-form__save"
             type="submit"
-            disabled={isSaveDisabled}
+            disabled={
+              isSaveDisabled
+            }
           >
             {isSaving
               ? 'Saving changes...'

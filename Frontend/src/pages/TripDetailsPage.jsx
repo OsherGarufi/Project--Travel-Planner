@@ -10,6 +10,7 @@ import HistoricalWeather from '../components/plan-trip/HistoricalWeather'
 import WeatherForecast from '../components/plan-trip/WeatherForecast'
 import DeleteTripSection from '../components/trip-details/DeleteTripSection'
 import TripEditForm from '../components/trip-details/TripEditForm'
+import TripNotesEditForm from '../components/trip-details/TripNotesEditForm'
 import TripSummary from '../components/trip-details/TripSummary'
 import TripExpensesSection from '../components/trip-expenses/TripExpensesSection'
 import '../css/pages/trip-details-page.css'
@@ -17,6 +18,7 @@ import useTripWeather from '../hooks/plan-trip/useTripWeather'
 import { useTripDelete } from '../hooks/trip-details/useTripDelete'
 import { useTripDetails } from '../hooks/trip-details/useTripDetails'
 import { useTripEdit } from '../hooks/trip-details/useTripEdit'
+import { useTripNotesEdit } from '../hooks/trip-details/useTripNotesEdit'
 import { searchCities } from '../services/city/cityService'
 import { getCountries } from '../services/countryService'
 import {
@@ -24,6 +26,12 @@ import {
   WEATHER_FORECAST_DAYS,
 } from '../services/weather/weatherService'
 import { getPreferredLocalCurrency } from '../utils/currencyUtils'
+
+const FOCUS_MODE = {
+  TRIP: 'trip',
+  NOTES: 'notes',
+  EXPENSE: 'expense',
+}
 
 function ArrowLeftIcon() {
   return (
@@ -37,25 +45,6 @@ function ArrowLeftIcon() {
         d="M19 12H5M10 7l-5 5 5 5"
         stroke="currentColor"
         strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function EditIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d="m14.5 5.5 4 4M5 19l3.2-.7L18.5 8a2.1 2.1 0 0 0-3-3L5.2 15.3 5 19Z"
-        stroke="currentColor"
-        strokeWidth="1.7"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -97,7 +86,13 @@ function TripDetailsLoadingState() {
 function TripDetailsPage() {
   const navigate = useNavigate()
 
-  const editFormRef = useRef(null)
+  const focusFormRef =
+    useRef(null)
+
+  const [
+    activeFocusMode,
+    setActiveFocusMode,
+  ] = useState(null)
 
   const [countries, setCountries] =
     useState([])
@@ -130,7 +125,6 @@ function TripDetailsPage() {
   } = useTripDetails()
 
   const {
-    isEditing,
     hasChanges,
     hasDateChanges,
 
@@ -142,7 +136,6 @@ function TripDetailsPage() {
 
     budgetAmount,
     budgetCurrency,
-    notes,
 
     isSaving,
     saveError,
@@ -156,8 +149,22 @@ function TripDetailsPage() {
     handleEndDateChange,
     handleBudgetAmountChange,
     handleBudgetCurrencyChange,
-    handleNotesChange,
   } = useTripEdit({
+    trip,
+    replaceTrip,
+  })
+
+  const {
+    notes,
+    hasNotesChanges,
+    isSavingNotes,
+    notesSaveError,
+
+    startNotesEditing,
+    cancelNotesEditing,
+    saveNotes,
+    handleNotesChange,
+  } = useTripNotesEdit({
     trip,
     replaceTrip,
   })
@@ -177,7 +184,8 @@ function TripDetailsPage() {
     handleCheckDestination,
     handleViewLastYearWeather,
   } = useTripWeather({
-    selectedCity: editWeatherCity,
+    selectedCity:
+      editWeatherCity,
     startDate,
     endDate,
   })
@@ -198,14 +206,18 @@ function TripDetailsPage() {
     let isActive = true
 
     getCountries()
-      .then((countriesResult) => {
-        if (isActive) {
-          setCountries(countriesResult)
-        }
-      })
+      .then(
+        (countriesResult) => {
+          if (isActive) {
+            setCountries(
+              countriesResult,
+            )
+          }
+        },
+      )
       .catch(() => {
-        // Trip details can still be shown
-        // if country metadata is unavailable.
+        // Trip details can still
+        // be shown without country metadata.
       })
 
     return () => {
@@ -213,29 +225,33 @@ function TripDetailsPage() {
     }
   }, [])
 
-  const destinationCountry = useMemo(() => {
-    const countryCode =
-      trip?.destinationCountryCode
-        ?.toUpperCase()
+  const destinationCountry =
+    useMemo(() => {
+      const countryCode =
+        trip
+          ?.destinationCountryCode
+          ?.toUpperCase()
 
-    if (!countryCode) {
-      return null
-    }
+      if (!countryCode) {
+        return null
+      }
 
-    return (
-      countries.find(
-        (item) =>
-          item.code?.toUpperCase() ===
-          countryCode,
-      ) ?? null
-    )
-  }, [
-    countries,
-    trip?.destinationCountryCode,
-  ])
+      return (
+        countries.find(
+          (item) =>
+            item.code
+              ?.toUpperCase() ===
+            countryCode,
+        ) ?? null
+      )
+    }, [
+      countries,
+      trip?.destinationCountryCode,
+    ])
 
   const flagUrl =
-    destinationCountry?.flagUrl ?? ''
+    destinationCountry?.flagUrl ??
+    ''
 
   const localCurrency =
     getPreferredLocalCurrency(
@@ -243,15 +259,21 @@ function TripDetailsPage() {
     )
 
   useEffect(() => {
-    if (!isEditing) {
+    if (
+      activeFocusMode !==
+        FOCUS_MODE.TRIP &&
+      activeFocusMode !==
+        FOCUS_MODE.NOTES
+    ) {
       return
     }
 
-    editFormRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
-  }, [isEditing])
+    focusFormRef.current
+      ?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+  }, [activeFocusMode])
 
   const clearEditWeather = () => {
     resetWeather()
@@ -264,30 +286,96 @@ function TripDetailsPage() {
     resetDelete()
     clearEditWeather()
     startEditing()
+
+    setActiveFocusMode(
+      FOCUS_MODE.TRIP,
+    )
   }
 
   const handleCancelEditing = () => {
     clearEditWeather()
     cancelEditing()
+
+    setActiveFocusMode(null)
   }
 
-  const handleEditStartDateChange = (
-    event,
-  ) => {
-    clearEditWeather()
-    handleStartDateChange(event)
-  }
+  const handleSaveEditing =
+    async () => {
+      const wasSaved =
+        await saveTrip()
 
-  const handleEditEndDateChange = (
-    event,
-  ) => {
-    clearEditWeather()
-    handleEndDateChange(event)
-  }
+      if (!wasSaved) {
+        return
+      }
 
-  const handleCloseEditedWeather = () => {
-    clearEditWeather()
-  }
+      clearEditWeather()
+
+      setActiveFocusMode(null)
+    }
+
+  const handleStartNotesEditing =
+    () => {
+      resetDelete()
+      clearEditWeather()
+      startNotesEditing()
+
+      setActiveFocusMode(
+        FOCUS_MODE.NOTES,
+      )
+    }
+
+  const handleCancelNotesEditing =
+    () => {
+      cancelNotesEditing()
+
+      setActiveFocusMode(null)
+    }
+
+  const handleSaveNotesEditing =
+    async () => {
+      const wasSaved =
+        await saveNotes()
+
+      if (!wasSaved) {
+        return
+      }
+
+      setActiveFocusMode(null)
+    }
+
+  const handleStartExpenseFocus =
+    () => {
+      resetDelete()
+      clearEditWeather()
+
+      setActiveFocusMode(
+        FOCUS_MODE.EXPENSE,
+      )
+    }
+
+  const handleEndExpenseFocus =
+    () => {
+      setActiveFocusMode(null)
+    }
+
+  const handleEditStartDateChange =
+    (event) => {
+      clearEditWeather()
+
+      handleStartDateChange(event)
+    }
+
+  const handleEditEndDateChange =
+    (event) => {
+      clearEditWeather()
+
+      handleEndDateChange(event)
+    }
+
+  const handleCloseEditedWeather =
+    () => {
+      clearEditWeather()
+    }
 
   const handleCheckEditedWeather =
     async () => {
@@ -302,7 +390,10 @@ function TripDetailsPage() {
       }
 
       try {
-        setIsResolvingWeatherCity(true)
+        setIsResolvingWeatherCity(
+          true,
+        )
+
         setWeatherLookupError('')
         resetWeather()
 
@@ -327,7 +418,9 @@ function TripDetailsPage() {
           )
 
         if (!matchedCity) {
-          setIsEditWeatherOpen(false)
+          setIsEditWeatherOpen(
+            false,
+          )
 
           setWeatherLookupError(
             'Could not locate this city for the weather forecast.',
@@ -336,7 +429,10 @@ function TripDetailsPage() {
           return
         }
 
-        setEditWeatherCity(matchedCity)
+        setEditWeatherCity(
+          matchedCity,
+        )
+
         setIsEditWeatherOpen(true)
 
         await handleCheckDestination(
@@ -354,7 +450,9 @@ function TripDetailsPage() {
           'Could not load the weather forecast. Please try again.',
         )
       } finally {
-        setIsResolvingWeatherCity(false)
+        setIsResolvingWeatherCity(
+          false,
+        )
       }
     }
 
@@ -388,8 +486,12 @@ function TripDetailsPage() {
       />
 
       <WeatherForecast
-        forecast={weatherForecast}
-        isPartial={isPartialForecast}
+        forecast={
+          weatherForecast
+        }
+        isPartial={
+          isPartialForecast
+        }
         forecastDays={
           WEATHER_FORECAST_DAYS
         }
@@ -415,7 +517,9 @@ function TripDetailsPage() {
         <button
           className="trip-details-page__back"
           type="button"
-          onClick={() => navigate('/trips')}
+          onClick={() =>
+            navigate('/trips')
+          }
         >
           <span
             className="trip-details-page__back-icon"
@@ -424,7 +528,9 @@ function TripDetailsPage() {
             <ArrowLeftIcon />
           </span>
 
-          <span>Back to My Trips</span>
+          <span>
+            Back to My Trips
+          </span>
         </button>
 
         <TripDetailsLoadingState />
@@ -438,7 +544,9 @@ function TripDetailsPage() {
         <button
           className="trip-details-page__back"
           type="button"
-          onClick={() => navigate('/trips')}
+          onClick={() =>
+            navigate('/trips')
+          }
         >
           <span
             className="trip-details-page__back-icon"
@@ -447,7 +555,9 @@ function TripDetailsPage() {
             <ArrowLeftIcon />
           </span>
 
-          <span>Back to My Trips</span>
+          <span>
+            Back to My Trips
+          </span>
         </button>
 
         <section className="trip-details-page__error-state">
@@ -468,52 +578,115 @@ function TripDetailsPage() {
     )
   }
 
+  const isRegularContentHidden =
+    Boolean(activeFocusMode)
+
+  const isExpensesHidden =
+    Boolean(
+      activeFocusMode &&
+      activeFocusMode !==
+        FOCUS_MODE.EXPENSE,
+    )
+
   return (
     <div className="trip-details-page">
-      <div className="trip-details-page__topbar">
-        <button
-          className="trip-details-page__back"
-          type="button"
-          onClick={() => navigate('/trips')}
-          disabled={isSaving || isDeleting}
-        >
-          <span
-            className="trip-details-page__back-icon"
-            aria-hidden="true"
-          >
-            <ArrowLeftIcon />
-          </span>
-
-          <span>Back to My Trips</span>
-        </button>
-
-        {!isEditing && (
+      <div
+        className="trip-details-page__normal-content"
+        hidden={
+          isRegularContentHidden
+        }
+      >
+        <div className="trip-details-page__topbar">
           <button
-            className="trip-details-page__edit-button"
+            className="trip-details-page__back"
             type="button"
-            onClick={handleStartEditing}
+            onClick={() =>
+              navigate('/trips')
+            }
             disabled={isDeleting}
           >
             <span
-              className="trip-details-page__edit-icon"
+              className="trip-details-page__back-icon"
               aria-hidden="true"
             >
-              <EditIcon />
+              <ArrowLeftIcon />
             </span>
 
-            <span>Edit trip</span>
+            <span>
+              Back to My Trips
+            </span>
           </button>
-        )}
+        </div>
+
+        <TripSummary
+          trip={trip}
+          flagUrl={flagUrl}
+          localCurrency={
+            localCurrency
+          }
+          onEditTrip={
+            handleStartEditing
+          }
+          onEditNotes={
+            handleStartNotesEditing
+          }
+          isTripEditDisabled={
+            isDeleting
+          }
+          isNotesEditDisabled={
+            isDeleting
+          }
+        />
       </div>
 
-      <TripSummary
+      <TripExpensesSection
         trip={trip}
-        flagUrl={flagUrl}
-        localCurrency={localCurrency}
+        isFocusMode={
+          activeFocusMode ===
+          FOCUS_MODE.EXPENSE
+        }
+        isHidden={
+          isExpensesHidden
+        }
+        onFocusStart={
+          handleStartExpenseFocus
+        }
+        onFocusEnd={
+          handleEndExpenseFocus
+        }
       />
 
-      {isEditing && (
-        <div ref={editFormRef}>
+      <div
+        className="trip-details-page__normal-content"
+        hidden={
+          isRegularContentHidden
+        }
+      >
+        <DeleteTripSection
+          isConfirmingDelete={
+            isConfirmingDelete
+          }
+          isDeleting={
+            isDeleting
+          }
+          deleteError={
+            deleteError
+          }
+          onStartDelete={
+            startDelete
+          }
+          onCancelDelete={
+            cancelDelete
+          }
+          onConfirmDelete={
+            confirmDelete
+          }
+        />
+      </div>
+
+      {activeFocusMode ===
+        FOCUS_MODE.TRIP && (
+        <div ref={focusFormRef}>
           <TripEditForm
             title={title}
             startDate={startDate}
@@ -524,14 +697,27 @@ function TripDetailsPage() {
             endDateMinimum={
               endDateMinimum
             }
-            budgetAmount={budgetAmount}
-            budgetCurrency={budgetCurrency}
-            localCurrency={localCurrency}
-            notes={notes}
-            hasChanges={hasChanges}
-            hasDateChanges={hasDateChanges}
-            isSaving={isSaving}
-            saveError={saveError}
+            budgetAmount={
+              budgetAmount
+            }
+            budgetCurrency={
+              budgetCurrency
+            }
+            localCurrency={
+              localCurrency
+            }
+            hasChanges={
+              hasChanges
+            }
+            hasDateChanges={
+              hasDateChanges
+            }
+            isSaving={
+              isSaving
+            }
+            saveError={
+              saveError
+            }
             isCheckingWeather={
               isResolvingWeatherCity ||
               isLoadingWeather
@@ -560,36 +746,47 @@ function TripDetailsPage() {
             onBudgetCurrencyChange={
               handleBudgetCurrencyChange
             }
-            onNotesChange={
-              handleNotesChange
-            }
             onCheckWeather={
               handleCheckEditedWeather
             }
             onCloseWeather={
               handleCloseEditedWeather
             }
-            onSave={saveTrip}
-            onCancel={handleCancelEditing}
+            onSave={
+              handleSaveEditing
+            }
+            onCancel={
+              handleCancelEditing
+            }
           />
         </div>
       )}
 
-      <TripExpensesSection
-        trip={trip}
-      />
-
-      {!isEditing && (
-        <DeleteTripSection
-          isConfirmingDelete={
-            isConfirmingDelete
-          }
-          isDeleting={isDeleting}
-          deleteError={deleteError}
-          onStartDelete={startDelete}
-          onCancelDelete={cancelDelete}
-          onConfirmDelete={confirmDelete}
-        />
+      {activeFocusMode ===
+        FOCUS_MODE.NOTES && (
+        <div ref={focusFormRef}>
+          <TripNotesEditForm
+            notes={notes}
+            hasChanges={
+              hasNotesChanges
+            }
+            isSaving={
+              isSavingNotes
+            }
+            saveError={
+              notesSaveError
+            }
+            onNotesChange={
+              handleNotesChange
+            }
+            onSave={
+              handleSaveNotesEditing
+            }
+            onCancel={
+              handleCancelNotesEditing
+            }
+          />
+        </div>
       )}
     </div>
   )
