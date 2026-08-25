@@ -32,6 +32,7 @@ builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<DbService>();
+builder.Services.AddScoped<ItineraryDbService>();
 builder.Services.AddScoped<FirebaseAuthService>();
 builder.Services.AddScoped<CurrentUserService>();
 

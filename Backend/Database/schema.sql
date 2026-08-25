@@ -107,6 +107,74 @@ CREATE TABLE IF NOT EXISTS trip_expenses (
 );
 
 -- =========================
+-- Trip itinerary items table
+-- =========================
+CREATE TABLE IF NOT EXISTS trip_itinerary_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    trip_id UUID NOT NULL,
+
+    expense_id UUID NULL,
+
+    title VARCHAR(100) NOT NULL,
+
+    description VARCHAR(2000) NULL,
+
+    category VARCHAR(50) NOT NULL,
+
+    itinerary_date DATE NOT NULL,
+
+    start_time TIME NULL,
+
+    end_time TIME NULL,
+
+    reference_url VARCHAR(2048) NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_trip_itinerary_items_trip
+        FOREIGN KEY (trip_id)
+        REFERENCES trips(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_trip_itinerary_items_expense
+        FOREIGN KEY (expense_id)
+        REFERENCES trip_expenses(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT ck_trip_itinerary_items_title
+        CHECK (
+            LENGTH(TRIM(title)) > 0
+        ),
+
+    CONSTRAINT ck_trip_itinerary_items_category
+        CHECK (
+            LENGTH(TRIM(category)) > 0
+        ),
+
+    CONSTRAINT ck_trip_itinerary_items_time_pair
+        CHECK (
+            (
+                start_time IS NULL
+                AND end_time IS NULL
+            )
+            OR
+            (
+                start_time IS NOT NULL
+                AND end_time IS NOT NULL
+            )
+        ),
+
+    CONSTRAINT ck_trip_itinerary_items_time_order
+        CHECK (
+            start_time IS NULL
+            OR end_time > start_time
+        )
+);
+
+-- =========================
 -- Indexes
 -- =========================
 CREATE INDEX IF NOT EXISTS idx_trips_user_id
@@ -121,6 +189,26 @@ CREATE INDEX IF NOT EXISTS idx_trips_city
 CREATE INDEX IF NOT EXISTS idx_trip_expenses_trip_id
     ON trip_expenses(trip_id);
 
+CREATE INDEX IF NOT EXISTS ix_trip_itinerary_items_trip_id
+    ON trip_itinerary_items(trip_id);
+
+CREATE INDEX IF NOT EXISTS ix_trip_itinerary_items_trip_date
+    ON trip_itinerary_items(
+        trip_id,
+        itinerary_date
+    );
+
+CREATE INDEX IF NOT EXISTS ix_trip_itinerary_items_trip_date_start_time
+    ON trip_itinerary_items(
+        trip_id,
+        itinerary_date,
+        start_time
+    );
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_trip_itinerary_items_expense_id
+    ON trip_itinerary_items(expense_id)
+    WHERE expense_id IS NOT NULL;
+
 -- =========================
 -- Row Level Security
 -- =========================
@@ -131,6 +219,9 @@ ALTER TABLE trips
 ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE trip_expenses
+ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE trip_itinerary_items
 ENABLE ROW LEVEL SECURITY;
 
 -- =========================
@@ -156,5 +247,10 @@ EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER set_trip_expenses_updated_at
 BEFORE UPDATE ON trip_expenses
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER set_trip_itinerary_items_updated_at
+BEFORE UPDATE ON trip_itinerary_items
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
