@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage'
 import PlanTripPage from './pages/PlanTripPage'
 import RegisterPage from './pages/RegisterPage'
 import TripDetailsPage from './pages/TripDetailsPage'
+import TripItineraryPage from './pages/TripItineraryPage'
 import TripsPage from './pages/TripsPage'
 
 function App() {
@@ -17,7 +18,12 @@ function App() {
     <Routes>
       <Route
         path="/"
-        element={<Navigate to="/home" replace />}
+        element={
+          <Navigate
+            to="/home"
+            replace
+          />
+        }
       />
 
       <Route
@@ -56,11 +62,21 @@ function App() {
           path="/trips/:tripId"
           element={<TripDetailsPage />}
         />
+
+        <Route
+          path="/trips/:tripId/itinerary"
+          element={<TripItineraryPage />}
+        />
       </Route>
 
       <Route
         path="*"
-        element={<Navigate to="/home" replace />}
+        element={
+          <Navigate
+            to="/home"
+            replace
+          />
+        }
       />
     </Routes>
   )

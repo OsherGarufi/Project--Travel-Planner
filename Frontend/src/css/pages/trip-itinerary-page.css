@@ -1,0 +1,138 @@
+.trip-itinerary-page {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--tp-space-4);
+}
+
+.trip-itinerary-page::before {
+  content: '';
+  position: absolute;
+  top: -4rem;
+  right: -12rem;
+  z-index: -1;
+  width: 30rem;
+  height: 30rem;
+  border-radius:
+    var(--tp-radius-full);
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle,
+      rgba(149, 188, 223, 0.16),
+      rgba(219, 233, 246, 0.06) 45%,
+      transparent 72%
+    );
+}
+
+/* Topbar */
+
+.trip-itinerary-page__topbar {
+  display: flex;
+  min-height: 2rem;
+  align-items: center;
+}
+
+.trip-itinerary-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tp-space-2);
+  padding:
+    var(--tp-space-1)
+    var(--tp-space-1);
+  border-radius:
+    var(--tp-radius-sm);
+  outline: none;
+  color:
+    var(--tp-color-text-muted);
+  background-color: transparent;
+  font-size:
+    var(--tp-font-size-sm);
+  font-weight:
+    var(--tp-font-weight-medium);
+  transition:
+    color var(--tp-duration-fast)
+      var(--tp-ease-standard),
+    background-color var(--tp-duration-fast)
+      var(--tp-ease-standard);
+}
+
+.trip-itinerary-page__back:hover {
+  color:
+    var(--tp-color-primary-700);
+  background-color:
+    var(--tp-color-primary-50);
+}
+
+.trip-itinerary-page__back:focus-visible {
+  box-shadow:
+    var(--tp-focus-ring);
+}
+
+.trip-itinerary-page__back-icon {
+  display: grid;
+  width: 1.125rem;
+  height: 1.125rem;
+  place-items: center;
+}
+
+.trip-itinerary-page__back-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Loading */
+
+.trip-itinerary-page__loading {
+  padding:
+    var(--tp-space-12);
+  color:
+    var(--tp-color-text-muted);
+  text-align: center;
+}
+
+/* Error */
+
+.trip-itinerary-page__error-state {
+  padding:
+    var(--tp-space-8);
+  border: 1px solid
+    rgba(217, 45, 32, 0.18);
+  border-radius:
+    var(--tp-radius-xl);
+  background-color:
+    var(--tp-color-danger-soft);
+}
+
+.trip-itinerary-page__error-title {
+  margin: 0;
+  color:
+    var(--tp-color-text-primary);
+  font-size:
+    var(--tp-font-size-2xl);
+}
+
+.trip-itinerary-page__error-description {
+  margin-top:
+    var(--tp-space-3);
+  color:
+    var(--tp-color-text-secondary);
+}
+
+/* Tablet */
+
+@media (max-width: 56rem) {
+  .trip-itinerary-page {
+    gap:
+      var(--tp-space-4);
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 40rem) {
+  .trip-itinerary-page::before {
+    display: none;
+  }
+}

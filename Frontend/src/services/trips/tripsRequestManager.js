@@ -1,6 +1,8 @@
 const activeTripsRequests = new Map()
-const activeTripDetailsRequests = new Map()
-const activeTripExpensesRequests = new Map()
+const activeTripDetailsRequests =
+  new Map()
+const activeTripExpensesRequests =
+  new Map()
 
 function getTripDetailsRequestKey(
   userId,
@@ -27,7 +29,8 @@ export function getOrCreateTripsRequest(
     return activeRequest
   }
 
-  const newRequest = requestFactory()
+  const newRequest =
+    requestFactory()
 
   activeTripsRequests.set(
     userId,
@@ -42,9 +45,13 @@ export function releaseTripsRequest(
   request,
 ) {
   if (
-    activeTripsRequests.get(userId) === request
+    activeTripsRequests.get(
+      userId,
+    ) === request
   ) {
-    activeTripsRequests.delete(userId)
+    activeTripsRequests.delete(
+      userId,
+    )
   }
 }
 
@@ -53,19 +60,23 @@ export function getOrCreateTripDetailsRequest(
   tripId,
   requestFactory,
 ) {
-  const requestKey = getTripDetailsRequestKey(
-    userId,
-    tripId,
-  )
+  const requestKey =
+    getTripDetailsRequestKey(
+      userId,
+      tripId,
+    )
 
   const activeRequest =
-    activeTripDetailsRequests.get(requestKey)
+    activeTripDetailsRequests.get(
+      requestKey,
+    )
 
   if (activeRequest) {
     return activeRequest
   }
 
-  const newRequest = requestFactory()
+  const newRequest =
+    requestFactory()
 
   activeTripDetailsRequests.set(
     requestKey,
@@ -80,16 +91,20 @@ export function releaseTripDetailsRequest(
   tripId,
   request,
 ) {
-  const requestKey = getTripDetailsRequestKey(
-    userId,
-    tripId,
-  )
+  const requestKey =
+    getTripDetailsRequestKey(
+      userId,
+      tripId,
+    )
 
   if (
-    activeTripDetailsRequests.get(requestKey) ===
-    request
+    activeTripDetailsRequests.get(
+      requestKey,
+    ) === request
   ) {
-    activeTripDetailsRequests.delete(requestKey)
+    activeTripDetailsRequests.delete(
+      requestKey,
+    )
   }
 }
 
@@ -98,19 +113,23 @@ export function getOrCreateTripExpensesRequest(
   tripId,
   requestFactory,
 ) {
-  const requestKey = getTripExpensesRequestKey(
-    userId,
-    tripId,
-  )
+  const requestKey =
+    getTripExpensesRequestKey(
+      userId,
+      tripId,
+    )
 
   const activeRequest =
-    activeTripExpensesRequests.get(requestKey)
+    activeTripExpensesRequests.get(
+      requestKey,
+    )
 
   if (activeRequest) {
     return activeRequest
   }
 
-  const newRequest = requestFactory()
+  const newRequest =
+    requestFactory()
 
   activeTripExpensesRequests.set(
     requestKey,
@@ -125,15 +144,19 @@ export function releaseTripExpensesRequest(
   tripId,
   request,
 ) {
-  const requestKey = getTripExpensesRequestKey(
-    userId,
-    tripId,
-  )
+  const requestKey =
+    getTripExpensesRequestKey(
+      userId,
+      tripId,
+    )
 
   if (
-    activeTripExpensesRequests.get(requestKey) ===
-    request
+    activeTripExpensesRequests.get(
+      requestKey,
+    ) === request
   ) {
-    activeTripExpensesRequests.delete(requestKey)
+    activeTripExpensesRequests.delete(
+      requestKey,
+    )
   }
 }
