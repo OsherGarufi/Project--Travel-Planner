@@ -1,6 +1,7 @@
 ﻿using Backend.Dtos.Itinerary;
 using Backend.Models;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Backend.DAL;
 
@@ -38,19 +39,23 @@ public class ItineraryDbService
     /// <summary>
     /// Returns all itinerary items for a trip only if the trip
     /// belongs to the specified user.
+    /// Includes linked expense cost and currency when available.
     /// Returns null when the trip does not exist or does not
     /// belong to the user.
     /// </summary>
-    public async Task<List<TripItineraryItem>?>
+    public async Task<List<TripItineraryItemResponse>?>
         GetTripItineraryForUserAsync(
             Guid tripId,
             Guid userId
         )
     {
-        var items = new List<TripItineraryItem>();
+        var items =
+            new List<TripItineraryItemResponse>();
 
         await using var connection =
-            new NpgsqlConnection(GetConnectionString());
+            new NpgsqlConnection(
+                GetConnectionString()
+            );
 
         await connection.OpenAsync();
 
@@ -66,21 +71,29 @@ public class ItineraryDbService
             i.start_time,
             i.end_time,
             i.reference_url,
+            e.amount AS cost,
+            e.currency AS expense_currency,
             i.created_at,
             i.updated_at
         FROM trips t
         LEFT JOIN trip_itinerary_items i
             ON i.trip_id = t.id
+        LEFT JOIN trip_expenses e
+            ON e.id = i.expense_id
+           AND e.trip_id = i.trip_id
         WHERE t.id = @trip_id
           AND t.user_id = @user_id
         ORDER BY
-            i.itinerary_date ASC,
+            i.itinerary_date ASC NULLS LAST,
             i.start_time ASC NULLS LAST,
             i.created_at ASC;
         """;
 
         await using var command =
-            new NpgsqlCommand(sql, connection);
+            new NpgsqlCommand(
+                sql,
+                connection
+            );
 
         command.Parameters.AddWithValue(
             "trip_id",
@@ -100,24 +113,184 @@ public class ItineraryDbService
             return null;
         }
 
-        if (reader.IsDBNull(reader.GetOrdinal("id")))
+        if (
+            reader.IsDBNull(
+                reader.GetOrdinal("id")
+            )
+        )
         {
             return items;
         }
 
         do
         {
-            items.Add(MapTripItineraryItem(reader));
+            items.Add(
+                MapTripItineraryItemResponse(
+                    reader
+                )
+            );
         }
-        while (await reader.ReadAsync());
+        while (
+            await reader.ReadAsync()
+        );
 
         return items;
     }
 
     /// <summary>
-    /// Creates an itinerary item only if the trip belongs to
-    /// the specified user and the itinerary date is inside the
-    /// trip date range.
+    /// Reads a single itinerary item using an existing
+    /// connection and optional transaction.
+    ///
+    /// Used by backend business logic to determine whether the
+    /// activity is currently free or linked to an expense.
+    /// </summary>
+    internal async Task<TripItineraryItem?>
+        GetTripItineraryItemForUserAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction? transaction,
+            Guid tripId,
+            Guid itemId,
+            Guid userId
+        )
+    {
+        const string sql = """
+        SELECT
+            i.id,
+            i.trip_id,
+            i.expense_id,
+            i.title,
+            i.description,
+            i.category,
+            i.itinerary_date,
+            i.start_time,
+            i.end_time,
+            i.reference_url,
+            i.created_at,
+            i.updated_at
+        FROM trip_itinerary_items i
+        INNER JOIN trips t
+            ON t.id = i.trip_id
+        WHERE i.id = @item_id
+          AND i.trip_id = @trip_id
+          AND t.user_id = @user_id
+        LIMIT 1
+        FOR UPDATE OF i;
+        """;
+
+        await using var command =
+            new NpgsqlCommand(
+                sql,
+                connection,
+                transaction
+            );
+
+        command.Parameters.AddWithValue(
+            "item_id",
+            itemId
+        );
+
+        command.Parameters.AddWithValue(
+            "trip_id",
+            tripId
+        );
+
+        command.Parameters.AddWithValue(
+            "user_id",
+            userId
+        );
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+
+        return MapTripItineraryItem(
+            reader
+        );
+    }
+
+    /// <summary>
+    /// Returns the itinerary item linked to a specific expense,
+    /// using an existing database connection and transaction.
+    ///
+    /// The itinerary row is locked for update so expense and
+    /// itinerary synchronization can be completed atomically.
+    /// Returns null when the expense has no linked itinerary item.
+    /// </summary>
+    internal async Task<TripItineraryItem?>
+        GetLinkedItineraryItemForExpenseAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction? transaction,
+            Guid tripId,
+            Guid expenseId,
+            Guid userId
+        )
+    {
+        const string sql = """
+        SELECT
+            i.id,
+            i.trip_id,
+            i.expense_id,
+            i.title,
+            i.description,
+            i.category,
+            i.itinerary_date,
+            i.start_time,
+            i.end_time,
+            i.reference_url,
+            i.created_at,
+            i.updated_at
+        FROM trip_itinerary_items i
+        INNER JOIN trips t
+            ON t.id = i.trip_id
+        WHERE i.trip_id = @trip_id
+          AND i.expense_id = @expense_id
+          AND t.user_id = @user_id
+        LIMIT 1
+        FOR UPDATE OF i;
+        """;
+
+        await using var command =
+            new NpgsqlCommand(
+                sql,
+                connection,
+                transaction
+            );
+
+        command.Parameters.AddWithValue(
+            "trip_id",
+            tripId
+        );
+
+        command.Parameters.AddWithValue(
+            "expense_id",
+            expenseId
+        );
+
+        command.Parameters.AddWithValue(
+            "user_id",
+            userId
+        );
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+
+        return MapTripItineraryItem(
+            reader
+        );
+    }
+
+    /// <summary>
+    /// Creates a standalone itinerary item using its own
+    /// database connection.
     /// </summary>
     public async Task<TripItineraryItem?>
         CreateTripItineraryItemForUserAsync(
@@ -127,13 +300,42 @@ public class ItineraryDbService
         )
     {
         await using var connection =
-            new NpgsqlConnection(GetConnectionString());
+            new NpgsqlConnection(
+                GetConnectionString()
+            );
 
         await connection.OpenAsync();
 
+        return await CreateTripItineraryItemForUserAsync(
+            connection,
+            transaction: null,
+            tripId,
+            userId,
+            expenseId: null,
+            request
+        );
+    }
+
+    /// <summary>
+    /// Creates an itinerary item using an existing connection
+    /// and optional transaction.
+    ///
+    /// ExpenseId is supplied only by backend business logic.
+    /// </summary>
+    internal async Task<TripItineraryItem?>
+        CreateTripItineraryItemForUserAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction? transaction,
+            Guid tripId,
+            Guid userId,
+            Guid? expenseId,
+            CreateTripItineraryItemRequest request
+        )
+    {
         const string sql = """
         INSERT INTO trip_itinerary_items (
             trip_id,
+            expense_id,
             title,
             description,
             category,
@@ -144,6 +346,7 @@ public class ItineraryDbService
         )
         SELECT
             t.id,
+            @expense_id,
             @title,
             @description,
             @category,
@@ -154,8 +357,20 @@ public class ItineraryDbService
         FROM trips t
         WHERE t.id = @trip_id
           AND t.user_id = @user_id
-          AND @itinerary_date
-              BETWEEN t.start_date AND t.end_date
+          AND (
+              @itinerary_date IS NULL
+              OR @itinerary_date
+                  BETWEEN t.start_date AND t.end_date
+          )
+          AND (
+              @expense_id IS NULL
+              OR EXISTS (
+                  SELECT 1
+                  FROM trip_expenses e
+                  WHERE e.id = @expense_id
+                    AND e.trip_id = t.id
+              )
+          )
         RETURNING
             id,
             trip_id,
@@ -172,14 +387,29 @@ public class ItineraryDbService
         """;
 
         await using var command =
-            new NpgsqlCommand(sql, connection);
+            new NpgsqlCommand(
+                sql,
+                connection,
+                transaction
+            );
 
-        AddCommonParameters(
+        AddBaseParameters(
             command,
             tripId,
             userId,
             request
         );
+
+        var expenseIdParameter =
+            command.Parameters.Add(
+                "expense_id",
+                NpgsqlDbType.Uuid
+            );
+
+        expenseIdParameter.Value =
+            expenseId.HasValue
+                ? expenseId.Value
+                : DBNull.Value;
 
         await using var reader =
             await command.ExecuteReaderAsync();
@@ -189,13 +419,14 @@ public class ItineraryDbService
             return null;
         }
 
-        return MapTripItineraryItem(reader);
+        return MapTripItineraryItem(
+            reader
+        );
     }
 
     /// <summary>
-    /// Updates an itinerary item only if it belongs to the
-    /// specified trip, the trip belongs to the specified user,
-    /// and the new itinerary date is inside the trip date range.
+    /// Updates an itinerary item using its own database
+    /// connection.
     /// </summary>
     public async Task<TripItineraryItem?>
         UpdateTripItineraryItemForUserAsync(
@@ -206,10 +437,39 @@ public class ItineraryDbService
         )
     {
         await using var connection =
-            new NpgsqlConnection(GetConnectionString());
+            new NpgsqlConnection(
+                GetConnectionString()
+            );
 
         await connection.OpenAsync();
 
+        return await UpdateTripItineraryItemForUserAsync(
+            connection,
+            transaction: null,
+            tripId,
+            itemId,
+            userId,
+            request
+        );
+    }
+
+    /// <summary>
+    /// Updates an itinerary item using an existing database
+    /// connection and optional transaction.
+    ///
+    /// ExpenseId is deliberately not updated here, so an
+    /// existing itinerary-expense link is preserved.
+    /// </summary>
+    internal async Task<TripItineraryItem?>
+        UpdateTripItineraryItemForUserAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction? transaction,
+            Guid tripId,
+            Guid itemId,
+            Guid userId,
+            UpdateTripItineraryItemRequest request
+        )
+    {
         const string sql = """
         UPDATE trip_itinerary_items i
         SET
@@ -225,8 +485,11 @@ public class ItineraryDbService
           AND i.trip_id = @trip_id
           AND t.id = i.trip_id
           AND t.user_id = @user_id
-          AND @itinerary_date
-              BETWEEN t.start_date AND t.end_date
+          AND (
+              @itinerary_date IS NULL
+              OR @itinerary_date
+                  BETWEEN t.start_date AND t.end_date
+          )
         RETURNING
             i.id,
             i.trip_id,
@@ -243,14 +506,18 @@ public class ItineraryDbService
         """;
 
         await using var command =
-            new NpgsqlCommand(sql, connection);
+            new NpgsqlCommand(
+                sql,
+                connection,
+                transaction
+            );
 
         command.Parameters.AddWithValue(
             "item_id",
             itemId
         );
 
-        AddCommonParameters(
+        AddBaseParameters(
             command,
             tripId,
             userId,
@@ -265,12 +532,104 @@ public class ItineraryDbService
             return null;
         }
 
-        return MapTripItineraryItem(reader);
+        return MapTripItineraryItem(
+            reader
+        );
     }
 
     /// <summary>
-    /// Deletes an itinerary item only if it belongs to the
-    /// specified trip and the trip belongs to the specified user.
+    /// Links an existing free itinerary item to an existing
+    /// expense using the same database connection and
+    /// transaction.
+    ///
+    /// The method refuses to overwrite an existing ExpenseId.
+    /// It also verifies that the expense belongs to the same
+    /// trip.
+    /// </summary>
+    internal async Task<TripItineraryItem?>
+        AttachExpenseToItineraryItemForUserAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction? transaction,
+            Guid tripId,
+            Guid itemId,
+            Guid expenseId,
+            Guid userId
+        )
+    {
+        const string sql = """
+        UPDATE trip_itinerary_items i
+        SET
+            expense_id = @expense_id
+        FROM trips t
+        WHERE i.id = @item_id
+          AND i.trip_id = @trip_id
+          AND i.expense_id IS NULL
+          AND t.id = i.trip_id
+          AND t.user_id = @user_id
+          AND EXISTS (
+              SELECT 1
+              FROM trip_expenses e
+              WHERE e.id = @expense_id
+                AND e.trip_id = i.trip_id
+          )
+        RETURNING
+            i.id,
+            i.trip_id,
+            i.expense_id,
+            i.title,
+            i.description,
+            i.category,
+            i.itinerary_date,
+            i.start_time,
+            i.end_time,
+            i.reference_url,
+            i.created_at,
+            i.updated_at;
+        """;
+
+        await using var command =
+            new NpgsqlCommand(
+                sql,
+                connection,
+                transaction
+            );
+
+        command.Parameters.AddWithValue(
+            "item_id",
+            itemId
+        );
+
+        command.Parameters.AddWithValue(
+            "trip_id",
+            tripId
+        );
+
+        command.Parameters.AddWithValue(
+            "expense_id",
+            expenseId
+        );
+
+        command.Parameters.AddWithValue(
+            "user_id",
+            userId
+        );
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+
+        return MapTripItineraryItem(
+            reader
+        );
+    }
+
+    /// <summary>
+    /// Deletes an itinerary item using its own database connection.
+    /// This keeps the standalone DAL operation available.
     /// </summary>
     public async Task<bool>
         DeleteTripItineraryItemForUserAsync(
@@ -280,10 +639,37 @@ public class ItineraryDbService
         )
     {
         await using var connection =
-            new NpgsqlConnection(GetConnectionString());
+            new NpgsqlConnection(
+                GetConnectionString()
+            );
 
         await connection.OpenAsync();
 
+        return await DeleteTripItineraryItemForUserAsync(
+            connection,
+            transaction: null,
+            tripId,
+            itemId,
+            userId
+        );
+    }
+
+    /// <summary>
+    /// Deletes an itinerary item using an existing database
+    /// connection and optional transaction.
+    ///
+    /// This overload allows a linked itinerary item and expense
+    /// to be deleted atomically by the business service.
+    /// </summary>
+    internal async Task<bool>
+        DeleteTripItineraryItemForUserAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction? transaction,
+            Guid tripId,
+            Guid itemId,
+            Guid userId
+        )
+    {
         const string sql = """
         DELETE FROM trip_itinerary_items i
         USING trips t
@@ -295,7 +681,11 @@ public class ItineraryDbService
         """;
 
         await using var command =
-            new NpgsqlCommand(sql, connection);
+            new NpgsqlCommand(
+                sql,
+                connection,
+                transaction
+            );
 
         command.Parameters.AddWithValue(
             "item_id",
@@ -321,8 +711,9 @@ public class ItineraryDbService
     /// <summary>
     /// Adds the parameters shared by itinerary create and
     /// update operations.
+    /// Nullable values use explicit PostgreSQL types.
     /// </summary>
-    private static void AddCommonParameters(
+    private static void AddBaseParameters(
         NpgsqlCommand command,
         Guid tripId,
         Guid userId,
@@ -344,43 +735,71 @@ public class ItineraryDbService
             request.Title.Trim()
         );
 
-        command.Parameters.AddWithValue(
-            "description",
-            string.IsNullOrWhiteSpace(request.Description)
+        var descriptionParameter =
+            command.Parameters.Add(
+                "description",
+                NpgsqlDbType.Varchar
+            );
+
+        descriptionParameter.Value =
+            string.IsNullOrWhiteSpace(
+                request.Description
+            )
                 ? DBNull.Value
-                : request.Description.Trim()
-        );
+                : request.Description.Trim();
 
         command.Parameters.AddWithValue(
             "category",
-            NormalizeCategory(request.Category)
+            NormalizeCategory(
+                request.Category
+            )
         );
 
-        command.Parameters.AddWithValue(
-            "itinerary_date",
-            request.ItineraryDate!.Value
-        );
+        var itineraryDateParameter =
+            command.Parameters.Add(
+                "itinerary_date",
+                NpgsqlDbType.Date
+            );
 
-        command.Parameters.AddWithValue(
-            "start_time",
+        itineraryDateParameter.Value =
+            request.ItineraryDate.HasValue
+                ? request.ItineraryDate.Value
+                : DBNull.Value;
+
+        var startTimeParameter =
+            command.Parameters.Add(
+                "start_time",
+                NpgsqlDbType.Time
+            );
+
+        startTimeParameter.Value =
             request.StartTime.HasValue
                 ? request.StartTime.Value
-                : DBNull.Value
-        );
+                : DBNull.Value;
 
-        command.Parameters.AddWithValue(
-            "end_time",
+        var endTimeParameter =
+            command.Parameters.Add(
+                "end_time",
+                NpgsqlDbType.Time
+            );
+
+        endTimeParameter.Value =
             request.EndTime.HasValue
                 ? request.EndTime.Value
-                : DBNull.Value
-        );
+                : DBNull.Value;
 
-        command.Parameters.AddWithValue(
-            "reference_url",
-            string.IsNullOrWhiteSpace(request.ReferenceUrl)
+        var referenceUrlParameter =
+            command.Parameters.Add(
+                "reference_url",
+                NpgsqlDbType.Varchar
+            );
+
+        referenceUrlParameter.Value =
+            string.IsNullOrWhiteSpace(
+                request.ReferenceUrl
+            )
                 ? DBNull.Value
-                : request.ReferenceUrl.Trim()
-        );
+                : request.ReferenceUrl.Trim();
     }
 
     /// <summary>
@@ -392,7 +811,9 @@ public class ItineraryDbService
     )
     {
         var normalizedCategory =
-            CollapseWhitespace(category);
+            CollapseWhitespace(
+                category
+            );
 
         string[] builtInCategories =
         [
@@ -415,7 +836,8 @@ public class ItineraryDbService
                 )
             );
 
-        return builtInCategory ?? normalizedCategory;
+        return builtInCategory
+            ?? normalizedCategory;
     }
 
     /// <summary>
@@ -438,9 +860,10 @@ public class ItineraryDbService
     /// <summary>
     /// Maps a database row into a TripItineraryItem model.
     /// </summary>
-    private static TripItineraryItem MapTripItineraryItem(
-        NpgsqlDataReader reader
-    )
+    private static TripItineraryItem
+        MapTripItineraryItem(
+            NpgsqlDataReader reader
+        )
     {
         return new TripItineraryItem
         {
@@ -476,11 +899,12 @@ public class ItineraryDbService
                 reader.GetOrdinal("category")
             ),
 
-            ItineraryDate =
-                reader.GetFieldValue<DateOnly>(
-                    reader.GetOrdinal(
-                        "itinerary_date"
-                    )
+            ItineraryDate = reader.IsDBNull(
+                reader.GetOrdinal("itinerary_date")
+            )
+                ? null
+                : reader.GetFieldValue<DateOnly>(
+                    reader.GetOrdinal("itinerary_date")
                 ),
 
             StartTime = reader.IsDBNull(
@@ -506,6 +930,107 @@ public class ItineraryDbService
                 : reader.GetString(
                     reader.GetOrdinal("reference_url")
                 ),
+
+            CreatedAt = reader.GetDateTime(
+                reader.GetOrdinal("created_at")
+            ),
+
+            UpdatedAt = reader.GetDateTime(
+                reader.GetOrdinal("updated_at")
+            )
+        };
+    }
+
+    /// <summary>
+    /// Maps an itinerary query with optional linked expense
+    /// data into the API response model.
+    /// </summary>
+    private static TripItineraryItemResponse
+        MapTripItineraryItemResponse(
+            NpgsqlDataReader reader
+        )
+    {
+        return new TripItineraryItemResponse
+        {
+            Id = reader.GetGuid(
+                reader.GetOrdinal("id")
+            ),
+
+            TripId = reader.GetGuid(
+                reader.GetOrdinal("trip_id")
+            ),
+
+            ExpenseId = reader.IsDBNull(
+                reader.GetOrdinal("expense_id")
+            )
+                ? null
+                : reader.GetGuid(
+                    reader.GetOrdinal("expense_id")
+                ),
+
+            Title = reader.GetString(
+                reader.GetOrdinal("title")
+            ),
+
+            Description = reader.IsDBNull(
+                reader.GetOrdinal("description")
+            )
+                ? null
+                : reader.GetString(
+                    reader.GetOrdinal("description")
+                ),
+
+            Category = reader.GetString(
+                reader.GetOrdinal("category")
+            ),
+
+            ItineraryDate = reader.IsDBNull(
+                reader.GetOrdinal("itinerary_date")
+            )
+                ? null
+                : reader.GetFieldValue<DateOnly>(
+                    reader.GetOrdinal("itinerary_date")
+                ),
+
+            StartTime = reader.IsDBNull(
+                reader.GetOrdinal("start_time")
+            )
+                ? null
+                : reader.GetFieldValue<TimeOnly>(
+                    reader.GetOrdinal("start_time")
+                ),
+
+            EndTime = reader.IsDBNull(
+                reader.GetOrdinal("end_time")
+            )
+                ? null
+                : reader.GetFieldValue<TimeOnly>(
+                    reader.GetOrdinal("end_time")
+                ),
+
+            ReferenceUrl = reader.IsDBNull(
+                reader.GetOrdinal("reference_url")
+            )
+                ? null
+                : reader.GetString(
+                    reader.GetOrdinal("reference_url")
+                ),
+
+            Cost = reader.IsDBNull(
+                reader.GetOrdinal("cost")
+            )
+                ? null
+                : reader.GetDecimal(
+                    reader.GetOrdinal("cost")
+                ),
+
+            Currency = reader.IsDBNull(
+                reader.GetOrdinal("expense_currency")
+            )
+                ? null
+                : reader.GetString(
+                    reader.GetOrdinal("expense_currency")
+                ).Trim(),
 
             CreatedAt = reader.GetDateTime(
                 reader.GetOrdinal("created_at")

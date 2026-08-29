@@ -1,6 +1,6 @@
-﻿namespace Backend.Dtos.Itinerary
+﻿namespace Backend.Dtos.Itinerary;
+
+public class UpdateTripItineraryItemRequest :
+    TripItineraryItemRequestBase
 {
-    public class UpdateTripItineraryItemRequest : TripItineraryItemRequestBase
-    {
-    }
 }

@@ -1,6 +1,6 @@
-﻿namespace Backend.Models;
+﻿namespace Backend.Dtos.Itinerary;
 
-public class TripItineraryItem
+public class TripItineraryItemResponse
 {
     public Guid Id { get; set; }
 
@@ -8,11 +8,13 @@ public class TripItineraryItem
 
     public Guid? ExpenseId { get; set; }
 
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set; } =
+        string.Empty;
 
     public string? Description { get; set; }
 
-    public string Category { get; set; } = string.Empty;
+    public string Category { get; set; } =
+        string.Empty;
 
     public DateOnly? ItineraryDate { get; set; }
 
@@ -21,6 +23,10 @@ public class TripItineraryItem
     public TimeOnly? EndTime { get; set; }
 
     public string? ReferenceUrl { get; set; }
+
+    public decimal? Cost { get; set; }
+
+    public string? Currency { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

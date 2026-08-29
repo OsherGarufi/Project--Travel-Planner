@@ -1,38 +1,30 @@
-.trip-itinerary-page {
-  position: relative;
+.trip-details-page {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: var(--tp-space-6);
+  gap: var(--tp-space-8);
 }
 
-.trip-itinerary-page::before {
-  content: '';
-  position: absolute;
-  top: -4rem;
-  right: -12rem;
-  z-index: -1;
-  width: 30rem;
-  height: 30rem;
-  border-radius: var(--tp-radius-full);
-  pointer-events: none;
-  background:
-    radial-gradient(
-      circle,
-      rgba(149, 188, 223, 0.16),
-      rgba(219, 233, 246, 0.06) 45%,
-      transparent 72%
-    );
+/*
+ * Keeps the normal trip content mounted
+ * without introducing an extra layout layer.
+ */
+.trip-details-page__normal-content {
+  display: contents;
 }
 
-/* Topbar */
+.trip-details-page__normal-content[hidden] {
+  display: none;
+}
 
-.trip-itinerary-page__topbar {
+.trip-details-page__topbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--tp-space-5);
 }
 
-.trip-itinerary-page__back {
+.trip-details-page__back {
   display: inline-flex;
   align-items: center;
   gap: var(--tp-space-2);
@@ -53,258 +45,175 @@
       var(--tp-ease-standard);
 }
 
-.trip-itinerary-page__back:hover {
+.trip-details-page__back:hover:not(:disabled) {
   color: var(--tp-color-primary-700);
   background-color:
     var(--tp-color-primary-50);
 }
 
-.trip-itinerary-page__back:focus-visible {
+.trip-details-page__back:focus-visible {
   box-shadow: var(--tp-focus-ring);
 }
 
-.trip-itinerary-page__back-icon {
+.trip-details-page__back:disabled {
+  cursor: not-allowed;
+  color:
+    var(--tp-color-text-disabled);
+}
+
+.trip-details-page__back-icon {
   display: grid;
   width: 1.125rem;
   height: 1.125rem;
   place-items: center;
 }
 
-.trip-itinerary-page__back-icon svg {
+.trip-details-page__back-icon svg {
   width: 100%;
   height: 100%;
 }
 
-/* Header */
+/* Error */
 
-.trip-itinerary-page__header {
-  max-width: 46rem;
+.trip-details-page__error-state {
+  padding: var(--tp-space-8);
+  border: 1px solid
+    rgba(217, 45, 32, 0.18);
+  border-radius: var(--tp-radius-xl);
+  background-color:
+    var(--tp-color-danger-soft);
 }
 
-.trip-itinerary-page__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--tp-space-2);
+.trip-details-page__error-eyebrow {
   margin-bottom: var(--tp-space-2);
-  color: var(--tp-color-primary-600);
+  color: var(--tp-color-danger);
   font-size: var(--tp-font-size-xs);
   font-weight:
     var(--tp-font-weight-semibold);
   letter-spacing: 0.08em;
 }
 
-.trip-itinerary-page__eyebrow::before {
-  content: '';
-  width: 1.75rem;
-  height: 1px;
-  background:
-    linear-gradient(
-      90deg,
-      var(--tp-color-primary-500),
-      var(--tp-color-accent-400)
-    );
+.trip-details-page__error-title {
+  font-size: var(--tp-font-size-2xl);
 }
 
-.trip-itinerary-page__title {
-  margin-bottom: var(--tp-space-3);
-  color: var(--tp-color-text-primary);
-  font-size:
-    clamp(
-      2.25rem,
-      4vw,
-      3.5rem
-    );
-  font-weight:
-    var(--tp-font-weight-semibold);
-  line-height: 1.05;
-  letter-spacing: -0.05em;
-}
-
-.trip-itinerary-page__description {
-  color: var(--tp-color-text-muted);
-  font-size: var(--tp-font-size-lg);
-  line-height:
-    var(--tp-line-height-relaxed);
-}
-
-/* Week navigation */
-
-.trip-itinerary-page__week-navigation {
-  display: flex;
-  width: fit-content;
-  align-items: center;
-  align-self: center;
-  gap: var(--tp-space-3);
-  padding:
-    var(--tp-space-2)
-    var(--tp-space-3);
-  border: 1px solid
-    var(--tp-color-border-subtle);
-  border-radius:
-    var(--tp-radius-lg);
-  background-color:
-    var(--tp-color-surface);
-  box-shadow:
-    0 1px 2px
-      rgba(13, 34, 56, 0.05),
-    0 8px 24px
-      rgba(30, 65, 103, 0.06);
-}
-
-.trip-itinerary-page__week-arrow {
-  display: grid;
-  width: var(--tp-control-height-md);
-  height: var(--tp-control-height-md);
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius:
-    var(--tp-radius-md);
-  outline: none;
-  color:
-    var(--tp-color-text-secondary);
-  background-color: transparent;
-  transition:
-    color var(--tp-duration-fast)
-      var(--tp-ease-standard),
-    background-color var(--tp-duration-fast)
-      var(--tp-ease-standard);
-}
-
-.trip-itinerary-page__week-arrow:hover:not(:disabled) {
-  color:
-    var(--tp-color-primary-700);
-  background-color:
-    var(--tp-color-primary-50);
-}
-
-.trip-itinerary-page__week-arrow:focus-visible {
-  box-shadow: var(--tp-focus-ring);
-}
-
-.trip-itinerary-page__week-arrow:disabled {
-  cursor: not-allowed;
-  color:
-    var(--tp-color-text-disabled);
-}
-
-.trip-itinerary-page__week-arrow svg {
-  width: 1.125rem;
-  height: 1.125rem;
-}
-
-.trip-itinerary-page__week-summary {
-  display: flex;
-  min-width: 10rem;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  text-align: center;
-}
-
-.trip-itinerary-page__week-number {
-  color:
-    var(--tp-color-text-muted);
-  font-size:
-    var(--tp-font-size-xs);
-  font-weight:
-    var(--tp-font-weight-medium);
-}
-
-.trip-itinerary-page__week-dates {
-  color:
-    var(--tp-color-text-primary);
-  font-size:
-    var(--tp-font-size-sm);
-  font-weight:
-    var(--tp-font-weight-semibold);
+.trip-details-page__error-description {
+  margin-top: var(--tp-space-3);
+  color: var(--tp-color-text-secondary);
 }
 
 /* Loading */
 
-.trip-itinerary-page__loading {
-  padding: var(--tp-space-12);
-  color:
-    var(--tp-color-text-muted);
-  text-align: center;
+.trip-details-page__loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-6);
 }
 
-/* Error */
+.trip-details-page__loading-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tp-space-3);
+}
 
-.trip-itinerary-page__error-state {
+.trip-details-page__loading-card {
+  min-height: 26rem;
   padding: var(--tp-space-8);
   border: 1px solid
-    rgba(217, 45, 32, 0.18);
-  border-radius:
-    var(--tp-radius-xl);
+    var(--tp-color-border-subtle);
+  border-radius: var(--tp-radius-xl);
   background-color:
-    var(--tp-color-danger-soft);
+    var(--tp-color-surface);
 }
 
-.trip-itinerary-page__error-eyebrow {
-  margin-bottom:
-    var(--tp-space-2);
-  color:
-    var(--tp-color-danger);
-  font-size:
-    var(--tp-font-size-xs);
-  font-weight:
-    var(--tp-font-weight-semibold);
-  letter-spacing: 0.08em;
+.trip-details-page__loading-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--tp-space-8);
 }
 
-.trip-itinerary-page__error-title {
-  color:
-    var(--tp-color-text-primary);
-  font-size:
-    var(--tp-font-size-2xl);
+.trip-details-page__loading-flag,
+.trip-details-page__loading-badge,
+.trip-details-page__loading-line,
+.trip-details-page__loading-block {
+  display: block;
+  background:
+    linear-gradient(
+      90deg,
+      var(--tp-color-surface-muted),
+      var(--tp-color-surface-hover),
+      var(--tp-color-surface-muted)
+    );
+  background-size: 200% 100%;
+  animation:
+    trip-details-skeleton
+    1.4s linear infinite;
 }
 
-.trip-itinerary-page__error-description {
-  margin-top:
-    var(--tp-space-3);
-  color:
-    var(--tp-color-text-secondary);
+.trip-details-page__loading-flag {
+  width: 4rem;
+  height: 2.75rem;
+  border-radius: var(--tp-radius-sm);
 }
 
-/* Tablet */
+.trip-details-page__loading-badge {
+  width: 6rem;
+  height: 2rem;
+  border-radius: var(--tp-radius-full);
+}
 
-@media (max-width: 56rem) {
-  .trip-itinerary-page {
-    gap: var(--tp-space-5);
+.trip-details-page__loading-line {
+  height: 0.875rem;
+  border-radius: var(--tp-radius-full);
+}
+
+.trip-details-page__loading-line--small {
+  width: 7rem;
+}
+
+.trip-details-page__loading-line--title {
+  width: min(28rem, 70%);
+  height: 2rem;
+}
+
+.trip-details-page__loading-line--medium {
+  width: min(20rem, 55%);
+}
+
+.trip-details-page__loading-details {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: var(--tp-space-4);
+  margin-top: var(--tp-space-8);
+}
+
+.trip-details-page__loading-block {
+  height: 5rem;
+  border-radius: var(--tp-radius-md);
+}
+
+@keyframes trip-details-skeleton {
+  to {
+    background-position: -200% 0;
   }
 }
-
-/* Mobile */
 
 @media (max-width: 40rem) {
-  .trip-itinerary-page {
-    gap: var(--tp-space-5);
+  .trip-details-page {
+    gap: var(--tp-space-6);
   }
 
-  .trip-itinerary-page::before {
-    display: none;
+  .trip-details-page__topbar {
+    align-items: center;
   }
 
-  .trip-itinerary-page__eyebrow::before {
-    width: 1.25rem;
+  .trip-details-page__loading-card {
+    padding: var(--tp-space-5);
   }
 
-  .trip-itinerary-page__title {
-    font-size: 2.25rem;
-  }
-
-  .trip-itinerary-page__description {
-    font-size:
-      var(--tp-font-size-md);
-  }
-
-  .trip-itinerary-page__week-navigation {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .trip-itinerary-page__week-summary {
-    min-width: 0;
-    flex: 1;
+  .trip-details-page__loading-details {
+    grid-template-columns: 1fr;
   }
 }

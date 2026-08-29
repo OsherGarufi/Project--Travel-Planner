@@ -2,17 +2,19 @@
 
 namespace Backend.Dtos.Itinerary;
 
-public abstract class TripItineraryItemRequestBase : IValidatableObject
+public abstract class TripItineraryItemRequestBase :
+    IValidatableObject
 {
     [Required]
     [StringLength(100)]
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set; } =
+        string.Empty;
 
     [Required]
     [StringLength(50)]
-    public string Category { get; set; } = string.Empty;
+    public string Category { get; set; } =
+        string.Empty;
 
-    [Required]
     public DateOnly? ItineraryDate { get; set; }
 
     public TimeOnly? StartTime { get; set; }
@@ -24,6 +26,27 @@ public abstract class TripItineraryItemRequestBase : IValidatableObject
 
     [StringLength(2048)]
     public string? ReferenceUrl { get; set; }
+
+    [Range(
+        typeof(decimal),
+        "0",
+        "9999999999.99",
+        ErrorMessage = "Cost cannot be negative."
+    )]
+    public decimal? Cost { get; set; }
+
+    [StringLength(
+        3,
+        MinimumLength = 3,
+        ErrorMessage =
+            "Currency must contain exactly 3 letters."
+    )]
+    [RegularExpression(
+        "^[A-Za-z]{3}$",
+        ErrorMessage =
+            "Currency must contain exactly 3 letters."
+    )]
+    public string? Currency { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext
@@ -45,8 +68,11 @@ public abstract class TripItineraryItemRequestBase : IValidatableObject
             );
         }
 
-        var hasStartTime = StartTime.HasValue;
-        var hasEndTime = EndTime.HasValue;
+        var hasStartTime =
+            StartTime.HasValue;
+
+        var hasEndTime =
+            EndTime.HasValue;
 
         if (hasStartTime != hasEndTime)
         {
@@ -54,6 +80,25 @@ public abstract class TripItineraryItemRequestBase : IValidatableObject
                 "Start time and end time must either both be provided or both be empty.",
                 new[]
                 {
+                    nameof(StartTime),
+                    nameof(EndTime)
+                }
+            );
+        }
+
+        if (
+            !ItineraryDate.HasValue &&
+            (
+                StartTime.HasValue ||
+                EndTime.HasValue
+            )
+        )
+        {
+            yield return new ValidationResult(
+                "An itinerary date is required when start and end times are provided.",
+                new[]
+                {
+                    nameof(ItineraryDate),
                     nameof(StartTime),
                     nameof(EndTime)
                 }
@@ -72,6 +117,22 @@ public abstract class TripItineraryItemRequestBase : IValidatableObject
                 {
                     nameof(StartTime),
                     nameof(EndTime)
+                }
+            );
+        }
+
+        if (
+            Cost.HasValue &&
+            Cost.Value > 0 &&
+            string.IsNullOrWhiteSpace(Currency)
+        )
+        {
+            yield return new ValidationResult(
+                "Currency is required when cost is greater than zero.",
+                new[]
+                {
+                    nameof(Cost),
+                    nameof(Currency)
                 }
             );
         }

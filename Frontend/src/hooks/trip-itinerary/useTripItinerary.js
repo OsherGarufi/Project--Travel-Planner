@@ -6,7 +6,10 @@ import {
   getOrCreateTripItineraryRequest,
   releaseTripItineraryRequest,
 } from '../../services/itinerary/itineraryRequestManager'
-import { getTripItinerary } from '../../services/itinerary/itineraryService'
+import {
+  createTripItineraryItem,
+  getTripItinerary,
+} from '../../services/itinerary/itineraryService'
 import { useAuth } from '../useAuth'
 
 export function useTripItinerary(
@@ -34,6 +37,16 @@ export function useTripItinerary(
     itineraryError,
     setItineraryError,
   ] = useState('')
+
+  const [
+    itineraryActionError,
+    setItineraryActionError,
+  ] = useState('')
+
+  const [
+    isCreatingItineraryItem,
+    setIsCreatingItineraryItem,
+  ] = useState(false)
 
   useEffect(() => {
     if (
@@ -112,6 +125,68 @@ export function useTripItinerary(
     idToken,
   ])
 
+  const addItineraryItem =
+    async (itemData) => {
+      if (
+        !tripId ||
+        !userId ||
+        !idToken ||
+        isCreatingItineraryItem
+      ) {
+        return null
+      }
+
+      try {
+        setIsCreatingItineraryItem(
+          true,
+        )
+
+        setItineraryActionError('')
+
+        const createdItem =
+          await createTripItineraryItem(
+            tripId,
+            itemData,
+            idToken,
+          )
+
+        if (!createdItem?.id) {
+          throw new Error(
+            'Invalid itinerary item response.',
+          )
+        }
+
+        setItineraryItems(
+          (currentItems) => [
+            ...currentItems,
+            createdItem,
+          ],
+        )
+
+        return createdItem
+      } catch (error) {
+        console.error(
+          'Failed to create itinerary item:',
+          error,
+        )
+
+        setItineraryActionError(
+          'Could not add the itinerary item. Please try again.',
+        )
+
+        return null
+      } finally {
+        setIsCreatingItineraryItem(
+          false,
+        )
+      }
+    }
+
+  const clearItineraryActionError =
+    () => {
+      setItineraryActionError('')
+    }
+
   const isLoadingItinerary =
     Boolean(
       tripId &&
@@ -131,5 +206,11 @@ export function useTripItinerary(
 
     isLoadingItinerary,
     itineraryError,
+    itineraryActionError,
+
+    isCreatingItineraryItem,
+
+    addItineraryItem,
+    clearItineraryActionError,
   }
 }

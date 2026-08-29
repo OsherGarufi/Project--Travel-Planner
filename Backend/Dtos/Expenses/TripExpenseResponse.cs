@@ -1,6 +1,6 @@
-﻿namespace Backend.Models;
+﻿namespace Backend.Dtos.Expenses;
 
-public class TripExpense
+public class TripExpenseResponse
 {
     public Guid Id { get; set; }
 
@@ -20,6 +20,14 @@ public class TripExpense
     public string? ReferenceUrl { get; set; }
 
     public string? Notes { get; set; }
+
+    public Guid? ItineraryItemId { get; set; }
+
+    public DateOnly? ItineraryDate { get; set; }
+
+    public TimeOnly? StartTime { get; set; }
+
+    public TimeOnly? EndTime { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

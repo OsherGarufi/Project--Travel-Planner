@@ -65,8 +65,6 @@ CREATE TABLE IF NOT EXISTS trip_expenses (
     amount NUMERIC(12, 2) NOT NULL,
     currency CHAR(3) NOT NULL,
 
-    expense_date DATE,
-
     reference_url TEXT,
     notes TEXT,
 
@@ -122,7 +120,7 @@ CREATE TABLE IF NOT EXISTS trip_itinerary_items (
 
     category VARCHAR(50) NOT NULL,
 
-    itinerary_date DATE NOT NULL,
+    itinerary_date DATE NULL,
 
     start_time TIME NULL,
 
@@ -142,7 +140,7 @@ CREATE TABLE IF NOT EXISTS trip_itinerary_items (
     CONSTRAINT fk_trip_itinerary_items_expense
         FOREIGN KEY (expense_id)
         REFERENCES trip_expenses(id)
-        ON DELETE CASCADE,
+        ON DELETE SET NULL,
 
     CONSTRAINT ck_trip_itinerary_items_title
         CHECK (
@@ -171,6 +169,15 @@ CREATE TABLE IF NOT EXISTS trip_itinerary_items (
         CHECK (
             start_time IS NULL
             OR end_time > start_time
+        ),
+
+    CONSTRAINT ck_trip_itinerary_items_schedule_date
+        CHECK (
+            itinerary_date IS NOT NULL
+            OR (
+                start_time IS NULL
+                AND end_time IS NULL
+            )
         )
 );
 

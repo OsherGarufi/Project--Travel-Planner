@@ -1,5 +1,6 @@
 ﻿namespace Backend.Dtos.Expenses;
 
-public class CreateTripExpenseRequest : TripExpenseRequestBase
+public class CreateTripExpenseRequest :
+    TripExpenseRequestBase
 {
 }

@@ -2,11 +2,18 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
+import {
+  useNavigate,
+} from 'react-router-dom'
+import ItineraryItemForm from '../components/trip-itinerary/ItineraryItemForm'
 import ItineraryWeekView from '../components/trip-itinerary/ItineraryWeekView'
 import '../css/pages/trip-itinerary-page.css'
-import { useTripDetails } from '../hooks/trip-details/useTripDetails'
-import { useTripItinerary } from '../hooks/trip-itinerary/useTripItinerary'
+import {
+  useTripDetails,
+} from '../hooks/trip-details/useTripDetails'
+import {
+  useTripItinerary,
+} from '../hooks/trip-itinerary/useTripItinerary'
 import {
   ITINERARY_DAYS_PER_WEEK,
 } from '../services/itinerary/itineraryConstants'
@@ -34,13 +41,37 @@ function ArrowLeftIcon() {
   )
 }
 
+function PlusIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M12 5v14M5 12h14"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 function TripItineraryPage() {
-  const navigate = useNavigate()
+  const navigate =
+    useNavigate()
 
   const [
     weekStartIndex,
     setWeekStartIndex,
   ] = useState(0)
+
+  const [
+    isAddingActivity,
+    setIsAddingActivity,
+  ] = useState(false)
 
   const {
     trip,
@@ -53,6 +84,10 @@ function TripItineraryPage() {
     itineraryItems,
     isLoadingItinerary,
     itineraryError,
+    itineraryActionError,
+    isCreatingItineraryItem,
+    addItineraryItem,
+    clearItineraryActionError,
   } = useTripItinerary(
     tripId,
   )
@@ -95,7 +130,9 @@ function TripItineraryPage() {
   const handlePreviousWeek =
     () => {
       setWeekStartIndex(
-        (currentIndex) =>
+        (
+          currentIndex,
+        ) =>
           Math.max(
             0,
             currentIndex -
@@ -107,7 +144,9 @@ function TripItineraryPage() {
   const handleNextWeek =
     () => {
       setWeekStartIndex(
-        (currentIndex) =>
+        (
+          currentIndex,
+        ) =>
           Math.min(
             Math.max(
               0,
@@ -118,6 +157,40 @@ function TripItineraryPage() {
               ITINERARY_DAYS_PER_WEEK,
           ),
       )
+    }
+
+  const handleOpenAddActivity =
+    () => {
+      clearItineraryActionError()
+      setIsAddingActivity(true)
+    }
+
+  const handleCancelAddActivity =
+    () => {
+      if (
+        isCreatingItineraryItem
+      ) {
+        return
+      }
+
+      clearItineraryActionError()
+      setIsAddingActivity(false)
+    }
+
+  const handleAddActivity =
+    async (itemData) => {
+      const createdItem =
+        await addItineraryItem(
+          itemData,
+        )
+
+      if (!createdItem) {
+        return null
+      }
+
+      setIsAddingActivity(false)
+
+      return createdItem
     }
 
   if (
@@ -178,31 +251,94 @@ function TripItineraryPage() {
             Back to trip
           </span>
         </button>
+
+        {!isAddingActivity && (
+          <button
+            className="trip-itinerary-page__add"
+            type="button"
+            onClick={
+              handleOpenAddActivity
+            }
+          >
+            <span
+              className="trip-itinerary-page__add-icon"
+              aria-hidden="true"
+            >
+              <PlusIcon />
+            </span>
+
+            <span>
+              Add activity
+            </span>
+          </button>
+        )}
       </div>
 
-      <ItineraryWeekView
-        title={trip.title}
-        dateRange={formatTripDateRange(
-          trip.startDate,
-          trip.endDate,
-        )}
-        days={visibleDays}
-        itineraryItems={
-          itineraryItems
+      {isAddingActivity && (
+        <ItineraryItemForm
+          initialDate={
+            visibleDays[0]
+              ?.dateValue ??
+            trip.startDate
+          }
+          minDate={
+            trip.startDate
+          }
+          maxDate={
+            trip.endDate
+          }
+          isSubmitting={
+            isCreatingItineraryItem
+          }
+          externalError={
+            itineraryActionError
+          }
+          onSubmit={
+            handleAddActivity
+          }
+          onCancel={
+            handleCancelAddActivity
+          }
+        />
+      )}
+
+      <div
+        className={
+          isAddingActivity
+            ? 'trip-itinerary-page__week-view trip-itinerary-page__week-view--hidden'
+            : 'trip-itinerary-page__week-view'
         }
-        canGoPrevious={
-          canGoPrevious
-        }
-        canGoNext={
-          canGoNext
-        }
-        onPreviousWeek={
-          handlePreviousWeek
-        }
-        onNextWeek={
-          handleNextWeek
-        }
-      />
+      >
+        <ItineraryWeekView
+          title={
+            trip.title
+          }
+          dateRange={
+            formatTripDateRange(
+              trip.startDate,
+              trip.endDate,
+            )
+          }
+          days={
+            visibleDays
+          }
+          itineraryItems={
+            itineraryItems
+          }
+          canGoPrevious={
+            canGoPrevious
+          }
+          canGoNext={
+            canGoNext
+          }
+          onPreviousWeek={
+            handlePreviousWeek
+          }
+          onNextWeek={
+            handleNextWeek
+          }
+        />
+      </div>
     </main>
   )
 }

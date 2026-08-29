@@ -2,33 +2,40 @@
 
 namespace Backend.Dtos.Expenses;
 
-public abstract class TripExpenseRequestBase : IValidatableObject
+public abstract class TripExpenseRequestBase :
+    IValidatableObject
 {
     [Required]
     [StringLength(50)]
-    public string Category { get; set; } = string.Empty;
+    public string Category { get; set; } =
+        string.Empty;
 
     [Required]
     [StringLength(100)]
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set; } =
+        string.Empty;
 
     [Range(
         typeof(decimal),
         "0.01",
         "9999999999.99",
-        ErrorMessage = "Amount must be greater than zero."
+        ErrorMessage =
+            "Amount must be greater than zero."
     )]
     public decimal Amount { get; set; }
 
     [Required]
-    [StringLength(3, MinimumLength = 3)]
+    [StringLength(
+        3,
+        MinimumLength = 3
+    )]
     [RegularExpression(
         "^[A-Za-z]{3}$",
-        ErrorMessage = "Currency must contain exactly 3 letters."
+        ErrorMessage =
+            "Currency must contain exactly 3 letters."
     )]
-    public string Currency { get; set; } = string.Empty;
-
-    public DateOnly? ExpenseDate { get; set; }
+    public string Currency { get; set; } =
+        string.Empty;
 
     [StringLength(2048)]
     public string? ReferenceUrl { get; set; }
@@ -40,7 +47,11 @@ public abstract class TripExpenseRequestBase : IValidatableObject
         ValidationContext validationContext
     )
     {
-        if (string.IsNullOrWhiteSpace(ReferenceUrl))
+        if (
+            string.IsNullOrWhiteSpace(
+                ReferenceUrl
+            )
+        )
         {
             yield break;
         }
@@ -52,14 +63,19 @@ public abstract class TripExpenseRequestBase : IValidatableObject
                 out var uri
             ) ||
             (
-                uri.Scheme != Uri.UriSchemeHttp &&
-                uri.Scheme != Uri.UriSchemeHttps
+                uri.Scheme !=
+                    Uri.UriSchemeHttp &&
+                uri.Scheme !=
+                    Uri.UriSchemeHttps
             )
         )
         {
             yield return new ValidationResult(
                 "Reference URL must be a valid HTTP or HTTPS URL.",
-                new[] { nameof(ReferenceUrl) }
+                new[]
+                {
+                    nameof(ReferenceUrl)
+                }
             );
         }
     }

@@ -10,16 +10,19 @@ namespace Backend.Controllers;
 public class ItineraryController : ControllerBase
 {
     private readonly ItineraryDbService _itineraryDbService;
+    private readonly ItineraryExpenseService _itineraryExpenseService;
     private readonly DbService _dbService;
     private readonly CurrentUserService _currentUserService;
 
     public ItineraryController(
         ItineraryDbService itineraryDbService,
+        ItineraryExpenseService itineraryExpenseService,
         DbService dbService,
         CurrentUserService currentUserService
     )
     {
         _itineraryDbService = itineraryDbService;
+        _itineraryExpenseService = itineraryExpenseService;
         _dbService = dbService;
         _currentUserService = currentUserService;
     }
@@ -61,8 +64,11 @@ public class ItineraryController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new itinerary item for a trip only if the
-    /// trip belongs to the authenticated user.
+    /// Creates a new itinerary item.
+    ///
+    /// Free activities are stored only in the itinerary.
+    /// Activities with a positive cost also create and link
+    /// an expense inside the same database transaction.
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> CreateTripItineraryItem(
@@ -93,12 +99,14 @@ public class ItineraryController : ControllerBase
             );
         }
 
-        var itineraryDate =
-            request.ItineraryDate!.Value;
-
         if (
-            itineraryDate < trip.StartDate ||
-            itineraryDate > trip.EndDate
+            request.ItineraryDate.HasValue &&
+            (
+                request.ItineraryDate.Value <
+                    trip.StartDate ||
+                request.ItineraryDate.Value >
+                    trip.EndDate
+            )
         )
         {
             return BadRequest(
@@ -107,8 +115,8 @@ public class ItineraryController : ControllerBase
         }
 
         var createdItem =
-            await _itineraryDbService
-                .CreateTripItineraryItemForUserAsync(
+            await _itineraryExpenseService
+                .CreateItineraryItemAsync(
                     tripId,
                     user.Id,
                     request
@@ -131,6 +139,9 @@ public class ItineraryController : ControllerBase
     /// Updates an itinerary item only if it belongs to the
     /// specified trip and the trip belongs to the
     /// authenticated user.
+    ///
+    /// Expense synchronization will be handled by the business
+    /// service in the next implementation stage.
     /// </summary>
     [HttpPut("{itemId:guid}")]
     public async Task<IActionResult> UpdateTripItineraryItem(
@@ -162,12 +173,14 @@ public class ItineraryController : ControllerBase
             );
         }
 
-        var itineraryDate =
-            request.ItineraryDate!.Value;
-
         if (
-            itineraryDate < trip.StartDate ||
-            itineraryDate > trip.EndDate
+            request.ItineraryDate.HasValue &&
+            (
+                request.ItineraryDate.Value <
+                    trip.StartDate ||
+                request.ItineraryDate.Value >
+                    trip.EndDate
+            )
         )
         {
             return BadRequest(
@@ -176,8 +189,8 @@ public class ItineraryController : ControllerBase
         }
 
         var updatedItem =
-            await _itineraryDbService
-                .UpdateTripItineraryItemForUserAsync(
+            await _itineraryExpenseService
+                .UpdateItineraryItemAsync(
                     tripId,
                     itemId,
                     user.Id,
@@ -195,9 +208,14 @@ public class ItineraryController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes an itinerary item only if it belongs to the
-    /// specified trip and the trip belongs to the
-    /// authenticated user.
+    /// Deletes an itinerary activity.
+    ///
+    /// Free activity:
+    /// - deletes only the itinerary item.
+    ///
+    /// Paid activity:
+    /// - deletes both the itinerary item and its linked expense
+    ///   inside the same database transaction.
     /// </summary>
     [HttpDelete("{itemId:guid}")]
     public async Task<IActionResult> DeleteTripItineraryItem(
@@ -216,8 +234,8 @@ public class ItineraryController : ControllerBase
         }
 
         var wasDeleted =
-            await _itineraryDbService
-                .DeleteTripItineraryItemForUserAsync(
+            await _itineraryExpenseService
+                .DeleteItineraryItemAsync(
                     tripId,
                     itemId,
                     user.Id
