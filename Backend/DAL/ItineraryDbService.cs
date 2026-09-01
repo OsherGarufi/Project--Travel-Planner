@@ -627,6 +627,74 @@ public class ItineraryDbService
         );
     }
 
+
+    /// <summary>
+    /// Moves only itinerary items that fall outside the new trip
+    /// date range to Global Unscheduled.
+    ///
+    /// Activities that remain inside the new trip range are not
+    /// modified.
+    ///
+    /// Already-global-unscheduled items are also left unchanged.
+    /// </summary>
+    internal async Task<int>
+        MoveOutOfRangeItemsToGlobalUnscheduledAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction? transaction,
+            Guid tripId,
+            Guid userId,
+            DateOnly newStartDate,
+            DateOnly newEndDate
+        )
+    {
+        const string sql = """
+    UPDATE trip_itinerary_items i
+    SET
+        itinerary_date = NULL,
+        start_time = NULL,
+        end_time = NULL
+    FROM trips t
+    WHERE i.trip_id = @trip_id
+      AND t.id = i.trip_id
+      AND t.user_id = @user_id
+      AND i.itinerary_date IS NOT NULL
+      AND (
+          i.itinerary_date < @new_start_date
+          OR i.itinerary_date > @new_end_date
+      );
+    """;
+
+        await using var command =
+            new NpgsqlCommand(
+                sql,
+                connection,
+                transaction
+            );
+
+        command.Parameters.AddWithValue(
+            "trip_id",
+            tripId
+        );
+
+        command.Parameters.AddWithValue(
+            "user_id",
+            userId
+        );
+
+        command.Parameters.AddWithValue(
+            "new_start_date",
+            newStartDate
+        );
+
+        command.Parameters.AddWithValue(
+            "new_end_date",
+            newEndDate
+        );
+
+        return await command.ExecuteNonQueryAsync();
+    }
+
+
     /// <summary>
     /// Deletes an itinerary item using its own database connection.
     /// This keeps the standalone DAL operation available.

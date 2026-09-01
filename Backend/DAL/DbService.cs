@@ -304,7 +304,11 @@ public class DbService
     }
 
     /// <summary>
-    /// Updates a trip only if it belongs to the specified user.
+    /// Updates a trip using its own database connection.
+    ///
+    /// The transactional overload is used internally by
+    /// business services when the trip update must be atomic
+    /// with other related database operations.
     /// </summary>
     public async Task<Trip?>
         UpdateTripForUserAsync(
@@ -320,6 +324,31 @@ public class DbService
 
         await connection.OpenAsync();
 
+        return await UpdateTripForUserAsync(
+            connection,
+            transaction: null,
+            id,
+            userId,
+            request
+        );
+    }
+
+    /// <summary>
+    /// Updates a trip using an existing database connection
+    /// and optional transaction.
+    ///
+    /// This allows trip updates and itinerary adjustments
+    /// to be committed or rolled back as one atomic operation.
+    /// </summary>
+    internal async Task<Trip?>
+        UpdateTripForUserAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction? transaction,
+            Guid id,
+            Guid userId,
+            UpdateTripRequest request
+        )
+    {
         const string sql = """
         UPDATE trips
         SET
@@ -353,7 +382,8 @@ public class DbService
         await using var command =
             new NpgsqlCommand(
                 sql,
-                connection
+                connection,
+                transaction
             );
 
         command.Parameters.AddWithValue(

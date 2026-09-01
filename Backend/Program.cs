@@ -48,6 +48,7 @@ builder.Services.AddScoped<DbService>();
 builder.Services.AddScoped<ExpenseDbService>();
 builder.Services.AddScoped<ItineraryDbService>();
 builder.Services.AddScoped<ItineraryExpenseService>();
+builder.Services.AddScoped<TripService>();
 builder.Services.AddScoped<FirebaseAuthService>();
 builder.Services.AddScoped<CurrentUserService>();
 
