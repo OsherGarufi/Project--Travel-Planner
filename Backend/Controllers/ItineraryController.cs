@@ -136,12 +136,10 @@ public class ItineraryController : ControllerBase
     }
 
     /// <summary>
-    /// Updates an itinerary item only if it belongs to the
-    /// specified trip and the trip belongs to the
-    /// authenticated user.
+    /// Updates an itinerary activity.
     ///
-    /// Expense synchronization will be handled by the business
-    /// service in the next implementation stage.
+    /// The business service keeps a linked expense synchronized
+    /// when the activity is paid.
     /// </summary>
     [HttpPut("{itemId:guid}")]
     public async Task<IActionResult> UpdateTripItineraryItem(
@@ -191,6 +189,82 @@ public class ItineraryController : ControllerBase
         var updatedItem =
             await _itineraryExpenseService
                 .UpdateItineraryItemAsync(
+                    tripId,
+                    itemId,
+                    user.Id,
+                    request
+                );
+
+        if (updatedItem is null)
+        {
+            return NotFound(
+                $"Itinerary item with id '{itemId}' was not found for trip '{tripId}'."
+            );
+        }
+
+        return Ok(updatedItem);
+    }
+
+    /// <summary>
+    /// Updates only the scheduling fields of an itinerary item.
+    ///
+    /// Scheduled activity:
+    /// - itinerary date, start time and end time are set.
+    ///
+    /// Plan later:
+    /// - itinerary date, start time and end time are all null.
+    ///
+    /// Activity content, cost, currency and linked expense
+    /// are never modified by this endpoint.
+    /// </summary>
+    [HttpPatch("{itemId:guid}/schedule")]
+    public async Task<IActionResult> UpdateTripItinerarySchedule(
+        Guid tripId,
+        Guid itemId,
+        [FromBody] UpdateTripItineraryScheduleRequest request
+    )
+    {
+        var user =
+            await _currentUserService.GetCurrentUserAsync();
+
+        if (user is null)
+        {
+            return Unauthorized(
+                "Invalid or missing Firebase ID token."
+            );
+        }
+
+        var trip =
+            await _dbService.GetTripByIdForUserAsync(
+                tripId,
+                user.Id
+            );
+
+        if (trip is null)
+        {
+            return NotFound(
+                $"Trip with id '{tripId}' was not found."
+            );
+        }
+
+        if (
+            request.ItineraryDate.HasValue &&
+            (
+                request.ItineraryDate.Value <
+                    trip.StartDate ||
+                request.ItineraryDate.Value >
+                    trip.EndDate
+            )
+        )
+        {
+            return BadRequest(
+                "Itinerary date must be within the trip date range."
+            );
+        }
+
+        var updatedItem =
+            await _itineraryDbService
+                .UpdateTripItineraryScheduleForUserAsync(
                     tripId,
                     itemId,
                     user.Id,

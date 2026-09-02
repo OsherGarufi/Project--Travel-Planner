@@ -537,6 +537,154 @@ public class ItineraryDbService
         );
     }
 
+
+    /// <summary>
+    /// Updates only the scheduling fields of an itinerary item.
+    ///
+    /// Scheduled:
+    /// - itinerary date, start time and end time are set.
+    ///
+    /// Global Unscheduled:
+    /// - itinerary date, start time and end time are all null.
+    ///
+    /// Activity content, ExpenseId and linked expense data
+    /// are deliberately left untouched.
+    /// </summary>
+    public async Task<TripItineraryItemResponse?>
+        UpdateTripItineraryScheduleForUserAsync(
+            Guid tripId,
+            Guid itemId,
+            Guid userId,
+            UpdateTripItineraryScheduleRequest request
+        )
+    {
+        await using var connection =
+            new NpgsqlConnection(
+                GetConnectionString()
+            );
+
+        await connection.OpenAsync();
+
+        const string sql = """
+    WITH updated_item AS (
+        UPDATE trip_itinerary_items i
+        SET
+            itinerary_date = @itinerary_date,
+            start_time = @start_time,
+            end_time = @end_time
+        FROM trips t
+        WHERE i.id = @item_id
+          AND i.trip_id = @trip_id
+          AND t.id = i.trip_id
+          AND t.user_id = @user_id
+          AND (
+              @itinerary_date IS NULL
+              OR @itinerary_date
+                  BETWEEN t.start_date AND t.end_date
+          )
+        RETURNING
+            i.id,
+            i.trip_id,
+            i.expense_id,
+            i.title,
+            i.description,
+            i.category,
+            i.itinerary_date,
+            i.start_time,
+            i.end_time,
+            i.reference_url,
+            i.created_at,
+            i.updated_at
+    )
+    SELECT
+        u.id,
+        u.trip_id,
+        u.expense_id,
+        u.title,
+        u.description,
+        u.category,
+        u.itinerary_date,
+        u.start_time,
+        u.end_time,
+        u.reference_url,
+        e.amount AS cost,
+        e.currency AS expense_currency,
+        u.created_at,
+        u.updated_at
+    FROM updated_item u
+    LEFT JOIN trip_expenses e
+        ON e.id = u.expense_id
+       AND e.trip_id = u.trip_id;
+    """;
+
+        await using var command =
+            new NpgsqlCommand(
+                sql,
+                connection
+            );
+
+        command.Parameters.AddWithValue(
+            "item_id",
+            itemId
+        );
+
+        command.Parameters.AddWithValue(
+            "trip_id",
+            tripId
+        );
+
+        command.Parameters.AddWithValue(
+            "user_id",
+            userId
+        );
+
+        var itineraryDateParameter =
+            command.Parameters.Add(
+                "itinerary_date",
+                NpgsqlDbType.Date
+            );
+
+        itineraryDateParameter.Value =
+            request.ItineraryDate.HasValue
+                ? request.ItineraryDate.Value
+                : DBNull.Value;
+
+        var startTimeParameter =
+            command.Parameters.Add(
+                "start_time",
+                NpgsqlDbType.Time
+            );
+
+        startTimeParameter.Value =
+            request.StartTime.HasValue
+                ? request.StartTime.Value
+                : DBNull.Value;
+
+        var endTimeParameter =
+            command.Parameters.Add(
+                "end_time",
+                NpgsqlDbType.Time
+            );
+
+        endTimeParameter.Value =
+            request.EndTime.HasValue
+                ? request.EndTime.Value
+                : DBNull.Value;
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+
+        return MapTripItineraryItemResponse(
+            reader
+        );
+    }
+
+
     /// <summary>
     /// Links an existing free itinerary item to an existing
     /// expense using the same database connection and

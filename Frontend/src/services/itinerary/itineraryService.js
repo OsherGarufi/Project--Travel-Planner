@@ -42,6 +42,22 @@ export function updateTripItineraryItem(
   )
 }
 
+export function updateTripItinerarySchedule(
+  tripId,
+  itemId,
+  scheduleData,
+  idToken,
+) {
+  return apiRequest(
+    `/api/Trips/${tripId}/itinerary/${itemId}/schedule`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(scheduleData),
+    },
+    idToken,
+  )
+}
+
 export function deleteTripItineraryItem(
   tripId,
   itemId,

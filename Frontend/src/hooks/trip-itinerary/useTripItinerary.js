@@ -1,7 +1,12 @@
 import {
   useEffect,
+  useRef,
   useState,
 } from 'react'
+import {
+  getTripItineraryCache,
+  setTripItineraryCache,
+} from '../../services/itinerary/itineraryCache'
 import {
   getOrCreateTripItineraryRequest,
   releaseTripItineraryRequest,
@@ -11,6 +16,7 @@ import {
   deleteTripItineraryItem,
   getTripItinerary,
   updateTripItineraryItem,
+  updateTripItinerarySchedule,
 } from '../../services/itinerary/itineraryService'
 import { useAuth } from '../useAuth'
 
@@ -25,14 +31,22 @@ export function useTripItinerary(
   const userId =
     firebaseUser?.uid ?? null
 
+  const itineraryContextKey =
+    userId && tripId
+      ? `${userId}:${tripId}`
+      : null
+
   const [
     itineraryItems,
     setItineraryItems,
   ] = useState([])
 
+  const itineraryItemsRef =
+    useRef([])
+
   const [
-    loadedTripId,
-    setLoadedTripId,
+    loadedContextKey,
+    setLoadedContextKey,
   ] = useState(null)
 
   const [
@@ -56,18 +70,85 @@ export function useTripItinerary(
   ] = useState(false)
 
   const [
+    isUpdatingItinerarySchedule,
+    setIsUpdatingItinerarySchedule,
+  ] = useState(false)
+
+  const [
     isDeletingItineraryItem,
     setIsDeletingItineraryItem,
   ] = useState(false)
+
+  const applyItineraryItems = (
+    nextItems,
+    shouldCache = true,
+  ) => {
+    itineraryItemsRef.current =
+      nextItems
+
+    setItineraryItems(
+      nextItems,
+    )
+
+    if (
+      shouldCache &&
+      userId &&
+      tripId
+    ) {
+      setTripItineraryCache(
+        userId,
+        tripId,
+        nextItems,
+      )
+    }
+  }
 
   useEffect(() => {
     if (
       !tripId ||
       !userId ||
-      !idToken
+      !idToken ||
+      !itineraryContextKey
     ) {
+      itineraryItemsRef.current =
+        []
+
+      setItineraryItems([])
+      setLoadedContextKey(null)
+      setItineraryError('')
+
       return undefined
     }
+
+    const cachedItems =
+      getTripItineraryCache(
+        userId,
+        tripId,
+      )
+
+    if (cachedItems) {
+      itineraryItemsRef.current =
+        cachedItems
+
+      setItineraryItems(
+        cachedItems,
+      )
+
+      setItineraryError('')
+
+      setLoadedContextKey(
+        itineraryContextKey,
+      )
+
+      return undefined
+    }
+
+    itineraryItemsRef.current =
+      []
+
+    setItineraryItems([])
+    setLoadedContextKey(null)
+    setItineraryError('')
 
     let isActive = true
 
@@ -92,14 +173,29 @@ export function useTripItinerary(
             return
           }
 
-          setItineraryItems(
+          const loadedItems =
             Array.isArray(result)
               ? result
-              : [],
+              : []
+
+          itineraryItemsRef.current =
+            loadedItems
+
+          setItineraryItems(
+            loadedItems,
+          )
+
+          setTripItineraryCache(
+            userId,
+            tripId,
+            loadedItems,
           )
 
           setItineraryError('')
-          setLoadedTripId(tripId)
+
+          setLoadedContextKey(
+            itineraryContextKey,
+          )
         } catch (error) {
           if (!isActive) {
             return
@@ -110,13 +206,18 @@ export function useTripItinerary(
             error,
           )
 
+          itineraryItemsRef.current =
+            []
+
           setItineraryItems([])
 
           setItineraryError(
             'Could not load the itinerary. Please try again.',
           )
 
-          setLoadedTripId(tripId)
+          setLoadedContextKey(
+            itineraryContextKey,
+          )
         } finally {
           releaseTripItineraryRequest(
             userId,
@@ -135,6 +236,7 @@ export function useTripItinerary(
     tripId,
     userId,
     idToken,
+    itineraryContextKey,
   ])
 
   const addItineraryItem =
@@ -143,6 +245,8 @@ export function useTripItinerary(
         !tripId ||
         !userId ||
         !idToken ||
+        loadedContextKey !==
+          itineraryContextKey ||
         isCreatingItineraryItem
       ) {
         return null
@@ -168,11 +272,13 @@ export function useTripItinerary(
           )
         }
 
-        setItineraryItems(
-          (currentItems) => [
-            ...currentItems,
-            createdItem,
-          ],
+        const nextItems = [
+          ...itineraryItemsRef.current,
+          createdItem,
+        ]
+
+        applyItineraryItems(
+          nextItems,
         )
 
         return createdItem
@@ -204,6 +310,8 @@ export function useTripItinerary(
         !userId ||
         !idToken ||
         !itemId ||
+        loadedContextKey !==
+          itineraryContextKey ||
         isUpdatingItineraryItem
       ) {
         return null
@@ -230,14 +338,16 @@ export function useTripItinerary(
           )
         }
 
-        setItineraryItems(
-          (currentItems) =>
-            currentItems.map(
-              (item) =>
-                item.id === itemId
-                  ? updatedItem
-                  : item,
-            ),
+        const nextItems =
+          itineraryItemsRef.current.map(
+            (item) =>
+              item.id === itemId
+                ? updatedItem
+                : item,
+          )
+
+        applyItineraryItems(
+          nextItems,
         )
 
         return updatedItem
@@ -259,6 +369,75 @@ export function useTripItinerary(
       }
     }
 
+  const updateItinerarySchedule =
+    async (
+      itemId,
+      scheduleData,
+    ) => {
+      if (
+        !tripId ||
+        !userId ||
+        !idToken ||
+        !itemId ||
+        loadedContextKey !==
+          itineraryContextKey ||
+        isUpdatingItinerarySchedule
+      ) {
+        return null
+      }
+
+      try {
+        setIsUpdatingItinerarySchedule(
+          true,
+        )
+
+        setItineraryActionError('')
+
+        const updatedItem =
+          await updateTripItinerarySchedule(
+            tripId,
+            itemId,
+            scheduleData,
+            idToken,
+          )
+
+        if (!updatedItem?.id) {
+          throw new Error(
+            'Invalid itinerary schedule response.',
+          )
+        }
+
+        const nextItems =
+          itineraryItemsRef.current.map(
+            (item) =>
+              item.id === itemId
+                ? updatedItem
+                : item,
+          )
+
+        applyItineraryItems(
+          nextItems,
+        )
+
+        return updatedItem
+      } catch (error) {
+        console.error(
+          'Failed to update itinerary schedule:',
+          error,
+        )
+
+        setItineraryActionError(
+          'Could not update the activity schedule. Please try again.',
+        )
+
+        return null
+      } finally {
+        setIsUpdatingItinerarySchedule(
+          false,
+        )
+      }
+    }
+
   const deleteItineraryItem =
     async (itemId) => {
       if (
@@ -266,6 +445,8 @@ export function useTripItinerary(
         !userId ||
         !idToken ||
         !itemId ||
+        loadedContextKey !==
+          itineraryContextKey ||
         isDeletingItineraryItem
       ) {
         return false
@@ -284,12 +465,14 @@ export function useTripItinerary(
           idToken,
         )
 
-        setItineraryItems(
-          (currentItems) =>
-            currentItems.filter(
-              (item) =>
-                item.id !== itemId,
-            ),
+        const nextItems =
+          itineraryItemsRef.current.filter(
+            (item) =>
+              item.id !== itemId,
+          )
+
+        applyItineraryItems(
+          nextItems,
         )
 
         return true
@@ -316,16 +499,25 @@ export function useTripItinerary(
       setItineraryActionError('')
     }
 
-  const isLoadingItinerary =
+  const hasItineraryContext =
     Boolean(
       tripId &&
       userId &&
       idToken &&
-      loadedTripId !== tripId,
+      itineraryContextKey,
+    )
+
+  const isLoadingItinerary =
+    Boolean(
+      hasItineraryContext &&
+      loadedContextKey !==
+        itineraryContextKey,
     )
 
   const visibleItineraryItems =
-    loadedTripId === tripId
+    hasItineraryContext &&
+    loadedContextKey ===
+      itineraryContextKey
       ? itineraryItems
       : []
 
@@ -339,10 +531,12 @@ export function useTripItinerary(
 
     isCreatingItineraryItem,
     isUpdatingItineraryItem,
+    isUpdatingItinerarySchedule,
     isDeletingItineraryItem,
 
     addItineraryItem,
     updateItineraryItem,
+    updateItinerarySchedule,
     deleteItineraryItem,
 
     clearItineraryActionError,

@@ -94,10 +94,12 @@ function TripItineraryPage() {
 
     isCreatingItineraryItem,
     isUpdatingItineraryItem,
+    isUpdatingItinerarySchedule,
     isDeletingItineraryItem,
 
     addItineraryItem,
     updateItineraryItem,
+    updateItinerarySchedule,
     deleteItineraryItem,
 
     clearItineraryActionError,
@@ -287,6 +289,27 @@ function TripItineraryPage() {
       return updatedItem
     }
 
+  const handleMoveActivityToPlanLater =
+    async (item) => {
+      if (
+        !item?.id ||
+        isUpdatingItinerarySchedule
+      ) {
+        return null
+      }
+
+      clearItineraryActionError()
+
+      return updateItinerarySchedule(
+        item.id,
+        {
+          itineraryDate: null,
+          startTime: null,
+          endTime: null,
+        },
+      )
+    }
+
   const handleDeleteActivity =
     async (item) => {
       if (
@@ -464,6 +487,9 @@ function TripItineraryPage() {
           }
           onEditItem={
             handleOpenEditActivity
+          }
+          onMoveItemToPlanLater={
+            handleMoveActivityToPlanLater
           }
           onDeleteItem={
             handleDeleteActivity

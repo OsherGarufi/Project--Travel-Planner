@@ -474,10 +474,21 @@ function ItineraryEventCard({
                       item,
                     )
                   }
-                  onMoveToPlanLater={() =>
-                    onMoveToPlanLater?.(
-                      item,
-                    )
+                  onMoveToPlanLater={
+                    async () => {
+                      const movedItem =
+                        await onMoveToPlanLater?.(
+                          item,
+                        )
+
+                      if (!movedItem) {
+                        return
+                      }
+
+                      onToggleSelected(
+                        item.id,
+                      )
+                    }
                   }
                   onDelete={() =>
                     onStartDelete(

@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import {
+  updateTripItineraryCacheForDateRange,
+} from '../../services/itinerary/itineraryCache'
 import { updateTrip } from '../../services/tripService'
 import { buildTripUpdatePayload } from '../../utils/tripUpdateUtils'
 import { useAuth } from '../useAuth'
@@ -43,8 +46,17 @@ export function useTripEdit({
   trip,
   replaceTrip,
 }) {
-  const { idToken } = useAuth()
-  const { updateTripInCache } = useTrips()
+  const {
+    firebaseUser,
+    idToken,
+  } = useAuth()
+
+  const {
+    updateTripInCache,
+  } = useTrips()
+
+  const userId =
+    firebaseUser?.uid ?? null
 
   const [title, setTitle] = useState('')
 
@@ -384,6 +396,9 @@ export function useTripEdit({
       return false
     }
 
+    const shouldUpdateItineraryCache =
+      hasDateChanges
+
     const tripData =
       buildTripUpdatePayload(
         trip,
@@ -430,9 +445,26 @@ export function useTripEdit({
             }
 
       replaceTrip(updatedTrip)
+
       updateTripInCache(
         updatedTrip,
       )
+
+      if (
+        shouldUpdateItineraryCache &&
+        userId
+      ) {
+        updateTripItineraryCacheForDateRange(
+          userId,
+          trip.id,
+          normalizeDateInputValue(
+            updatedTrip.startDate,
+          ),
+          normalizeDateInputValue(
+            updatedTrip.endDate,
+          ),
+        )
+      }
 
       return true
     } catch (error) {
