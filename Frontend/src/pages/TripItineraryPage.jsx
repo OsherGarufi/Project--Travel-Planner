@@ -74,6 +74,11 @@ function TripItineraryPage() {
     setIsAddingActivity,
   ] = useState(false)
 
+  const [
+    editingItem,
+    setEditingItem,
+  ] = useState(null)
+
   const {
     trip,
     tripId,
@@ -86,15 +91,33 @@ function TripItineraryPage() {
     isLoadingItinerary,
     itineraryError,
     itineraryActionError,
+
     isCreatingItineraryItem,
+    isUpdatingItineraryItem,
+    isDeletingItineraryItem,
+
     addItineraryItem,
+    updateItineraryItem,
+    deleteItineraryItem,
+
     clearItineraryActionError,
   } = useTripItinerary(
     tripId,
   )
 
+  const isEditingActivity =
+    Boolean(editingItem)
+
+  const isActivityFormOpen =
+    isAddingActivity ||
+    isEditingActivity
+
+  const isSubmittingActivity =
+    isCreatingItineraryItem ||
+    isUpdatingItineraryItem
+
   useEffect(() => {
-    if (!isAddingActivity) {
+    if (!isActivityFormOpen) {
       return undefined
     }
 
@@ -123,7 +146,7 @@ function TripItineraryPage() {
           previousHtmlOverflow
     }
   }, [
-    isAddingActivity,
+    isActivityFormOpen,
   ])
 
   const tripDays =
@@ -196,19 +219,35 @@ function TripItineraryPage() {
   const handleOpenAddActivity =
     () => {
       clearItineraryActionError()
+
+      setEditingItem(null)
       setIsAddingActivity(true)
     }
 
-  const handleCancelAddActivity =
+  const handleOpenEditActivity =
+    (item) => {
+      if (!item?.id) {
+        return
+      }
+
+      clearItineraryActionError()
+
+      setIsAddingActivity(false)
+      setEditingItem(item)
+    }
+
+  const handleCancelActivityForm =
     () => {
       if (
-        isCreatingItineraryItem
+        isSubmittingActivity
       ) {
         return
       }
 
       clearItineraryActionError()
+
       setIsAddingActivity(false)
+      setEditingItem(null)
     }
 
   const handleAddActivity =
@@ -225,6 +264,43 @@ function TripItineraryPage() {
       setIsAddingActivity(false)
 
       return createdItem
+    }
+
+  const handleUpdateActivity =
+    async (itemData) => {
+      if (!editingItem?.id) {
+        return null
+      }
+
+      const updatedItem =
+        await updateItineraryItem(
+          editingItem.id,
+          itemData,
+        )
+
+      if (!updatedItem) {
+        return null
+      }
+
+      setEditingItem(null)
+
+      return updatedItem
+    }
+
+  const handleDeleteActivity =
+    async (item) => {
+      if (
+        !item?.id ||
+        isDeletingItineraryItem
+      ) {
+        return false
+      }
+
+      clearItineraryActionError()
+
+      return deleteItineraryItem(
+        item.id,
+      )
     }
 
   if (
@@ -265,12 +341,12 @@ function TripItineraryPage() {
   return (
     <main
       className={
-        isAddingActivity
+        isActivityFormOpen
           ? 'trip-itinerary-page trip-itinerary-page--adding'
           : 'trip-itinerary-page'
       }
     >
-      {!isAddingActivity && (
+      {!isActivityFormOpen && (
         <div className="trip-itinerary-page__topbar">
           <button
             className="trip-itinerary-page__back"
@@ -314,8 +390,15 @@ function TripItineraryPage() {
         </div>
       )}
 
-      {isAddingActivity && (
+      {isActivityFormOpen && (
         <ItineraryItemForm
+          key={
+            editingItem?.id ??
+            'new-activity'
+          }
+          initialItem={
+            editingItem
+          }
           initialDate={
             visibleDays[0]
               ?.dateValue ??
@@ -328,23 +411,25 @@ function TripItineraryPage() {
             trip.endDate
           }
           isSubmitting={
-            isCreatingItineraryItem
+            isSubmittingActivity
           }
           externalError={
             itineraryActionError
           }
           onSubmit={
-            handleAddActivity
+            isEditingActivity
+              ? handleUpdateActivity
+              : handleAddActivity
           }
           onCancel={
-            handleCancelAddActivity
+            handleCancelActivityForm
           }
         />
       )}
 
       <div
         className={
-          isAddingActivity
+          isActivityFormOpen
             ? 'trip-itinerary-page__week-view trip-itinerary-page__week-view--hidden'
             : 'trip-itinerary-page__week-view'
         }
@@ -376,6 +461,18 @@ function TripItineraryPage() {
           }
           onNextWeek={
             handleNextWeek
+          }
+          onEditItem={
+            handleOpenEditActivity
+          }
+          onDeleteItem={
+            handleDeleteActivity
+          }
+          isDeletingItem={
+            isDeletingItineraryItem
+          }
+          actionError={
+            itineraryActionError
           }
         />
       </div>

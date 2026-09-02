@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 import '../../css/components/itinerary-week-view.css'
 import {
@@ -15,6 +16,7 @@ import {
   formatTime,
   parseTimeToMinutes,
 } from '../../services/itinerary/itineraryDateTimeUtils'
+import ItineraryItemActions from './ItineraryItemActions'
 
 const HOURS = Array.from(
   {
@@ -157,7 +159,10 @@ function layoutDayItems(items) {
         item.timeRange !== null,
     )
     .sort(
-      (firstItem, secondItem) =>
+      (
+        firstItem,
+        secondItem,
+      ) =>
         firstItem.timeRange
           .startMinutes -
         secondItem.timeRange
@@ -223,8 +228,107 @@ function layoutDayItems(items) {
   return result
 }
 
+function ItineraryDeleteConfirmation({
+  item,
+  isDeleting,
+  error,
+  onCancel,
+  onConfirm,
+}) {
+  const hasLinkedExpense =
+    Boolean(
+      item.expenseId,
+    ) ||
+    Number(item.cost) > 0
+
+  const handleCancel = (
+    event,
+  ) => {
+    event.stopPropagation()
+
+    onCancel()
+  }
+
+  const handleConfirm = (
+    event,
+  ) => {
+    event.stopPropagation()
+
+    onConfirm()
+  }
+
+  return (
+    <div
+      className="itinerary-week__delete-confirmation"
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+    >
+      <p className="itinerary-week__delete-message">
+        Delete this activity?
+      </p>
+
+      {hasLinkedExpense && (
+        <p className="itinerary-week__delete-warning">
+          Its linked expense will
+          also be deleted.
+        </p>
+      )}
+
+      {error && (
+        <p
+          className="itinerary-week__delete-error"
+          role="alert"
+        >
+          {error}
+        </p>
+      )}
+
+      <div className="itinerary-week__delete-actions">
+        <button
+          className="itinerary-week__delete-cancel"
+          type="button"
+          onClick={
+            handleCancel
+          }
+          disabled={
+            isDeleting
+          }
+        >
+          Cancel
+        </button>
+
+        <button
+          className="itinerary-week__delete-confirm"
+          type="button"
+          onClick={
+            handleConfirm
+          }
+          disabled={
+            isDeleting
+          }
+        >
+          {isDeleting
+            ? 'Deleting...'
+            : 'Delete'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ItineraryEventCard({
   item,
+  isSelected,
+  isConfirmingDelete,
+  isDeleting,
+  deleteError,
+  onToggleSelected,
+  onEdit,
+  onMoveToPlanLater,
+  onStartDelete,
+  onCancelDelete,
+  onConfirmDelete,
 }) {
   const {
     startMinutes,
@@ -270,20 +374,60 @@ function ItineraryEventCard({
       item.category,
     )
 
+  const handleDoubleClick =
+    (event) => {
+      event.stopPropagation()
+
+      onToggleSelected(
+        item.id,
+      )
+    }
+
+  const handleKeyDown =
+    (event) => {
+      if (
+        event.key !== 'Enter' &&
+        event.key !== ' '
+      ) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      onToggleSelected(
+        item.id,
+      )
+    }
+
   return (
     <article
-      className={`itinerary-week__event itinerary-week__event--${categoryKey}`}
+      className={
+        isSelected
+          ? `itinerary-week__event itinerary-week__event--${categoryKey} itinerary-week__event--selected`
+          : `itinerary-week__event itinerary-week__event--${categoryKey}`
+      }
       style={{
         top: `${top}px`,
         height: `${height}px`,
         left: `calc(${leftPercentage}% + 4px)`,
         width: `calc(${widthPercentage}% - 8px)`,
       }}
+      tabIndex={0}
       aria-label={`${item.title}, ${formatTime(
         item.startTime,
       )} to ${formatTime(
         item.endTime,
-      )}`}
+      )}. Double click for actions.`}
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+      onDoubleClick={
+        handleDoubleClick
+      }
+      onKeyDown={
+        handleKeyDown
+      }
     >
       <span className="itinerary-week__event-time">
         {formatTime(
@@ -298,6 +442,164 @@ function ItineraryEventCard({
       <strong className="itinerary-week__event-title">
         {item.title}
       </strong>
+
+      {isSelected &&
+        (
+          isConfirmingDelete
+            ? (
+                <ItineraryDeleteConfirmation
+                  item={
+                    item
+                  }
+                  isDeleting={
+                    isDeleting
+                  }
+                  error={
+                    deleteError
+                  }
+                  onCancel={
+                    onCancelDelete
+                  }
+                  onConfirm={() =>
+                    onConfirmDelete(
+                      item,
+                    )
+                  }
+                />
+              )
+            : (
+                <ItineraryItemActions
+                  onEdit={() =>
+                    onEdit?.(
+                      item,
+                    )
+                  }
+                  onMoveToPlanLater={() =>
+                    onMoveToPlanLater?.(
+                      item,
+                    )
+                  }
+                  onDelete={() =>
+                    onStartDelete(
+                      item,
+                    )
+                  }
+                />
+              )
+        )}
+    </article>
+  )
+}
+
+function UnscheduledItemCard({
+  item,
+  isSelected,
+  isConfirmingDelete,
+  isDeleting,
+  deleteError,
+  onToggleSelected,
+  onEdit,
+  onStartDelete,
+  onCancelDelete,
+  onConfirmDelete,
+}) {
+  const categoryKey =
+    getItineraryCategoryKey(
+      item.category,
+    )
+
+  const handleDoubleClick =
+    (event) => {
+      event.stopPropagation()
+
+      onToggleSelected(
+        item.id,
+      )
+    }
+
+  const handleKeyDown =
+    (event) => {
+      if (
+        event.key !== 'Enter' &&
+        event.key !== ' '
+      ) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      onToggleSelected(
+        item.id,
+      )
+    }
+
+  return (
+    <article
+      className={
+        isSelected
+          ? `itinerary-week__unscheduled-card itinerary-week__unscheduled-card--${categoryKey} itinerary-week__unscheduled-card--selected`
+          : `itinerary-week__unscheduled-card itinerary-week__unscheduled-card--${categoryKey}`
+      }
+      tabIndex={0}
+      aria-label={`${item.title}. Double click for actions.`}
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+      onDoubleClick={
+        handleDoubleClick
+      }
+      onKeyDown={
+        handleKeyDown
+      }
+    >
+      <span className="itinerary-week__unscheduled-date">
+        Plan later
+      </span>
+
+      <strong>
+        {item.title}
+      </strong>
+
+      {isSelected &&
+        (
+          isConfirmingDelete
+            ? (
+                <ItineraryDeleteConfirmation
+                  item={
+                    item
+                  }
+                  isDeleting={
+                    isDeleting
+                  }
+                  error={
+                    deleteError
+                  }
+                  onCancel={
+                    onCancelDelete
+                  }
+                  onConfirm={() =>
+                    onConfirmDelete(
+                      item,
+                    )
+                  }
+                />
+              )
+            : (
+                <ItineraryItemActions
+                  onEdit={() =>
+                    onEdit?.(
+                      item,
+                    )
+                  }
+                  onDelete={() =>
+                    onStartDelete(
+                      item,
+                    )
+                  }
+                />
+              )
+        )}
     </article>
   )
 }
@@ -311,9 +613,29 @@ function ItineraryWeekView({
   canGoNext,
   onPreviousWeek,
   onNextWeek,
+  onEditItem,
+  onMoveItemToPlanLater,
+  onDeleteItem,
+  isDeletingItem,
+  actionError,
 }) {
   const calendarScrollRef =
     useRef(null)
+
+  const [
+    selectedItemId,
+    setSelectedItemId,
+  ] = useState(null)
+
+  const [
+    deleteConfirmationItemId,
+    setDeleteConfirmationItemId,
+  ] = useState(null)
+
+  const [
+    hasDeleteAttempted,
+    setHasDeleteAttempted,
+  ] = useState(false)
 
   useEffect(() => {
     const calendar =
@@ -333,7 +655,48 @@ function ItineraryWeekView({
       )
 
     calendar.scrollLeft = 0
+
+    setSelectedItemId(null)
+
+    setDeleteConfirmationItemId(
+      null,
+    )
+
+    setHasDeleteAttempted(false)
   }, [days])
+
+  useEffect(() => {
+    const handleDocumentClick =
+      () => {
+        if (
+          isDeletingItem
+        ) {
+          return
+        }
+
+        setSelectedItemId(null)
+
+        setDeleteConfirmationItemId(
+          null,
+        )
+
+        setHasDeleteAttempted(false)
+      }
+
+    document.addEventListener(
+      'click',
+      handleDocumentClick,
+    )
+
+    return () => {
+      document.removeEventListener(
+        'click',
+        handleDocumentClick,
+      )
+    }
+  }, [
+    isDeletingItem,
+  ])
 
   const visibleDateValues =
     useMemo(
@@ -352,12 +715,14 @@ function ItineraryWeekView({
       const result =
         new Map()
 
-      days.forEach((day) => {
-        result.set(
-          day.dateValue,
-          [],
-        )
-      })
+      days.forEach(
+        (day) => {
+          result.set(
+            day.dateValue,
+            [],
+          )
+        },
+      )
 
       itineraryItems.forEach(
         (item) => {
@@ -404,6 +769,95 @@ function ItineraryWeekView({
       ],
     )
 
+  const handleToggleSelected =
+    (itemId) => {
+      if (
+        isDeletingItem
+      ) {
+        return
+      }
+
+      setSelectedItemId(
+        (currentItemId) =>
+          currentItemId ===
+          itemId
+            ? null
+            : itemId,
+      )
+
+      setDeleteConfirmationItemId(
+        null,
+      )
+
+      setHasDeleteAttempted(false)
+    }
+
+  const handleStartDeleting =
+    (item) => {
+      if (
+        !item?.id ||
+        isDeletingItem
+      ) {
+        return
+      }
+
+      setSelectedItemId(
+        item.id,
+      )
+
+      setDeleteConfirmationItemId(
+        item.id,
+      )
+
+      setHasDeleteAttempted(false)
+    }
+
+  const handleCancelDeleting =
+    () => {
+      if (
+        isDeletingItem
+      ) {
+        return
+      }
+
+      setDeleteConfirmationItemId(
+        null,
+      )
+
+      setHasDeleteAttempted(false)
+    }
+
+  const handleConfirmDeleting =
+    async (item) => {
+      if (
+        !item?.id ||
+        isDeletingItem
+      ) {
+        return
+      }
+
+      setHasDeleteAttempted(
+        true,
+      )
+
+      const wasDeleted =
+        await onDeleteItem?.(
+          item,
+        )
+
+      if (!wasDeleted) {
+        return
+      }
+
+      setDeleteConfirmationItemId(
+        null,
+      )
+
+      setSelectedItemId(null)
+
+      setHasDeleteAttempted(false)
+    }
+
   return (
     <section className="itinerary-week">
       <div className="itinerary-week__heading-layout">
@@ -423,7 +877,9 @@ function ItineraryWeekView({
           (category) => (
             <div
               className="itinerary-week__legend-item"
-              key={category.key}
+              key={
+                category.key
+              }
             >
               <span
                 className={`itinerary-week__legend-color itinerary-week__legend-color--${category.key}`}
@@ -447,7 +903,8 @@ function ItineraryWeekView({
               onPreviousWeek
             }
             disabled={
-              !canGoPrevious
+              !canGoPrevious ||
+              isDeletingItem
             }
             aria-label="Previous week"
           >
@@ -461,7 +918,8 @@ function ItineraryWeekView({
               onNextWeek
             }
             disabled={
-              !canGoNext
+              !canGoNext ||
+              isDeletingItem
             }
             aria-label="Next week"
           >
@@ -469,7 +927,9 @@ function ItineraryWeekView({
           </button>
 
           <div
-            ref={calendarScrollRef}
+            ref={
+              calendarScrollRef
+            }
             className="itinerary-week__calendar-scroll"
           >
             <div
@@ -504,12 +964,16 @@ function ItineraryWeekView({
                       }
                     >
                       <span className="itinerary-week__day-name">
-                        {day.weekday}
+                        {
+                          day.weekday
+                        }
                       </span>
 
                       <div className="itinerary-week__day-date-row">
                         <strong className="itinerary-week__day-date">
-                          {day.shortDate}
+                          {
+                            day.shortDate
+                          }
                         </strong>
 
                         {hasScheduledActivity && (
@@ -530,7 +994,9 @@ function ItineraryWeekView({
                     (hour) => (
                       <span
                         className="itinerary-week__hour-label"
-                        key={hour}
+                        key={
+                          hour
+                        }
                         style={{
                           top: `${
                             hour *
@@ -570,7 +1036,9 @@ function ItineraryWeekView({
                         }
                       >
                         {HOURS.map(
-                          (hour) => (
+                          (
+                            hour,
+                          ) => (
                             <span
                               className="itinerary-week__hour-line"
                               key={
@@ -595,6 +1063,42 @@ function ItineraryWeekView({
                               }
                               item={
                                 item
+                              }
+                              isSelected={
+                                selectedItemId ===
+                                item.id
+                              }
+                              isConfirmingDelete={
+                                deleteConfirmationItemId ===
+                                item.id
+                              }
+                              isDeleting={
+                                isDeletingItem
+                              }
+                              deleteError={
+                                deleteConfirmationItemId ===
+                                  item.id &&
+                                hasDeleteAttempted
+                                  ? actionError
+                                  : ''
+                              }
+                              onToggleSelected={
+                                handleToggleSelected
+                              }
+                              onEdit={
+                                onEditItem
+                              }
+                              onMoveToPlanLater={
+                                onMoveItemToPlanLater
+                              }
+                              onStartDelete={
+                                handleStartDeleting
+                              }
+                              onCancelDelete={
+                                handleCancelDeleting
+                              }
+                              onConfirmDelete={
+                                handleConfirmDeleting
                               }
                             />
                           ),
@@ -634,36 +1138,49 @@ function ItineraryWeekView({
               </p>
             ) : (
               unscheduledItems.map(
-                (item) => {
-                  const categoryKey =
-                    getItineraryCategoryKey(
-                      item.category,
-                    )
-
-                  const matchingDay =
-                    days.find(
-                      (day) =>
-                        day.dateValue ===
-                        item.itineraryDate,
-                    )
-
-                  return (
-                    <article
-                      className={`itinerary-week__unscheduled-card itinerary-week__unscheduled-card--${categoryKey}`}
-                      key={item.id}
-                    >
-                      <span className="itinerary-week__unscheduled-date">
-                        {matchingDay
-                          ?.displayDate ??
-                          'Plan later'}
-                      </span>
-
-                      <strong>
-                        {item.title}
-                      </strong>
-                    </article>
-                  )
-                },
+                (item) => (
+                  <UnscheduledItemCard
+                    key={
+                      item.id
+                    }
+                    item={
+                      item
+                    }
+                    isSelected={
+                      selectedItemId ===
+                      item.id
+                    }
+                    isConfirmingDelete={
+                      deleteConfirmationItemId ===
+                      item.id
+                    }
+                    isDeleting={
+                      isDeletingItem
+                    }
+                    deleteError={
+                      deleteConfirmationItemId ===
+                        item.id &&
+                      hasDeleteAttempted
+                        ? actionError
+                        : ''
+                    }
+                    onToggleSelected={
+                      handleToggleSelected
+                    }
+                    onEdit={
+                      onEditItem
+                    }
+                    onStartDelete={
+                      handleStartDeleting
+                    }
+                    onCancelDelete={
+                      handleCancelDeleting
+                    }
+                    onConfirmDelete={
+                      handleConfirmDeleting
+                    }
+                  />
+                ),
               )
             )}
           </div>

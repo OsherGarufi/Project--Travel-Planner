@@ -46,6 +46,19 @@ function ActivityIcon() {
   )
 }
 
+function toInputTimeValue(
+  value,
+) {
+  if (!value) {
+    return ''
+  }
+
+  return value.slice(
+    0,
+    5,
+  )
+}
+
 function toApiTimeValue(
   timeValue,
 ) {
@@ -54,6 +67,14 @@ function toApiTimeValue(
   }
 
   return `${timeValue}:00`
+}
+
+function isBuiltInCategory(
+  category,
+) {
+  return BUILT_IN_CATEGORIES.includes(
+    category,
+  )
 }
 
 function isValidHttpUrl(
@@ -80,6 +101,7 @@ function isValidHttpUrl(
 
 function ItineraryItemForm({
   initialDate,
+  initialItem = null,
   minDate,
   maxDate,
   isSubmitting,
@@ -87,33 +109,74 @@ function ItineraryItemForm({
   onSubmit,
   onCancel,
 }) {
+  const isEditMode =
+    Boolean(initialItem)
+
+  const initialCategory =
+    initialItem?.category ??
+    ''
+
+  const initialIsCustomCategory =
+    Boolean(
+      initialCategory &&
+      !isBuiltInCategory(
+        initialCategory,
+      ),
+    )
+
+  const initialIsScheduled =
+    Boolean(
+      initialItem
+        ? (
+            initialItem.itineraryDate &&
+            initialItem.startTime &&
+            initialItem.endTime
+          )
+        : true,
+    )
+
   const [
     title,
     setTitle,
-  ] = useState('')
+  ] = useState(
+    initialItem?.title ??
+      '',
+  )
 
   const [
     categoryOption,
     setCategoryOption,
-  ] = useState('')
+  ] = useState(
+    initialIsCustomCategory
+      ? 'CUSTOM'
+      : initialCategory,
+  )
 
   const [
     customCategory,
     setCustomCategory,
-  ] = useState('')
+  ] = useState(
+    initialIsCustomCategory
+      ? initialCategory
+      : '',
+  )
 
   const [
     scheduleType,
     setScheduleType,
   ] = useState(
-    SCHEDULE_TYPES.SCHEDULED,
+    initialIsScheduled
+      ? SCHEDULE_TYPES.SCHEDULED
+      : SCHEDULE_TYPES.PLAN_LATER,
   )
 
   const [
     itineraryDate,
     setItineraryDate,
   ] = useState(
-    initialDate ||
+    initialItem
+      ?.itineraryDate ||
+      initialDate ||
       minDate ||
       '',
   )
@@ -121,32 +184,60 @@ function ItineraryItemForm({
   const [
     startTime,
     setStartTime,
-  ] = useState('')
+  ] = useState(
+    toInputTimeValue(
+      initialItem?.startTime,
+    ),
+  )
 
   const [
     endTime,
     setEndTime,
-  ] = useState('')
+  ] = useState(
+    toInputTimeValue(
+      initialItem?.endTime,
+    ),
+  )
 
   const [
     cost,
     setCost,
-  ] = useState('')
+  ] = useState(
+    initialItem?.cost != null &&
+    Number(
+      initialItem.cost,
+    ) > 0
+      ? String(
+          initialItem.cost,
+        )
+      : '',
+  )
 
   const [
     currency,
     setCurrency,
-  ] = useState('ILS')
+  ] = useState(
+    initialItem?.currency ||
+      'ILS',
+  )
 
   const [
     description,
     setDescription,
-  ] = useState('')
+  ] = useState(
+    initialItem
+      ?.description ??
+      '',
+  )
 
   const [
     referenceUrl,
     setReferenceUrl,
-  ] = useState('')
+  ] = useState(
+    initialItem
+      ?.referenceUrl ??
+      '',
+  )
 
   const [
     validationError,
@@ -412,14 +503,15 @@ function ItineraryItemForm({
           </p>
 
           <h1 className="itinerary-item-form__title">
-            Add activity
+            {isEditMode
+              ? 'Edit activity'
+              : 'Add activity'}
           </h1>
 
           <p className="itinerary-item-form__description">
-            Add something to your
-            itinerary and choose whether
-            to schedule it now or plan
-            it later.
+            {isEditMode
+              ? 'Update the activity details, schedule or cost.'
+              : 'Add something to your itinerary and choose whether to schedule it now or plan it later.'}
           </p>
         </div>
       </header>
@@ -934,8 +1026,16 @@ function ItineraryItemForm({
               }
             >
               {isSubmitting
-                ? 'Adding activity...'
-                : 'Add activity'}
+                ? (
+                    isEditMode
+                      ? 'Saving changes...'
+                      : 'Adding activity...'
+                  )
+                : (
+                    isEditMode
+                      ? 'Save changes'
+                      : 'Add activity'
+                  )}
             </button>
           </div>
         </footer>
