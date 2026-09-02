@@ -272,6 +272,14 @@
   text-transform: uppercase;
 }
 
+.itinerary-week__day-date-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap:
+    var(--tp-space-2);
+}
+
 .itinerary-week__day-date {
   color:
     var(--tp-color-text-primary);
@@ -279,6 +287,19 @@
     var(--tp-font-size-sm);
   font-weight:
     var(--tp-font-weight-semibold);
+}
+
+.itinerary-week__day-indicator {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius:
+    var(--tp-radius-full);
+  background-color:
+    var(--tp-color-primary-700);
+  box-shadow:
+    0 0 0 2px
+      rgba(255, 255, 255, 0.72);
 }
 
 /* =========================

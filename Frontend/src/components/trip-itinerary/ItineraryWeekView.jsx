@@ -389,11 +389,14 @@ function ItineraryWeekView({
       () =>
         itineraryItems.filter(
           (item) =>
-            visibleDateValues.has(
-              item.itineraryDate,
-            ) &&
             !item.startTime &&
-            !item.endTime,
+            !item.endTime &&
+            (
+              !item.itineraryDate ||
+              visibleDateValues.has(
+                item.itineraryDate,
+              )
+            ),
         ),
       [
         itineraryItems,
@@ -479,22 +482,46 @@ function ItineraryWeekView({
               <div className="itinerary-week__header-spacer" />
 
               {days.map(
-                (day) => (
-                  <div
-                    className="itinerary-week__day-header"
-                    key={
-                      day.dateValue
-                    }
-                  >
-                    <span className="itinerary-week__day-name">
-                      {day.weekday}
-                    </span>
+                (day) => {
+                  const dayItems =
+                    itemsByDate.get(
+                      day.dateValue,
+                    ) ?? []
 
-                    <strong className="itinerary-week__day-date">
-                      {day.shortDate}
-                    </strong>
-                  </div>
-                ),
+                  const hasScheduledActivity =
+                    dayItems.some(
+                      (item) =>
+                        getItemTimeRange(
+                          item,
+                        ) !== null,
+                    )
+
+                  return (
+                    <div
+                      className="itinerary-week__day-header"
+                      key={
+                        day.dateValue
+                      }
+                    >
+                      <span className="itinerary-week__day-name">
+                        {day.weekday}
+                      </span>
+
+                      <div className="itinerary-week__day-date-row">
+                        <strong className="itinerary-week__day-date">
+                          {day.shortDate}
+                        </strong>
+
+                        {hasScheduledActivity && (
+                          <span
+                            className="itinerary-week__day-indicator"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )
+                },
               )}
 
               <div className="itinerary-week__timeline">
@@ -628,7 +655,7 @@ function ItineraryWeekView({
                       <span className="itinerary-week__unscheduled-date">
                         {matchingDay
                           ?.displayDate ??
-                          item.itineraryDate}
+                          'Plan later'}
                       </span>
 
                       <strong>

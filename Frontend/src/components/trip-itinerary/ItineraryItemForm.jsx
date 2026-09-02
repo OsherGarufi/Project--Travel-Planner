@@ -1,10 +1,50 @@
 import {
-    useState,
+  useState,
 } from 'react'
 import '../../css/components/itinerary-item-form.css'
-import {
-    ITINERARY_CATEGORIES,
-} from '../../services/itinerary/itineraryConstants'
+import CurrencySelector from '../currency/CurrencySelector'
+
+const BUILT_IN_CATEGORIES = [
+  'Flights',
+  'Accommodation',
+  'Food',
+  'Transportation',
+  'Activities',
+  'Shopping',
+  'Insurance',
+  'Other',
+]
+
+const SCHEDULE_TYPES = {
+  SCHEDULED: 'scheduled',
+  PLAN_LATER: 'plan-later',
+}
+
+function ActivityIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M8 3v3M16 3v3M4.5 9h15M6.5 5h11A2.5 2.5 0 0 1 20 7.5v10A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-10A2.5 2.5 0 0 1 6.5 5Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      <path
+        d="M12 12v5M9.5 14.5h5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
 
 function toApiTimeValue(
   timeValue,
@@ -14,6 +54,28 @@ function toApiTimeValue(
   }
 
   return `${timeValue}:00`
+}
+
+function isValidHttpUrl(
+  value,
+) {
+  if (!value.trim()) {
+    return true
+  }
+
+  try {
+    const url =
+      new URL(
+        value.trim(),
+      )
+
+    return (
+      url.protocol === 'http:' ||
+      url.protocol === 'https:'
+    )
+  } catch {
+    return false
+  }
 }
 
 function ItineraryItemForm({
@@ -31,9 +93,21 @@ function ItineraryItemForm({
   ] = useState('')
 
   const [
-    category,
-    setCategory,
-  ] = useState('Activities')
+    categoryOption,
+    setCategoryOption,
+  ] = useState('')
+
+  const [
+    customCategory,
+    setCustomCategory,
+  ] = useState('')
+
+  const [
+    scheduleType,
+    setScheduleType,
+  ] = useState(
+    SCHEDULE_TYPES.SCHEDULED,
+  )
 
   const [
     itineraryDate,
@@ -55,6 +129,16 @@ function ItineraryItemForm({
   ] = useState('')
 
   const [
+    cost,
+    setCost,
+  ] = useState('')
+
+  const [
+    currency,
+    setCurrency,
+  ] = useState('ILS')
+
+  const [
     description,
     setDescription,
   ] = useState('')
@@ -69,6 +153,85 @@ function ItineraryItemForm({
     setValidationError,
   ] = useState('')
 
+  const isCustomCategory =
+    categoryOption ===
+    'CUSTOM'
+
+  const finalCategory =
+    isCustomCategory
+      ? customCategory.trim()
+      : categoryOption.trim()
+
+  const isScheduled =
+    scheduleType ===
+    SCHEDULE_TYPES.SCHEDULED
+
+  const numericCost =
+    cost === ''
+      ? 0
+      : Number(cost)
+
+  const isPaidActivity =
+    Number.isFinite(
+      numericCost,
+    ) &&
+    numericCost > 0
+
+  const handleCategoryChange =
+    (event) => {
+      const nextCategory =
+        event.target.value
+
+      setCategoryOption(
+        nextCategory,
+      )
+
+      if (
+        nextCategory !==
+        'CUSTOM'
+      ) {
+        setCustomCategory('')
+      }
+
+      setValidationError('')
+    }
+
+  const handleScheduleTypeChange =
+    (
+      nextScheduleType,
+    ) => {
+      setScheduleType(
+        nextScheduleType,
+      )
+
+      setValidationError('')
+
+      if (
+        nextScheduleType ===
+        SCHEDULE_TYPES.PLAN_LATER
+      ) {
+        setStartTime('')
+        setEndTime('')
+      }
+    }
+
+  const handleCostChange =
+    (event) => {
+      const nextValue =
+        event.target.value
+
+      if (
+        nextValue === '' ||
+        /^\d*\.?\d{0,2}$/.test(
+          nextValue,
+        )
+      ) {
+        setCost(
+          nextValue,
+        )
+      }
+    }
+
   const handleSubmit =
     async (event) => {
       event.preventDefault()
@@ -82,6 +245,11 @@ function ItineraryItemForm({
       const normalizedReferenceUrl =
         referenceUrl.trim()
 
+      const normalizedCurrency =
+        currency
+          .trim()
+          .toUpperCase()
+
       if (!normalizedTitle) {
         setValidationError(
           'Please enter a title.',
@@ -90,15 +258,29 @@ function ItineraryItemForm({
         return
       }
 
-      if (!category) {
+      if (!finalCategory) {
         setValidationError(
-          'Please choose a category.',
+          'Please choose or enter a category.',
         )
 
         return
       }
 
-      if (!itineraryDate) {
+      if (
+        finalCategory.length >
+        50
+      ) {
+        setValidationError(
+          'Category cannot exceed 50 characters.',
+        )
+
+        return
+      }
+
+      if (
+        isScheduled &&
+        !itineraryDate
+      ) {
         setValidationError(
           'Please choose a date.',
         )
@@ -106,29 +288,62 @@ function ItineraryItemForm({
         return
       }
 
-      const hasStartTime =
-        Boolean(startTime)
+      if (isScheduled) {
+        if (
+          !startTime ||
+          !endTime
+        ) {
+          setValidationError(
+            'Please choose both a start time and an end time.',
+          )
 
-      const hasEndTime =
-        Boolean(endTime)
+          return
+        }
+
+        if (
+          endTime <= startTime
+        ) {
+          setValidationError(
+            'End time must be later than start time.',
+          )
+
+          return
+        }
+      }
 
       if (
-        hasStartTime !==
-        hasEndTime
+        !Number.isFinite(
+          numericCost,
+        ) ||
+        numericCost < 0
       ) {
         setValidationError(
-          'Choose both a start time and an end time, or leave both empty.',
+          'Please enter a valid cost.',
         )
 
         return
       }
 
       if (
-        hasStartTime &&
-        endTime <= startTime
+        isPaidActivity &&
+        !/^[A-Z]{3}$/.test(
+          normalizedCurrency,
+        )
       ) {
         setValidationError(
-          'End time must be later than start time.',
+          'Please enter a valid 3-letter currency code.',
+        )
+
+        return
+      }
+
+      if (
+        !isValidHttpUrl(
+          referenceUrl,
+        )
+      ) {
+        setValidationError(
+          'Reference URL must use HTTP or HTTPS.',
         )
 
         return
@@ -136,23 +351,31 @@ function ItineraryItemForm({
 
       setValidationError('')
 
-      await onSubmit({
+      return onSubmit({
         title:
           normalizedTitle,
 
-        category,
+        category:
+          finalCategory,
 
-        itineraryDate,
+        itineraryDate:
+          isScheduled
+            ? itineraryDate
+            : null,
 
         startTime:
-          toApiTimeValue(
-            startTime,
-          ),
+          isScheduled
+            ? toApiTimeValue(
+                startTime,
+              )
+            : null,
 
         endTime:
-          toApiTimeValue(
-            endTime,
-          ),
+          isScheduled
+            ? toApiTimeValue(
+                endTime,
+              )
+            : null,
 
         description:
           normalizedDescription ||
@@ -161,6 +384,14 @@ function ItineraryItemForm({
         referenceUrl:
           normalizedReferenceUrl ||
           null,
+
+        cost:
+          numericCost,
+
+        currency:
+          isPaidActivity
+            ? normalizedCurrency
+            : null,
       })
     }
 
@@ -170,8 +401,12 @@ function ItineraryItemForm({
 
   return (
     <section className="itinerary-item-form">
-      <div className="itinerary-item-form__header">
-        <div>
+      <header className="itinerary-item-form__header">
+        <div className="itinerary-item-form__header-icon">
+          <ActivityIcon />
+        </div>
+
+        <div className="itinerary-item-form__header-copy">
           <p className="itinerary-item-form__eyebrow">
             TRIP ITINERARY
           </p>
@@ -182,12 +417,12 @@ function ItineraryItemForm({
 
           <p className="itinerary-item-form__description">
             Add something to your
-            trip schedule now, or
-            leave the time empty and
-            plan it later.
+            itinerary and choose whether
+            to schedule it now or plan
+            it later.
           </p>
         </div>
-      </div>
+      </header>
 
       <form
         className="itinerary-item-form__form"
@@ -195,249 +430,515 @@ function ItineraryItemForm({
           handleSubmit
         }
       >
-        <div className="itinerary-item-form__field itinerary-item-form__field--full">
-          <label htmlFor="itinerary-title">
-            Title
-          </label>
+        <div className="itinerary-item-form__body">
+          <section className="itinerary-item-form__section">
+            <div className="itinerary-item-form__section-header">
+              <div>
+                <h2 className="itinerary-item-form__section-title">
+                  Activity details
+                </h2>
 
-          <input
-            id="itinerary-title"
-            type="text"
-            value={title}
-            maxLength={100}
-            placeholder="e.g. Visit the museum"
-            autoFocus
-            disabled={
-              isSubmitting
-            }
-            onChange={(
-              event,
-            ) =>
-              setTitle(
-                event.target.value,
-              )
-            }
-          />
-        </div>
+                <p className="itinerary-item-form__section-description">
+                  Basic information
+                  about this activity.
+                </p>
+              </div>
+            </div>
 
-        <div className="itinerary-item-form__field">
-          <label htmlFor="itinerary-category">
-            Category
-          </label>
+            <div className="itinerary-item-form__details-grid">
+              <div className="itinerary-item-form__field">
+                <label
+                  className="itinerary-item-form__label"
+                  htmlFor="itinerary-title"
+                >
+                  Title
+                </label>
 
-          <select
-            id="itinerary-category"
-            value={category}
-            disabled={
-              isSubmitting
-            }
-            onChange={(
-              event,
-            ) =>
-              setCategory(
-                event.target.value,
-              )
-            }
-          >
-            {ITINERARY_CATEGORIES.map(
-              (
-                categoryOption,
-              ) => (
-                <option
-                  key={
-                    categoryOption.key
+                <input
+                  className="itinerary-item-form__control"
+                  id="itinerary-title"
+                  type="text"
+                  value={title}
+                  maxLength={100}
+                  placeholder="e.g. Visit the museum"
+                  autoFocus
+                  disabled={
+                    isSubmitting
                   }
+                  onChange={(
+                    event,
+                  ) =>
+                    setTitle(
+                      event.target.value,
+                    )
+                  }
+                />
+              </div>
+
+              <div className="itinerary-item-form__field">
+                <label
+                  className="itinerary-item-form__label"
+                  htmlFor="itinerary-category"
+                >
+                  Category
+                </label>
+
+                <select
+                  className="itinerary-item-form__control"
+                  id="itinerary-category"
                   value={
-                    categoryOption.name
+                    categoryOption
+                  }
+                  disabled={
+                    isSubmitting
+                  }
+                  onChange={
+                    handleCategoryChange
                   }
                 >
-                  {
-                    categoryOption.name
+                  <option value="">
+                    Select category
+                  </option>
+
+                  {BUILT_IN_CATEGORIES.map(
+                    (
+                      category,
+                    ) => (
+                      <option
+                        key={
+                          category
+                        }
+                        value={
+                          category
+                        }
+                      >
+                        {category}
+                      </option>
+                    ),
+                  )}
+
+                  <option value="CUSTOM">
+                    Custom category
+                  </option>
+                </select>
+              </div>
+
+              {isCustomCategory && (
+                <div className="itinerary-item-form__field itinerary-item-form__field--full">
+                  <label
+                    className="itinerary-item-form__label"
+                    htmlFor="itinerary-custom-category"
+                  >
+                    Custom category
+                  </label>
+
+                  <input
+                    className="itinerary-item-form__control"
+                    id="itinerary-custom-category"
+                    type="text"
+                    value={
+                      customCategory
+                    }
+                    maxLength={50}
+                    autoComplete="off"
+                    placeholder="e.g. Nightlife"
+                    disabled={
+                      isSubmitting
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setCustomCategory(
+                        event.target.value,
+                      )
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="itinerary-item-form__section">
+            <div className="itinerary-item-form__section-header">
+              <div>
+                <h2 className="itinerary-item-form__section-title">
+                  Schedule
+                </h2>
+
+                <p className="itinerary-item-form__section-description">
+                  Schedule the activity
+                  now or leave it ready
+                  for later.
+                </p>
+              </div>
+            </div>
+
+            <fieldset className="itinerary-item-form__schedule">
+              <legend className="sr-only">
+                Activity schedule
+              </legend>
+
+              <label
+                className={
+                  scheduleType ===
+                  SCHEDULE_TYPES.SCHEDULED
+                    ? 'itinerary-item-form__schedule-option itinerary-item-form__schedule-option--active'
+                    : 'itinerary-item-form__schedule-option'
+                }
+              >
+                <input
+                  type="radio"
+                  name="schedule-type"
+                  checked={
+                    scheduleType ===
+                    SCHEDULE_TYPES.SCHEDULED
                   }
-                </option>
-              ),
+                  disabled={
+                    isSubmitting
+                  }
+                  onChange={() =>
+                    handleScheduleTypeChange(
+                      SCHEDULE_TYPES.SCHEDULED,
+                    )
+                  }
+                />
+
+                <span>
+                  Scheduled
+                </span>
+              </label>
+
+              <label
+                className={
+                  scheduleType ===
+                  SCHEDULE_TYPES.PLAN_LATER
+                    ? 'itinerary-item-form__schedule-option itinerary-item-form__schedule-option--active'
+                    : 'itinerary-item-form__schedule-option'
+                }
+              >
+                <input
+                  type="radio"
+                  name="schedule-type"
+                  checked={
+                    scheduleType ===
+                    SCHEDULE_TYPES.PLAN_LATER
+                  }
+                  disabled={
+                    isSubmitting
+                  }
+                  onChange={() =>
+                    handleScheduleTypeChange(
+                      SCHEDULE_TYPES.PLAN_LATER,
+                    )
+                  }
+                />
+
+                <span>
+                  Plan later
+                </span>
+              </label>
+            </fieldset>
+
+            {isScheduled ? (
+              <div className="itinerary-item-form__schedule-grid">
+                <div className="itinerary-item-form__field">
+                  <label
+                    className="itinerary-item-form__label"
+                    htmlFor="itinerary-date"
+                  >
+                    Date
+                  </label>
+
+                  <input
+                    className="itinerary-item-form__control"
+                    id="itinerary-date"
+                    type="date"
+                    value={
+                      itineraryDate
+                    }
+                    min={minDate}
+                    max={maxDate}
+                    disabled={
+                      isSubmitting
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setItineraryDate(
+                        event.target.value,
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="itinerary-item-form__time-group">
+                  <div className="itinerary-item-form__field">
+                    <label
+                      className="itinerary-item-form__label"
+                      htmlFor="itinerary-start-time"
+                    >
+                      Start time
+                    </label>
+
+                    <input
+                      className="itinerary-item-form__control"
+                      id="itinerary-start-time"
+                      type="time"
+                      value={
+                        startTime
+                      }
+                      step={900}
+                      disabled={
+                        isSubmitting
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        setStartTime(
+                          event.target.value,
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div
+                    className="itinerary-item-form__time-divider"
+                    aria-hidden="true"
+                  >
+                    →
+                  </div>
+
+                  <div className="itinerary-item-form__field">
+                    <label
+                      className="itinerary-item-form__label"
+                      htmlFor="itinerary-end-time"
+                    >
+                      End time
+                    </label>
+
+                    <input
+                      className="itinerary-item-form__control"
+                      id="itinerary-end-time"
+                      type="time"
+                      value={
+                        endTime
+                      }
+                      step={900}
+                      disabled={
+                        isSubmitting
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        setEndTime(
+                          event.target.value,
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="itinerary-item-form__plan-later">
+                <div className="itinerary-item-form__plan-later-icon">
+                  <ActivityIcon />
+                </div>
+
+                <div>
+                  <p className="itinerary-item-form__plan-later-title">
+                    Keep it unscheduled
+                  </p>
+
+                  <p className="itinerary-item-form__plan-later-description">
+                    The activity will wait
+                    in your itinerary until
+                    you assign a day and
+                    time.
+                  </p>
+                </div>
+              </div>
             )}
-          </select>
+          </section>
+
+          <section className="itinerary-item-form__section">
+            <div className="itinerary-item-form__section-header">
+              <div>
+                <h2 className="itinerary-item-form__section-title">
+                  Cost
+                </h2>
+
+                <p className="itinerary-item-form__section-description">
+                  Leave the amount empty
+                  for a free activity.
+                </p>
+              </div>
+            </div>
+
+            <div className="itinerary-item-form__cost-grid">
+              <div className="itinerary-item-form__field">
+                <label
+                  className="itinerary-item-form__label"
+                  htmlFor="itinerary-cost"
+                >
+                  Amount
+                  <span className="itinerary-item-form__optional">
+                    Optional
+                  </span>
+                </label>
+
+                <input
+                  className="itinerary-item-form__control"
+                  id="itinerary-cost"
+                  type="text"
+                  inputMode="decimal"
+                  value={cost}
+                  placeholder="0"
+                  disabled={
+                    isSubmitting
+                  }
+                  onChange={
+                    handleCostChange
+                  }
+                />
+              </div>
+
+              <div className="itinerary-item-form__currency">
+                <CurrencySelector
+                  id="itinerary-currency"
+                  label="Currency"
+                  value={currency}
+                  onChange={
+                    setCurrency
+                  }
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="itinerary-item-form__section">
+            <div className="itinerary-item-form__section-header">
+              <div>
+                <h2 className="itinerary-item-form__section-title">
+                  Extra details
+                </h2>
+
+                <p className="itinerary-item-form__section-description">
+                  Optional notes,
+                  booking details or
+                  useful links.
+                </p>
+              </div>
+            </div>
+
+            <div className="itinerary-item-form__extra-grid">
+              <div className="itinerary-item-form__field itinerary-item-form__field--full">
+                <label
+                  className="itinerary-item-form__label"
+                  htmlFor="itinerary-description"
+                >
+                  Description
+                  <span className="itinerary-item-form__optional">
+                    Optional
+                  </span>
+                </label>
+
+                <textarea
+                  className="itinerary-item-form__textarea"
+                  id="itinerary-description"
+                  value={
+                    description
+                  }
+                  maxLength={2000}
+                  rows={3}
+                  placeholder="Reservation details, notes or anything useful..."
+                  disabled={
+                    isSubmitting
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setDescription(
+                      event.target.value,
+                    )
+                  }
+                />
+              </div>
+
+              <div className="itinerary-item-form__field itinerary-item-form__field--full">
+                <label
+                  className="itinerary-item-form__label"
+                  htmlFor="itinerary-reference-url"
+                >
+                  Reference URL
+                  <span className="itinerary-item-form__optional">
+                    Optional
+                  </span>
+                </label>
+
+                <input
+                  className="itinerary-item-form__control"
+                  id="itinerary-reference-url"
+                  type="url"
+                  value={
+                    referenceUrl
+                  }
+                  maxLength={2048}
+                  placeholder="https://..."
+                  disabled={
+                    isSubmitting
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setReferenceUrl(
+                      event.target.value,
+                    )
+                  }
+                />
+              </div>
+            </div>
+          </section>
         </div>
 
-        <div className="itinerary-item-form__field">
-          <label htmlFor="itinerary-date">
-            Date
-          </label>
-
-          <input
-            id="itinerary-date"
-            type="date"
-            value={
-              itineraryDate
-            }
-            min={minDate}
-            max={maxDate}
-            disabled={
-              isSubmitting
-            }
-            onChange={(
-              event,
-            ) =>
-              setItineraryDate(
-                event.target.value,
-              )
-            }
-          />
-        </div>
-
-        <div className="itinerary-item-form__field">
-          <label htmlFor="itinerary-start-time">
-            Start time
-          </label>
-
-          <input
-            id="itinerary-start-time"
-            type="time"
-            value={
-              startTime
-            }
-            step={900}
-            disabled={
-              isSubmitting
-            }
-            onChange={(
-              event,
-            ) =>
-              setStartTime(
-                event.target.value,
-              )
-            }
-          />
-
-          <span className="itinerary-item-form__hint">
-            Optional
-          </span>
-        </div>
-
-        <div className="itinerary-item-form__field">
-          <label htmlFor="itinerary-end-time">
-            End time
-          </label>
-
-          <input
-            id="itinerary-end-time"
-            type="time"
-            value={endTime}
-            step={900}
-            disabled={
-              isSubmitting
-            }
-            onChange={(
-              event,
-            ) =>
-              setEndTime(
-                event.target.value,
-              )
-            }
-          />
-
-          <span className="itinerary-item-form__hint">
-            Optional
-          </span>
-        </div>
-
-        <div className="itinerary-item-form__field itinerary-item-form__field--full">
-          <label htmlFor="itinerary-description">
-            Description
-          </label>
-
-          <textarea
-            id="itinerary-description"
-            value={
-              description
-            }
-            maxLength={2000}
-            rows={4}
-            placeholder="Notes, reservation details or anything useful for this activity..."
-            disabled={
-              isSubmitting
-            }
-            onChange={(
-              event,
-            ) =>
-              setDescription(
-                event.target.value,
-              )
-            }
-          />
-
-          <span className="itinerary-item-form__hint">
-            Optional
-          </span>
-        </div>
-
-        <div className="itinerary-item-form__field itinerary-item-form__field--full">
-          <label htmlFor="itinerary-reference-url">
-            Reference URL
-          </label>
-
-          <input
-            id="itinerary-reference-url"
-            type="url"
-            value={
-              referenceUrl
-            }
-            maxLength={2048}
-            placeholder="https://..."
-            disabled={
-              isSubmitting
-            }
-            onChange={(
-              event,
-            ) =>
-              setReferenceUrl(
-                event.target.value,
-              )
-            }
-          />
-
-          <span className="itinerary-item-form__hint">
-            Optional · tickets,
-            booking, maps or website
-          </span>
-        </div>
-
-        {displayedError && (
-          <div
-            className="itinerary-item-form__error"
-            role="alert"
-          >
-            {displayedError}
+        <footer className="itinerary-item-form__footer">
+          <div className="itinerary-item-form__footer-message">
+            {displayedError && (
+              <div
+                className="itinerary-item-form__error"
+                role="alert"
+              >
+                {displayedError}
+              </div>
+            )}
           </div>
-        )}
 
-        <div className="itinerary-item-form__actions">
-          <button
-            className="itinerary-item-form__cancel"
-            type="button"
-            disabled={
-              isSubmitting
-            }
-            onClick={
-              onCancel
-            }
-          >
-            Cancel
-          </button>
+          <div className="itinerary-item-form__actions">
+            <button
+              className="itinerary-item-form__cancel"
+              type="button"
+              disabled={
+                isSubmitting
+              }
+              onClick={
+                onCancel
+              }
+            >
+              Cancel
+            </button>
 
-          <button
-            className="itinerary-item-form__submit"
-            type="submit"
-            disabled={
-              isSubmitting
-            }
-          >
-            {isSubmitting
-              ? 'Adding activity...'
-              : 'Add activity'}
-          </button>
-        </div>
+            <button
+              className="itinerary-item-form__submit"
+              type="submit"
+              disabled={
+                isSubmitting
+              }
+            >
+              {isSubmitting
+                ? 'Adding activity...'
+                : 'Add activity'}
+            </button>
+          </div>
+        </footer>
       </form>
     </section>
   )

@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -91,6 +92,39 @@ function TripItineraryPage() {
   } = useTripItinerary(
     tripId,
   )
+
+  useEffect(() => {
+    if (!isAddingActivity) {
+      return undefined
+    }
+
+    const previousBodyOverflow =
+      document.body.style.overflow
+
+    const previousHtmlOverflow =
+      document.documentElement
+        .style
+        .overflow
+
+    document.body.style.overflow =
+      'hidden'
+
+    document.documentElement
+      .style
+      .overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow =
+        previousBodyOverflow
+
+      document.documentElement
+        .style
+        .overflow =
+          previousHtmlOverflow
+    }
+  }, [
+    isAddingActivity,
+  ])
 
   const tripDays =
     useMemo(
@@ -229,30 +263,36 @@ function TripItineraryPage() {
   }
 
   return (
-    <main className="trip-itinerary-page">
-      <div className="trip-itinerary-page__topbar">
-        <button
-          className="trip-itinerary-page__back"
-          type="button"
-          onClick={() =>
-            navigate(
-              `/trips/${trip.id}`,
-            )
-          }
-        >
-          <span
-            className="trip-itinerary-page__back-icon"
-            aria-hidden="true"
+    <main
+      className={
+        isAddingActivity
+          ? 'trip-itinerary-page trip-itinerary-page--adding'
+          : 'trip-itinerary-page'
+      }
+    >
+      {!isAddingActivity && (
+        <div className="trip-itinerary-page__topbar">
+          <button
+            className="trip-itinerary-page__back"
+            type="button"
+            onClick={() =>
+              navigate(
+                `/trips/${trip.id}`,
+              )
+            }
           >
-            <ArrowLeftIcon />
-          </span>
+            <span
+              className="trip-itinerary-page__back-icon"
+              aria-hidden="true"
+            >
+              <ArrowLeftIcon />
+            </span>
 
-          <span>
-            Back to trip
-          </span>
-        </button>
+            <span>
+              Back to trip
+            </span>
+          </button>
 
-        {!isAddingActivity && (
           <button
             className="trip-itinerary-page__add"
             type="button"
@@ -271,8 +311,8 @@ function TripItineraryPage() {
               Add activity
             </span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {isAddingActivity && (
         <ItineraryItemForm

@@ -7,6 +7,11 @@
     var(--tp-space-4);
 }
 
+.trip-itinerary-page--adding {
+  min-height: 0;
+  gap: 0;
+}
+
 .trip-itinerary-page::before {
   content: '';
   position: absolute;
@@ -26,6 +31,7 @@
       transparent 72%
     );
 }
+
 
 /* Topbar */
 
@@ -64,7 +70,6 @@
   gap:
     var(--tp-space-2);
   padding:
-    var(--tp-space-1)
     var(--tp-space-1);
   border-radius:
     var(--tp-radius-sm);
@@ -137,6 +142,7 @@
   height: 100%;
 }
 
+
 /* Week view */
 
 .trip-itinerary-page__week-view {
@@ -147,6 +153,7 @@
   display: none;
 }
 
+
 /* Loading */
 
 .trip-itinerary-page__loading {
@@ -156,6 +163,7 @@
     var(--tp-color-text-muted);
   text-align: center;
 }
+
 
 /* Error */
 
@@ -185,6 +193,7 @@
     var(--tp-color-text-secondary);
 }
 
+
 /* Tablet */
 
 @media (max-width: 56rem) {
@@ -192,7 +201,12 @@
     gap:
       var(--tp-space-4);
   }
+
+  .trip-itinerary-page--adding {
+    gap: 0;
+  }
 }
+
 
 /* Mobile */
 
