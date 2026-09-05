@@ -1,6 +1,4 @@
-import {
-  useState,
-} from 'react'
+import { useState } from 'react'
 import '../../css/components/itinerary-item-form.css'
 import CurrencySelector from '../currency/CurrencySelector'
 
@@ -46,22 +44,15 @@ function ActivityIcon() {
   )
 }
 
-function toInputTimeValue(
-  value,
-) {
+function toInputTimeValue(value) {
   if (!value) {
     return ''
   }
 
-  return value.slice(
-    0,
-    5,
-  )
+  return value.slice(0, 5)
 }
 
-function toApiTimeValue(
-  timeValue,
-) {
+function toApiTimeValue(timeValue) {
   if (!timeValue) {
     return null
   }
@@ -69,26 +60,17 @@ function toApiTimeValue(
   return `${timeValue}:00`
 }
 
-function isBuiltInCategory(
-  category,
-) {
-  return BUILT_IN_CATEGORIES.includes(
-    category,
-  )
+function isBuiltInCategory(category) {
+  return BUILT_IN_CATEGORIES.includes(category)
 }
 
-function isValidHttpUrl(
-  value,
-) {
+function isValidHttpUrl(value) {
   if (!value.trim()) {
     return true
   }
 
   try {
-    const url =
-      new URL(
-        value.trim(),
-      )
+    const url = new URL(value.trim())
 
     return (
       url.protocol === 'http:' ||
@@ -100,48 +82,33 @@ function isValidHttpUrl(
 }
 
 function ItineraryItemForm({
-  initialDate,
-  initialItem = null,
-  minDate,
-  maxDate,
-  isSubmitting,
-  externalError,
+  initialDate = '',
+  initialItem,
+  minDate = '',
+  maxDate = '',
+  isSubmitting = false,
+  externalError = '',
   onSubmit,
   onCancel,
 }) {
-  const isEditMode =
-    Boolean(initialItem)
-
   const initialCategory =
-    initialItem?.category ??
-    ''
+    initialItem.category ?? ''
 
   const initialIsCustomCategory =
     Boolean(
       initialCategory &&
-      !isBuiltInCategory(
-        initialCategory,
-      ),
+        !isBuiltInCategory(initialCategory),
     )
 
   const initialIsScheduled =
     Boolean(
-      initialItem
-        ? (
-            initialItem.itineraryDate &&
-            initialItem.startTime &&
-            initialItem.endTime
-          )
-        : true,
+      initialItem.itineraryDate &&
+        initialItem.startTime &&
+        initialItem.endTime,
     )
 
-  const [
-    title,
-    setTitle,
-  ] = useState(
-    initialItem?.title ??
-      '',
-  )
+  const [title, setTitle] =
+    useState(initialItem.title ?? '')
 
   const [
     categoryOption,
@@ -174,8 +141,7 @@ function ItineraryItemForm({
     itineraryDate,
     setItineraryDate,
   ] = useState(
-    initialItem
-      ?.itineraryDate ||
+    initialItem.itineraryDate ||
       initialDate ||
       minDate ||
       '',
@@ -186,7 +152,7 @@ function ItineraryItemForm({
     setStartTime,
   ] = useState(
     toInputTimeValue(
-      initialItem?.startTime,
+      initialItem.startTime,
     ),
   )
 
@@ -195,48 +161,37 @@ function ItineraryItemForm({
     setEndTime,
   ] = useState(
     toInputTimeValue(
-      initialItem?.endTime,
+      initialItem.endTime,
     ),
   )
 
-  const [
-    cost,
-    setCost,
-  ] = useState(
-    initialItem?.cost != null &&
-    Number(
-      initialItem.cost,
-    ) > 0
-      ? String(
-          initialItem.cost,
-        )
-      : '',
-  )
+  const [cost, setCost] =
+    useState(
+      initialItem.cost != null &&
+        Number(initialItem.cost) > 0
+        ? String(initialItem.cost)
+        : '',
+    )
 
   const [
     currency,
     setCurrency,
   ] = useState(
-    initialItem?.currency ||
-      'ILS',
+    initialItem.currency || 'ILS',
   )
 
   const [
     description,
     setDescription,
   ] = useState(
-    initialItem
-      ?.description ??
-      '',
+    initialItem.description ?? '',
   )
 
   const [
     referenceUrl,
     setReferenceUrl,
   ] = useState(
-    initialItem
-      ?.referenceUrl ??
-      '',
+    initialItem.referenceUrl ?? '',
   )
 
   const [
@@ -245,8 +200,7 @@ function ItineraryItemForm({
   ] = useState('')
 
   const isCustomCategory =
-    categoryOption ===
-    'CUSTOM'
+    categoryOption === 'CUSTOM'
 
   const finalCategory =
     isCustomCategory
@@ -263,228 +217,217 @@ function ItineraryItemForm({
       : Number(cost)
 
   const isPaidActivity =
-    Number.isFinite(
-      numericCost,
-    ) &&
+    Number.isFinite(numericCost) &&
     numericCost > 0
 
-  const handleCategoryChange =
-    (event) => {
-      const nextCategory =
-        event.target.value
+  const handleCategoryChange = (
+    event,
+  ) => {
+    const nextCategory =
+      event.target.value
 
-      setCategoryOption(
-        nextCategory,
+    setCategoryOption(nextCategory)
+
+    if (nextCategory !== 'CUSTOM') {
+      setCustomCategory('')
+    }
+
+    setValidationError('')
+  }
+
+  const handleScheduleTypeChange = (
+    nextScheduleType,
+  ) => {
+    setScheduleType(nextScheduleType)
+    setValidationError('')
+
+    if (
+      nextScheduleType ===
+      SCHEDULE_TYPES.PLAN_LATER
+    ) {
+      setStartTime('')
+      setEndTime('')
+    }
+  }
+
+  const handleCostChange = (
+    event,
+  ) => {
+    const nextValue =
+      event.target.value
+
+    if (
+      nextValue === '' ||
+      /^\d*\.?\d{0,2}$/.test(
+        nextValue,
+      )
+    ) {
+      setCost(nextValue)
+    }
+  }
+
+  const handleSubmit = async (
+    event,
+  ) => {
+    event.preventDefault()
+
+    const normalizedTitle =
+      title.trim()
+
+    const normalizedDescription =
+      description.trim()
+
+    const normalizedReferenceUrl =
+      referenceUrl.trim()
+
+    const normalizedCurrency =
+      currency
+        .trim()
+        .toUpperCase()
+
+    if (!normalizedTitle) {
+      setValidationError(
+        'Please enter a title.',
       )
 
-      if (
-        nextCategory !==
-        'CUSTOM'
-      ) {
-        setCustomCategory('')
-      }
-
-      setValidationError('')
+      return
     }
 
-  const handleScheduleTypeChange =
-    (
-      nextScheduleType,
-    ) => {
-      setScheduleType(
-        nextScheduleType,
+    if (!finalCategory) {
+      setValidationError(
+        'Please choose or enter a category.',
       )
 
-      setValidationError('')
+      return
+    }
+
+    if (
+      finalCategory.length > 50
+    ) {
+      setValidationError(
+        'Category cannot exceed 50 characters.',
+      )
+
+      return
+    }
+
+    if (
+      isScheduled &&
+      !itineraryDate
+    ) {
+      setValidationError(
+        'Please choose a date.',
+      )
+
+      return
+    }
+
+    if (isScheduled) {
+      if (
+        !startTime ||
+        !endTime
+      ) {
+        setValidationError(
+          'Please choose both a start time and an end time.',
+        )
+
+        return
+      }
 
       if (
-        nextScheduleType ===
-        SCHEDULE_TYPES.PLAN_LATER
+        endTime <= startTime
       ) {
-        setStartTime('')
-        setEndTime('')
+        setValidationError(
+          'End time must be later than start time.',
+        )
+
+        return
       }
     }
 
-  const handleCostChange =
-    (event) => {
-      const nextValue =
-        event.target.value
+    if (
+      !Number.isFinite(
+        numericCost,
+      ) ||
+      numericCost < 0
+    ) {
+      setValidationError(
+        'Please enter a valid cost.',
+      )
 
-      if (
-        nextValue === '' ||
-        /^\d*\.?\d{0,2}$/.test(
-          nextValue,
-        )
-      ) {
-        setCost(
-          nextValue,
-        )
-      }
+      return
     }
 
-  const handleSubmit =
-    async (event) => {
-      event.preventDefault()
+    if (
+      isPaidActivity &&
+      !/^[A-Z]{3}$/.test(
+        normalizedCurrency,
+      )
+    ) {
+      setValidationError(
+        'Please enter a valid 3-letter currency code.',
+      )
 
-      const normalizedTitle =
-        title.trim()
-
-      const normalizedDescription =
-        description.trim()
-
-      const normalizedReferenceUrl =
-        referenceUrl.trim()
-
-      const normalizedCurrency =
-        currency
-          .trim()
-          .toUpperCase()
-
-      if (!normalizedTitle) {
-        setValidationError(
-          'Please enter a title.',
-        )
-
-        return
-      }
-
-      if (!finalCategory) {
-        setValidationError(
-          'Please choose or enter a category.',
-        )
-
-        return
-      }
-
-      if (
-        finalCategory.length >
-        50
-      ) {
-        setValidationError(
-          'Category cannot exceed 50 characters.',
-        )
-
-        return
-      }
-
-      if (
-        isScheduled &&
-        !itineraryDate
-      ) {
-        setValidationError(
-          'Please choose a date.',
-        )
-
-        return
-      }
-
-      if (isScheduled) {
-        if (
-          !startTime ||
-          !endTime
-        ) {
-          setValidationError(
-            'Please choose both a start time and an end time.',
-          )
-
-          return
-        }
-
-        if (
-          endTime <= startTime
-        ) {
-          setValidationError(
-            'End time must be later than start time.',
-          )
-
-          return
-        }
-      }
-
-      if (
-        !Number.isFinite(
-          numericCost,
-        ) ||
-        numericCost < 0
-      ) {
-        setValidationError(
-          'Please enter a valid cost.',
-        )
-
-        return
-      }
-
-      if (
-        isPaidActivity &&
-        !/^[A-Z]{3}$/.test(
-          normalizedCurrency,
-        )
-      ) {
-        setValidationError(
-          'Please enter a valid 3-letter currency code.',
-        )
-
-        return
-      }
-
-      if (
-        !isValidHttpUrl(
-          referenceUrl,
-        )
-      ) {
-        setValidationError(
-          'Reference URL must use HTTP or HTTPS.',
-        )
-
-        return
-      }
-
-      setValidationError('')
-
-      return onSubmit({
-        title:
-          normalizedTitle,
-
-        category:
-          finalCategory,
-
-        itineraryDate:
-          isScheduled
-            ? itineraryDate
-            : null,
-
-        startTime:
-          isScheduled
-            ? toApiTimeValue(
-                startTime,
-              )
-            : null,
-
-        endTime:
-          isScheduled
-            ? toApiTimeValue(
-                endTime,
-              )
-            : null,
-
-        description:
-          normalizedDescription ||
-          null,
-
-        referenceUrl:
-          normalizedReferenceUrl ||
-          null,
-
-        cost:
-          numericCost,
-
-        currency:
-          isPaidActivity
-            ? normalizedCurrency
-            : null,
-      })
+      return
     }
+
+    if (
+      !isValidHttpUrl(
+        referenceUrl,
+      )
+    ) {
+      setValidationError(
+        'Reference URL must use HTTP or HTTPS.',
+      )
+
+      return
+    }
+
+    setValidationError('')
+
+    return onSubmit({
+      title:
+        normalizedTitle,
+
+      category:
+        finalCategory,
+
+      itineraryDate:
+        isScheduled
+          ? itineraryDate
+          : null,
+
+      startTime:
+        isScheduled
+          ? toApiTimeValue(
+              startTime,
+            )
+          : null,
+
+      endTime:
+        isScheduled
+          ? toApiTimeValue(
+              endTime,
+            )
+          : null,
+
+      description:
+        normalizedDescription ||
+        null,
+
+      referenceUrl:
+        normalizedReferenceUrl ||
+        null,
+
+      cost:
+        numericCost,
+
+      currency:
+        isPaidActivity
+          ? normalizedCurrency
+          : null,
+    })
+  }
 
   const displayedError =
     validationError ||
@@ -503,24 +446,19 @@ function ItineraryItemForm({
           </p>
 
           <h1 className="itinerary-item-form__title">
-            {isEditMode
-              ? 'Edit activity'
-              : 'Add activity'}
+            Edit activity
           </h1>
 
           <p className="itinerary-item-form__description">
-            {isEditMode
-              ? 'Update the activity details, schedule or cost.'
-              : 'Add something to your itinerary and choose whether to schedule it now or plan it later.'}
+            Update the activity details,
+            schedule or cost.
           </p>
         </div>
       </header>
 
       <form
         className="itinerary-item-form__form"
-        onSubmit={
-          handleSubmit
-        }
+        onSubmit={handleSubmit}
       >
         <div className="itinerary-item-form__body">
           <section className="itinerary-item-form__section">
@@ -531,8 +469,8 @@ function ItineraryItemForm({
                 </h2>
 
                 <p className="itinerary-item-form__section-description">
-                  Basic information
-                  about this activity.
+                  Basic information about
+                  this activity.
                 </p>
               </div>
             </div>
@@ -557,9 +495,7 @@ function ItineraryItemForm({
                   disabled={
                     isSubmitting
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setTitle(
                       event.target.value,
                     )
@@ -593,16 +529,10 @@ function ItineraryItemForm({
                   </option>
 
                   {BUILT_IN_CATEGORIES.map(
-                    (
-                      category,
-                    ) => (
+                    (category) => (
                       <option
-                        key={
-                          category
-                        }
-                        value={
-                          category
-                        }
+                        key={category}
+                        value={category}
                       >
                         {category}
                       </option>
@@ -637,9 +567,7 @@ function ItineraryItemForm({
                     disabled={
                       isSubmitting
                     }
-                    onChange={(
-                      event,
-                    ) =>
+                    onChange={(event) =>
                       setCustomCategory(
                         event.target.value,
                       )
@@ -753,9 +681,7 @@ function ItineraryItemForm({
                     disabled={
                       isSubmitting
                     }
-                    onChange={(
-                      event,
-                    ) =>
+                    onChange={(event) =>
                       setItineraryDate(
                         event.target.value,
                       )
@@ -783,9 +709,7 @@ function ItineraryItemForm({
                       disabled={
                         isSubmitting
                       }
-                      onChange={(
-                        event,
-                      ) =>
+                      onChange={(event) =>
                         setStartTime(
                           event.target.value,
                         )
@@ -819,9 +743,7 @@ function ItineraryItemForm({
                       disabled={
                         isSubmitting
                       }
-                      onChange={(
-                        event,
-                      ) =>
+                      onChange={(event) =>
                         setEndTime(
                           event.target.value,
                         )
@@ -873,6 +795,7 @@ function ItineraryItemForm({
                   htmlFor="itinerary-cost"
                 >
                   Amount
+
                   <span className="itinerary-item-form__optional">
                     Optional
                   </span>
@@ -929,6 +852,7 @@ function ItineraryItemForm({
                   htmlFor="itinerary-description"
                 >
                   Description
+
                   <span className="itinerary-item-form__optional">
                     Optional
                   </span>
@@ -946,9 +870,7 @@ function ItineraryItemForm({
                   disabled={
                     isSubmitting
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setDescription(
                       event.target.value,
                     )
@@ -962,6 +884,7 @@ function ItineraryItemForm({
                   htmlFor="itinerary-reference-url"
                 >
                   Reference URL
+
                   <span className="itinerary-item-form__optional">
                     Optional
                   </span>
@@ -979,9 +902,7 @@ function ItineraryItemForm({
                   disabled={
                     isSubmitting
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setReferenceUrl(
                       event.target.value,
                     )
@@ -1026,16 +947,8 @@ function ItineraryItemForm({
               }
             >
               {isSubmitting
-                ? (
-                    isEditMode
-                      ? 'Saving changes...'
-                      : 'Adding activity...'
-                  )
-                : (
-                    isEditMode
-                      ? 'Save changes'
-                      : 'Add activity'
-                  )}
+                ? 'Saving changes...'
+                : 'Save changes'}
             </button>
           </div>
         </footer>

@@ -1,6 +1,22 @@
-import { useState } from 'react'
+import {
+  useMemo,
+  useState,
+} from 'react'
 import '../../css/components/itinerary-item-form.css'
+import '../../css/components/trip-entry-form.css'
 import CurrencySelector from '../currency/CurrencySelector'
+
+export const TRIP_ENTRY_TYPES = {
+  SCHEDULED: 'scheduled',
+  PLAN_LATER: 'plan-later',
+  ONLY_EXPENSE: 'only-expense',
+}
+
+export const TRIP_ENTRY_FORM_MODES = {
+  CREATE_ACTIVITY: 'create-activity',
+  CREATE_EXPENSE: 'create-expense',
+  EDIT_EXPENSE: 'edit-expense',
+}
 
 const BUILT_IN_CATEGORIES = [
   'Flights',
@@ -12,11 +28,6 @@ const BUILT_IN_CATEGORIES = [
   'Insurance',
   'Other',
 ]
-
-const SCHEDULE_TYPES = {
-  SCHEDULED: 'scheduled',
-  PLAN_LATER: 'plan-later',
-}
 
 function ActivityIcon() {
   return (
@@ -44,6 +55,32 @@ function ActivityIcon() {
   )
 }
 
+function ExpenseIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="8.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      <path
+        d="M14.75 8.75c-.55-.55-1.45-.9-2.55-.9-1.55 0-2.7.75-2.7 1.85 0 1.2 1.05 1.65 2.7 2 1.65.35 2.65.8 2.65 2 0 1.2-1.15 2-2.75 2-1.15 0-2.15-.35-2.85-1.05M12 6.5v11"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 function toInputTimeValue(value) {
   if (!value) {
     return ''
@@ -52,16 +89,12 @@ function toInputTimeValue(value) {
   return value.slice(0, 5)
 }
 
-function toApiTimeValue(timeValue) {
-  if (!timeValue) {
+function toApiTimeValue(value) {
+  if (!value) {
     return null
   }
 
-  return `${timeValue}:00`
-}
-
-function isBuiltInCategory(category) {
-  return BUILT_IN_CATEGORIES.includes(category)
+  return `${value}:00`
 }
 
 function isValidHttpUrl(value) {
@@ -70,7 +103,8 @@ function isValidHttpUrl(value) {
   }
 
   try {
-    const url = new URL(value.trim())
+    const url =
+      new URL(value.trim())
 
     return (
       url.protocol === 'http:' ||
@@ -81,34 +115,106 @@ function isValidHttpUrl(value) {
   }
 }
 
-function ItineraryItemForm({
+function TripEntryForm({
+  formMode =
+    TRIP_ENTRY_FORM_MODES.CREATE_ACTIVITY,
+
+  initialEntry = null,
+
   initialDate = '',
-  initialItem,
   minDate = '',
   maxDate = '',
+
+  defaultCurrency = 'ILS',
+  existingCategories = [],
+
+  initialEntryType =
+    TRIP_ENTRY_TYPES.SCHEDULED,
+
+  allowOnlyExpense = false,
+  requireAmount = false,
+
+  lockEntryType = false,
+  lockSchedule = false,
+
   isSubmitting = false,
   externalError = '',
+
   onSubmit,
   onCancel,
 }) {
+  const isExpenseEdit =
+    formMode ===
+    TRIP_ENTRY_FORM_MODES.EDIT_EXPENSE
+
   const initialCategory =
-    initialItem.category ?? ''
+    initialEntry?.category ??
+    ''
+
+  const categoryOptions =
+    useMemo(() => {
+      const customCategories = [
+        ...existingCategories,
+        initialCategory,
+      ]
+        .map((category) =>
+          typeof category === 'string'
+            ? category.trim()
+            : '',
+        )
+        .filter(Boolean)
+        .filter(
+          (category) =>
+            !BUILT_IN_CATEGORIES.some(
+              (builtInCategory) =>
+                builtInCategory.toLowerCase() ===
+                category.toLowerCase(),
+            ),
+        )
+
+      return [
+        ...BUILT_IN_CATEGORIES,
+
+        ...Array.from(
+          new Map(
+            customCategories.map(
+              (category) => [
+                category.toLowerCase(),
+                category,
+              ],
+            ),
+          ).values(),
+        ),
+      ]
+    }, [
+      existingCategories,
+      initialCategory,
+    ])
 
   const initialIsCustomCategory =
     Boolean(
       initialCategory &&
-        !isBuiltInCategory(initialCategory),
+        !BUILT_IN_CATEGORIES.some(
+          (category) =>
+            category.toLowerCase() ===
+            initialCategory.toLowerCase(),
+        ),
     )
 
-  const initialIsScheduled =
-    Boolean(
-      initialItem.itineraryDate &&
-        initialItem.startTime &&
-        initialItem.endTime,
-    )
+  const resolvedInitialEntryType =
+    !allowOnlyExpense &&
+    initialEntryType ===
+      TRIP_ENTRY_TYPES.ONLY_EXPENSE
+      ? TRIP_ENTRY_TYPES.SCHEDULED
+      : initialEntryType
 
-  const [title, setTitle] =
-    useState(initialItem.title ?? '')
+  const [
+    title,
+    setTitle,
+  ] = useState(
+    initialEntry?.title ??
+      '',
+  )
 
   const [
     categoryOption,
@@ -129,19 +235,18 @@ function ItineraryItemForm({
   )
 
   const [
-    scheduleType,
-    setScheduleType,
+    entryType,
+    setEntryType,
   ] = useState(
-    initialIsScheduled
-      ? SCHEDULE_TYPES.SCHEDULED
-      : SCHEDULE_TYPES.PLAN_LATER,
+    initialEntry?.entryType ??
+      resolvedInitialEntryType,
   )
 
   const [
     itineraryDate,
     setItineraryDate,
   ] = useState(
-    initialItem.itineraryDate ||
+    initialEntry?.itineraryDate ||
       initialDate ||
       minDate ||
       '',
@@ -152,7 +257,7 @@ function ItineraryItemForm({
     setStartTime,
   ] = useState(
     toInputTimeValue(
-      initialItem.startTime,
+      initialEntry?.startTime,
     ),
   )
 
@@ -161,37 +266,44 @@ function ItineraryItemForm({
     setEndTime,
   ] = useState(
     toInputTimeValue(
-      initialItem.endTime,
+      initialEntry?.endTime,
     ),
   )
 
-  const [cost, setCost] =
-    useState(
-      initialItem.cost != null &&
-        Number(initialItem.cost) > 0
-        ? String(initialItem.cost)
-        : '',
-    )
+  const [
+    amount,
+    setAmount,
+  ] = useState(
+    initialEntry?.amount != null
+      ? String(
+          initialEntry.amount,
+        )
+      : '',
+  )
 
   const [
     currency,
     setCurrency,
   ] = useState(
-    initialItem.currency || 'ILS',
+    initialEntry?.currency ??
+      defaultCurrency ??
+      'ILS',
   )
 
   const [
     description,
     setDescription,
   ] = useState(
-    initialItem.description ?? '',
+    initialEntry?.description ??
+      '',
   )
 
   const [
     referenceUrl,
     setReferenceUrl,
   ] = useState(
-    initialItem.referenceUrl ?? '',
+    initialEntry?.referenceUrl ??
+      '',
   )
 
   const [
@@ -200,7 +312,8 @@ function ItineraryItemForm({
   ] = useState('')
 
   const isCustomCategory =
-    categoryOption === 'CUSTOM'
+    categoryOption ===
+    'CUSTOM'
 
   const finalCategory =
     isCustomCategory
@@ -208,17 +321,31 @@ function ItineraryItemForm({
       : categoryOption.trim()
 
   const isScheduled =
-    scheduleType ===
-    SCHEDULE_TYPES.SCHEDULED
+    entryType ===
+    TRIP_ENTRY_TYPES.SCHEDULED
 
-  const numericCost =
-    cost === ''
+  const isPlanLater =
+    entryType ===
+    TRIP_ENTRY_TYPES.PLAN_LATER
+
+  const isOnlyExpense =
+    entryType ===
+    TRIP_ENTRY_TYPES.ONLY_EXPENSE
+
+  const numericAmount =
+    amount === ''
       ? 0
-      : Number(cost)
+      : Number(amount)
 
-  const isPaidActivity =
-    Number.isFinite(numericCost) &&
-    numericCost > 0
+  const hasAmount =
+    Number.isFinite(
+      numericAmount,
+    ) &&
+    numericAmount > 0
+
+  const isAmountRequired =
+    requireAmount ||
+    isOnlyExpense
 
   const handleCategoryChange = (
     event,
@@ -226,31 +353,51 @@ function ItineraryItemForm({
     const nextCategory =
       event.target.value
 
-    setCategoryOption(nextCategory)
+    setCategoryOption(
+      nextCategory,
+    )
 
-    if (nextCategory !== 'CUSTOM') {
+    if (
+      nextCategory !==
+      'CUSTOM'
+    ) {
       setCustomCategory('')
     }
 
     setValidationError('')
   }
 
-  const handleScheduleTypeChange = (
-    nextScheduleType,
+  const handleEntryTypeChange = (
+    nextEntryType,
   ) => {
-    setScheduleType(nextScheduleType)
+    if (lockEntryType) {
+      return
+    }
+
+    if (
+      nextEntryType ===
+        TRIP_ENTRY_TYPES.ONLY_EXPENSE &&
+      !allowOnlyExpense
+    ) {
+      return
+    }
+
+    setEntryType(
+      nextEntryType,
+    )
+
     setValidationError('')
 
     if (
-      nextScheduleType ===
-      SCHEDULE_TYPES.PLAN_LATER
+      nextEntryType !==
+      TRIP_ENTRY_TYPES.SCHEDULED
     ) {
       setStartTime('')
       setEndTime('')
     }
   }
 
-  const handleCostChange = (
+  const handleAmountChange = (
     event,
   ) => {
     const nextValue =
@@ -262,7 +409,9 @@ function ItineraryItemForm({
         nextValue,
       )
     ) {
-      setCost(nextValue)
+      setAmount(
+        nextValue,
+      )
     }
   }
 
@@ -302,7 +451,8 @@ function ItineraryItemForm({
     }
 
     if (
-      finalCategory.length > 50
+      finalCategory.length >
+      50
     ) {
       setValidationError(
         'Category cannot exceed 50 characters.',
@@ -347,19 +497,30 @@ function ItineraryItemForm({
 
     if (
       !Number.isFinite(
-        numericCost,
+        numericAmount,
       ) ||
-      numericCost < 0
+      numericAmount < 0
     ) {
       setValidationError(
-        'Please enter a valid cost.',
+        'Please enter a valid amount.',
       )
 
       return
     }
 
     if (
-      isPaidActivity &&
+      isAmountRequired &&
+      !hasAmount
+    ) {
+      setValidationError(
+        'An expense must have an amount greater than zero.',
+      )
+
+      return
+    }
+
+    if (
+      hasAmount &&
       !/^[A-Z]{3}$/.test(
         normalizedCurrency,
       )
@@ -386,6 +547,8 @@ function ItineraryItemForm({
     setValidationError('')
 
     return onSubmit({
+      entryType,
+
       title:
         normalizedTitle,
 
@@ -411,6 +574,14 @@ function ItineraryItemForm({
             )
           : null,
 
+      amount:
+        numericAmount,
+
+      currency:
+        hasAmount
+          ? normalizedCurrency
+          : null,
+
       description:
         normalizedDescription ||
         null,
@@ -418,14 +589,6 @@ function ItineraryItemForm({
       referenceUrl:
         normalizedReferenceUrl ||
         null,
-
-      cost:
-        numericCost,
-
-      currency:
-        isPaidActivity
-          ? normalizedCurrency
-          : null,
     })
   }
 
@@ -433,44 +596,78 @@ function ItineraryItemForm({
     validationError ||
     externalError
 
+  const selectorClassName =
+    allowOnlyExpense
+      ? 'itinerary-item-form__schedule trip-entry-form__type-selector'
+      : 'itinerary-item-form__schedule'
+
+  const pageTitle =
+    isExpenseEdit
+      ? 'Edit expense'
+      : allowOnlyExpense
+        ? 'Add trip item'
+        : 'Add activity'
+
+  const pageDescription =
+    isExpenseEdit
+      ? 'Update the expense details while keeping its itinerary connection consistent.'
+      : allowOnlyExpense
+        ? 'Schedule an activity, save it for later or track an expense without adding it to the itinerary.'
+        : 'Add something to your itinerary and choose whether to schedule it now or plan it later.'
+
+  const eyebrow =
+    isExpenseEdit
+      ? 'TRIP EXPENSES'
+      : 'TRIP PLANNER'
+
   return (
     <section className="itinerary-item-form">
       <header className="itinerary-item-form__header">
         <div className="itinerary-item-form__header-icon">
-          <ActivityIcon />
+          {isExpenseEdit ||
+          isOnlyExpense
+            ? (
+                <ExpenseIcon />
+              )
+            : (
+                <ActivityIcon />
+              )}
         </div>
 
         <div className="itinerary-item-form__header-copy">
           <p className="itinerary-item-form__eyebrow">
-            TRIP ITINERARY
+            {eyebrow}
           </p>
 
           <h1 className="itinerary-item-form__title">
-            Edit activity
+            {pageTitle}
           </h1>
 
           <p className="itinerary-item-form__description">
-            Update the activity details,
-            schedule or cost.
+            {pageDescription}
           </p>
         </div>
       </header>
 
       <form
         className="itinerary-item-form__form"
-        onSubmit={handleSubmit}
+        onSubmit={
+          handleSubmit
+        }
       >
         <div className="itinerary-item-form__body">
           <section className="itinerary-item-form__section">
             <div className="itinerary-item-form__section-header">
               <div>
                 <h2 className="itinerary-item-form__section-title">
-                  Activity details
+                  {isExpenseEdit
+                    ? 'Expense details'
+                    : 'Details'}
                 </h2>
 
                 <p className="itinerary-item-form__section-description">
-                  Basic information about
-                  this activity.
+                  Basic information
+                  about this trip item.
                 </p>
               </div>
             </div>
@@ -479,14 +676,14 @@ function ItineraryItemForm({
               <div className="itinerary-item-form__field">
                 <label
                   className="itinerary-item-form__label"
-                  htmlFor="itinerary-title"
+                  htmlFor="trip-entry-title"
                 >
                   Title
                 </label>
 
                 <input
                   className="itinerary-item-form__control"
-                  id="itinerary-title"
+                  id="trip-entry-title"
                   type="text"
                   value={title}
                   maxLength={100}
@@ -506,14 +703,14 @@ function ItineraryItemForm({
               <div className="itinerary-item-form__field">
                 <label
                   className="itinerary-item-form__label"
-                  htmlFor="itinerary-category"
+                  htmlFor="trip-entry-category"
                 >
                   Category
                 </label>
 
                 <select
                   className="itinerary-item-form__control"
-                  id="itinerary-category"
+                  id="trip-entry-category"
                   value={
                     categoryOption
                   }
@@ -528,7 +725,7 @@ function ItineraryItemForm({
                     Select category
                   </option>
 
-                  {BUILT_IN_CATEGORIES.map(
+                  {categoryOptions.map(
                     (category) => (
                       <option
                         key={category}
@@ -549,14 +746,14 @@ function ItineraryItemForm({
                 <div className="itinerary-item-form__field itinerary-item-form__field--full">
                   <label
                     className="itinerary-item-form__label"
-                    htmlFor="itinerary-custom-category"
+                    htmlFor="trip-entry-custom-category"
                   >
                     Custom category
                   </label>
 
                   <input
                     className="itinerary-item-form__control"
-                    id="itinerary-custom-category"
+                    id="trip-entry-custom-category"
                     type="text"
                     value={
                       customCategory
@@ -582,43 +779,46 @@ function ItineraryItemForm({
             <div className="itinerary-item-form__section-header">
               <div>
                 <h2 className="itinerary-item-form__section-title">
-                  Schedule
+                  Trip placement
                 </h2>
 
                 <p className="itinerary-item-form__section-description">
-                  Schedule the activity
-                  now or leave it ready
-                  for later.
+                  {isExpenseEdit
+                    ? 'The current itinerary relationship is shown below.'
+                    : 'Choose where this item should live in your trip.'}
                 </p>
               </div>
             </div>
 
-            <fieldset className="itinerary-item-form__schedule">
+            <fieldset
+              className={
+                selectorClassName
+              }
+            >
               <legend className="sr-only">
-                Activity schedule
+                Trip item type
               </legend>
 
               <label
                 className={
-                  scheduleType ===
-                  SCHEDULE_TYPES.SCHEDULED
+                  isScheduled
                     ? 'itinerary-item-form__schedule-option itinerary-item-form__schedule-option--active'
                     : 'itinerary-item-form__schedule-option'
                 }
               >
                 <input
                   type="radio"
-                  name="schedule-type"
+                  name="trip-entry-type"
                   checked={
-                    scheduleType ===
-                    SCHEDULE_TYPES.SCHEDULED
+                    isScheduled
                   }
                   disabled={
-                    isSubmitting
+                    isSubmitting ||
+                    lockEntryType
                   }
                   onChange={() =>
-                    handleScheduleTypeChange(
-                      SCHEDULE_TYPES.SCHEDULED,
+                    handleEntryTypeChange(
+                      TRIP_ENTRY_TYPES.SCHEDULED,
                     )
                   }
                 />
@@ -630,25 +830,24 @@ function ItineraryItemForm({
 
               <label
                 className={
-                  scheduleType ===
-                  SCHEDULE_TYPES.PLAN_LATER
+                  isPlanLater
                     ? 'itinerary-item-form__schedule-option itinerary-item-form__schedule-option--active'
                     : 'itinerary-item-form__schedule-option'
                 }
               >
                 <input
                   type="radio"
-                  name="schedule-type"
+                  name="trip-entry-type"
                   checked={
-                    scheduleType ===
-                    SCHEDULE_TYPES.PLAN_LATER
+                    isPlanLater
                   }
                   disabled={
-                    isSubmitting
+                    isSubmitting ||
+                    lockEntryType
                   }
                   onChange={() =>
-                    handleScheduleTypeChange(
-                      SCHEDULE_TYPES.PLAN_LATER,
+                    handleEntryTypeChange(
+                      TRIP_ENTRY_TYPES.PLAN_LATER,
                     )
                   }
                 />
@@ -657,21 +856,81 @@ function ItineraryItemForm({
                   Plan later
                 </span>
               </label>
+
+              {allowOnlyExpense && (
+                <label
+                  className={
+                    isOnlyExpense
+                      ? 'itinerary-item-form__schedule-option itinerary-item-form__schedule-option--active'
+                      : 'itinerary-item-form__schedule-option'
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="trip-entry-type"
+                    checked={
+                      isOnlyExpense
+                    }
+                    disabled={
+                      isSubmitting ||
+                      lockEntryType
+                    }
+                    onChange={() =>
+                      handleEntryTypeChange(
+                        TRIP_ENTRY_TYPES.ONLY_EXPENSE,
+                      )
+                    }
+                  />
+
+                  <span>
+                    Only expense
+                  </span>
+                </label>
+              )}
             </fieldset>
 
-            {isScheduled ? (
+            {isExpenseEdit &&
+              lockEntryType && (
+                <div className="itinerary-item-form__plan-later">
+                  <div className="itinerary-item-form__plan-later-icon">
+                    {isOnlyExpense
+                      ? (
+                          <ExpenseIcon />
+                        )
+                      : (
+                          <ActivityIcon />
+                        )}
+                  </div>
+
+                  <div>
+                    <p className="itinerary-item-form__plan-later-title">
+                      {isOnlyExpense
+                        ? 'Expense only'
+                        : 'Linked to itinerary'}
+                    </p>
+
+                    <p className="itinerary-item-form__plan-later-description">
+                      {isOnlyExpense
+                        ? 'This expense is not linked to an itinerary activity.'
+                        : 'Shared expense details can be edited here. Schedule changes are managed from the itinerary.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+            {isScheduled && (
               <div className="itinerary-item-form__schedule-grid">
                 <div className="itinerary-item-form__field">
                   <label
                     className="itinerary-item-form__label"
-                    htmlFor="itinerary-date"
+                    htmlFor="trip-entry-date"
                   >
                     Date
                   </label>
 
                   <input
                     className="itinerary-item-form__control"
-                    id="itinerary-date"
+                    id="trip-entry-date"
                     type="date"
                     value={
                       itineraryDate
@@ -679,7 +938,8 @@ function ItineraryItemForm({
                     min={minDate}
                     max={maxDate}
                     disabled={
-                      isSubmitting
+                      isSubmitting ||
+                      lockSchedule
                     }
                     onChange={(event) =>
                       setItineraryDate(
@@ -693,21 +953,22 @@ function ItineraryItemForm({
                   <div className="itinerary-item-form__field">
                     <label
                       className="itinerary-item-form__label"
-                      htmlFor="itinerary-start-time"
+                      htmlFor="trip-entry-start-time"
                     >
                       Start time
                     </label>
 
                     <input
                       className="itinerary-item-form__control"
-                      id="itinerary-start-time"
+                      id="trip-entry-start-time"
                       type="time"
                       value={
                         startTime
                       }
                       step={900}
                       disabled={
-                        isSubmitting
+                        isSubmitting ||
+                        lockSchedule
                       }
                       onChange={(event) =>
                         setStartTime(
@@ -727,21 +988,22 @@ function ItineraryItemForm({
                   <div className="itinerary-item-form__field">
                     <label
                       className="itinerary-item-form__label"
-                      htmlFor="itinerary-end-time"
+                      htmlFor="trip-entry-end-time"
                     >
                       End time
                     </label>
 
                     <input
                       className="itinerary-item-form__control"
-                      id="itinerary-end-time"
+                      id="trip-entry-end-time"
                       type="time"
                       value={
                         endTime
                       }
                       step={900}
                       disabled={
-                        isSubmitting
+                        isSubmitting ||
+                        lockSchedule
                       }
                       onChange={(event) =>
                         setEndTime(
@@ -752,26 +1014,51 @@ function ItineraryItemForm({
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="itinerary-item-form__plan-later">
-                <div className="itinerary-item-form__plan-later-icon">
-                  <ActivityIcon />
-                </div>
-
-                <div>
-                  <p className="itinerary-item-form__plan-later-title">
-                    Keep it unscheduled
-                  </p>
-
-                  <p className="itinerary-item-form__plan-later-description">
-                    The activity will wait
-                    in your itinerary until
-                    you assign a day and
-                    time.
-                  </p>
-                </div>
-              </div>
             )}
+
+            {!isExpenseEdit &&
+              isPlanLater && (
+                <div className="itinerary-item-form__plan-later">
+                  <div className="itinerary-item-form__plan-later-icon">
+                    <ActivityIcon />
+                  </div>
+
+                  <div>
+                    <p className="itinerary-item-form__plan-later-title">
+                      Keep it unscheduled
+                    </p>
+
+                    <p className="itinerary-item-form__plan-later-description">
+                      The activity will wait
+                      in your itinerary until
+                      you assign a day and
+                      time.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+            {!isExpenseEdit &&
+              isOnlyExpense && (
+                <div className="itinerary-item-form__plan-later">
+                  <div className="itinerary-item-form__plan-later-icon">
+                    <ExpenseIcon />
+                  </div>
+
+                  <div>
+                    <p className="itinerary-item-form__plan-later-title">
+                      Track only the expense
+                    </p>
+
+                    <p className="itinerary-item-form__plan-later-description">
+                      This item will be saved
+                      in Expenses only and
+                      will not be added to
+                      your itinerary.
+                    </p>
+                  </div>
+                </div>
+              )}
           </section>
 
           <section className="itinerary-item-form__section">
@@ -782,8 +1069,9 @@ function ItineraryItemForm({
                 </h2>
 
                 <p className="itinerary-item-form__section-description">
-                  Leave the amount empty
-                  for a free activity.
+                  {isAmountRequired
+                    ? 'Enter the amount you want to track for this expense.'
+                    : 'Leave the amount empty for a free activity.'}
                 </p>
               </div>
             </div>
@@ -792,34 +1080,40 @@ function ItineraryItemForm({
               <div className="itinerary-item-form__field">
                 <label
                   className="itinerary-item-form__label"
-                  htmlFor="itinerary-cost"
+                  htmlFor="trip-entry-amount"
                 >
                   Amount
 
-                  <span className="itinerary-item-form__optional">
-                    Optional
-                  </span>
+                  {!isAmountRequired && (
+                    <span className="itinerary-item-form__optional">
+                      Optional
+                    </span>
+                  )}
                 </label>
 
                 <input
                   className="itinerary-item-form__control"
-                  id="itinerary-cost"
+                  id="trip-entry-amount"
                   type="text"
                   inputMode="decimal"
-                  value={cost}
-                  placeholder="0"
+                  value={amount}
+                  placeholder={
+                    isAmountRequired
+                      ? '100'
+                      : '0'
+                  }
                   disabled={
                     isSubmitting
                   }
                   onChange={
-                    handleCostChange
+                    handleAmountChange
                   }
                 />
               </div>
 
               <div className="itinerary-item-form__currency">
                 <CurrencySelector
-                  id="itinerary-currency"
+                  id="trip-entry-currency"
                   label="Currency"
                   value={currency}
                   onChange={
@@ -849,9 +1143,12 @@ function ItineraryItemForm({
               <div className="itinerary-item-form__field itinerary-item-form__field--full">
                 <label
                   className="itinerary-item-form__label"
-                  htmlFor="itinerary-description"
+                  htmlFor="trip-entry-description"
                 >
-                  Description
+                  {isExpenseEdit ||
+                  isOnlyExpense
+                    ? 'Notes'
+                    : 'Description'}
 
                   <span className="itinerary-item-form__optional">
                     Optional
@@ -860,13 +1157,18 @@ function ItineraryItemForm({
 
                 <textarea
                   className="itinerary-item-form__textarea"
-                  id="itinerary-description"
+                  id="trip-entry-description"
                   value={
                     description
                   }
                   maxLength={2000}
                   rows={3}
-                  placeholder="Reservation details, notes or anything useful..."
+                  placeholder={
+                    isExpenseEdit ||
+                    isOnlyExpense
+                      ? 'Receipt details, payment notes or anything useful...'
+                      : 'Reservation details, notes or anything useful...'
+                  }
                   disabled={
                     isSubmitting
                   }
@@ -881,7 +1183,7 @@ function ItineraryItemForm({
               <div className="itinerary-item-form__field itinerary-item-form__field--full">
                 <label
                   className="itinerary-item-form__label"
-                  htmlFor="itinerary-reference-url"
+                  htmlFor="trip-entry-reference-url"
                 >
                   Reference URL
 
@@ -892,7 +1194,7 @@ function ItineraryItemForm({
 
                 <input
                   className="itinerary-item-form__control"
-                  id="itinerary-reference-url"
+                  id="trip-entry-reference-url"
                   type="url"
                   value={
                     referenceUrl
@@ -947,8 +1249,18 @@ function ItineraryItemForm({
               }
             >
               {isSubmitting
-                ? 'Saving changes...'
-                : 'Save changes'}
+                ? (
+                    isExpenseEdit
+                      ? 'Saving changes...'
+                      : 'Adding...'
+                  )
+                : (
+                    isExpenseEdit
+                      ? 'Save changes'
+                      : isOnlyExpense
+                        ? 'Add expense'
+                        : 'Add activity'
+                  )}
             </button>
           </div>
         </footer>
@@ -957,4 +1269,4 @@ function ItineraryItemForm({
   )
 }
 
-export default ItineraryItemForm
+export default TripEntryForm

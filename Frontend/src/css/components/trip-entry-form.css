@@ -1,0 +1,15 @@
+.trip-entry-form__type-selector {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+  gap: var(--tp-space-3);
+}
+
+@media (max-width: 40rem) {
+  .trip-entry-form__type-selector {
+    grid-template-columns: 1fr;
+  }
+}

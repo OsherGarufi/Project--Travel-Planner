@@ -6,6 +6,7 @@ import {
 import {
   useNavigate,
 } from 'react-router-dom'
+import TripEntryForm from '../components/trip-entry/TripEntryForm'
 import ItineraryItemForm from '../components/trip-itinerary/ItineraryItemForm'
 import ItineraryWeekView from '../components/trip-itinerary/ItineraryWeekView'
 import '../css/pages/trip-itinerary-page.css'
@@ -253,11 +254,38 @@ function TripItineraryPage() {
     }
 
   const handleAddActivity =
-    async (itemData) => {
+    async (entryData) => {
       const createdItem =
-        await addItineraryItem(
-          itemData,
-        )
+        await addItineraryItem({
+          title:
+            entryData.title,
+
+          category:
+            entryData.category,
+
+          itineraryDate:
+            entryData.itineraryDate,
+
+          startTime:
+            entryData.startTime,
+
+          endTime:
+            entryData.endTime,
+
+          description:
+            entryData.description,
+
+          referenceUrl:
+            entryData.referenceUrl,
+
+          cost:
+            entryData.amount,
+
+          currency:
+            entryData.amount > 0
+              ? entryData.currency
+              : null,
+        })
 
       if (!createdItem) {
         return null
@@ -413,11 +441,46 @@ function TripItineraryPage() {
         </div>
       )}
 
-      {isActivityFormOpen && (
+      {isAddingActivity && (
+        <TripEntryForm
+          key="new-activity"
+          initialDate={
+            visibleDays[0]
+              ?.dateValue ??
+            trip.startDate
+          }
+          minDate={
+            trip.startDate
+          }
+          maxDate={
+            trip.endDate
+          }
+          defaultCurrency={
+            trip.budgetCurrency ??
+            'ILS'
+          }
+          allowOnlyExpense={
+            false
+          }
+          isSubmitting={
+            isCreatingItineraryItem
+          }
+          externalError={
+            itineraryActionError
+          }
+          onSubmit={
+            handleAddActivity
+          }
+          onCancel={
+            handleCancelActivityForm
+          }
+        />
+      )}
+
+      {isEditingActivity && (
         <ItineraryItemForm
           key={
-            editingItem?.id ??
-            'new-activity'
+            editingItem.id
           }
           initialItem={
             editingItem
@@ -434,15 +497,13 @@ function TripItineraryPage() {
             trip.endDate
           }
           isSubmitting={
-            isSubmittingActivity
+            isUpdatingItineraryItem
           }
           externalError={
             itineraryActionError
           }
           onSubmit={
-            isEditingActivity
-              ? handleUpdateActivity
-              : handleAddActivity
+            handleUpdateActivity
           }
           onCancel={
             handleCancelActivityForm

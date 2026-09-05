@@ -1,7 +1,7 @@
 const ITINERARY_CACHE_TTL_MS =
   30 * 60 * 1000
 
-function getCacheKey(
+export function getTripItineraryCacheKey(
   userId,
   tripId,
 ) {
@@ -21,7 +21,7 @@ export function getTripItineraryCache(
 
   try {
     const cacheKey =
-      getCacheKey(
+      getTripItineraryCacheKey(
         userId,
         tripId,
       )
@@ -88,7 +88,7 @@ export function setTripItineraryCache(
 
   try {
     localStorage.setItem(
-      getCacheKey(
+      getTripItineraryCacheKey(
         userId,
         tripId,
       ),
@@ -174,7 +174,7 @@ export function clearTripItineraryCache(
 
   try {
     localStorage.removeItem(
-      getCacheKey(
+      getTripItineraryCacheKey(
         userId,
         tripId,
       ),

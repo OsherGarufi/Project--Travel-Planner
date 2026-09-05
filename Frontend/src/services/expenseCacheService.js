@@ -7,7 +7,7 @@ const EXPENSES_CACHE_TTL_MS =
 const expensesMemoryCache =
   new Map()
 
-function getCacheKey(
+export function getTripExpensesCacheKey(
   userId,
   tripId,
 ) {
@@ -60,10 +60,11 @@ export function getCachedTripExpenses(
     return null
   }
 
-  const cacheKey = getCacheKey(
-    userId,
-    tripId,
-  )
+  const cacheKey =
+    getTripExpensesCacheKey(
+      userId,
+      tripId,
+    )
 
   const memoryEntry =
     expensesMemoryCache.get(
@@ -124,6 +125,56 @@ export function getCachedTripExpenses(
   }
 }
 
+export function syncCachedTripExpensesFromStorage(
+  userId,
+  tripId,
+  rawValue,
+) {
+  if (
+    !userId ||
+    !tripId ||
+    !rawValue
+  ) {
+    return null
+  }
+
+  const cacheKey =
+    getTripExpensesCacheKey(
+      userId,
+      tripId,
+    )
+
+  try {
+    const storedEntry =
+      JSON.parse(rawValue)
+
+    if (
+      !isCacheEntryValid(
+        storedEntry,
+      )
+    ) {
+      expensesMemoryCache.delete(
+        cacheKey,
+      )
+
+      return null
+    }
+
+    expensesMemoryCache.set(
+      cacheKey,
+      storedEntry,
+    )
+
+    return storedEntry.expenses
+  } catch {
+    expensesMemoryCache.delete(
+      cacheKey,
+    )
+
+    return null
+  }
+}
+
 export function setCachedTripExpenses(
   userId,
   tripId,
@@ -137,10 +188,11 @@ export function setCachedTripExpenses(
     return
   }
 
-  const cacheKey = getCacheKey(
-    userId,
-    tripId,
-  )
+  const cacheKey =
+    getTripExpensesCacheKey(
+      userId,
+      tripId,
+    )
 
   const cacheEntry = {
     expenses,
@@ -172,7 +224,7 @@ export function clearCachedTripExpenses(
   }
 
   removeCachedExpensesByKey(
-    getCacheKey(
+    getTripExpensesCacheKey(
       userId,
       tripId,
     ),

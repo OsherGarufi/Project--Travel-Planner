@@ -46,9 +46,16 @@ export function deleteTripExpense(
   tripId,
   expenseId,
   idToken,
+  deleteLinkedActivity = null,
 ) {
+  const deletePath =
+    typeof deleteLinkedActivity ===
+    'boolean'
+      ? `/api/Trips/${tripId}/expenses/${expenseId}?deleteLinkedActivity=${deleteLinkedActivity}`
+      : `/api/Trips/${tripId}/expenses/${expenseId}`
+
   return apiRequest(
-    `/api/Trips/${tripId}/expenses/${expenseId}`,
+    deletePath,
     {
       method: 'DELETE',
     },

@@ -5,8 +5,13 @@ import {
 } from 'react'
 import {
   getTripItineraryCache,
+  getTripItineraryCacheKey,
   setTripItineraryCache,
 } from '../../services/itinerary/itineraryCache'
+import {
+  syncExpensesCacheAfterItineraryDelete,
+  syncExpensesCacheFromItineraryItem,
+} from '../../services/itinerary/itineraryExpenseCacheSync'
 import {
   getOrCreateTripItineraryRequest,
   releaseTripItineraryRequest,
@@ -239,6 +244,77 @@ export function useTripItinerary(
     itineraryContextKey,
   ])
 
+  useEffect(() => {
+    if (
+      !userId ||
+      !tripId ||
+      !itineraryContextKey ||
+      loadedContextKey !==
+        itineraryContextKey
+    ) {
+      return undefined
+    }
+
+    const cacheKey =
+      getTripItineraryCacheKey(
+        userId,
+        tripId,
+      )
+
+    const handleStorageChange = (
+      event,
+    ) => {
+      if (
+        event.storageArea !==
+          localStorage ||
+        event.key !== cacheKey ||
+        !event.newValue
+      ) {
+        return
+      }
+
+      const nextItems =
+        getTripItineraryCache(
+          userId,
+          tripId,
+        )
+
+      if (
+        !Array.isArray(
+          nextItems,
+        )
+      ) {
+        return
+      }
+
+      itineraryItemsRef.current =
+        nextItems
+
+      setItineraryItems(
+        nextItems,
+      )
+
+      setItineraryError('')
+    }
+
+    window.addEventListener(
+      'storage',
+      handleStorageChange,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        handleStorageChange,
+      )
+    }
+  }, [
+    userId,
+    tripId,
+    itineraryContextKey,
+    loadedContextKey,
+  ])
+
   const addItineraryItem =
     async (itemData) => {
       if (
@@ -281,6 +357,12 @@ export function useTripItinerary(
           nextItems,
         )
 
+        syncExpensesCacheFromItineraryItem(
+          userId,
+          tripId,
+          createdItem,
+        )
+
         return createdItem
       } catch (error) {
         console.error(
@@ -317,6 +399,12 @@ export function useTripItinerary(
         return null
       }
 
+      const previousItem =
+        itineraryItemsRef.current.find(
+          (item) =>
+            item.id === itemId,
+        ) ?? null
+
       try {
         setIsUpdatingItineraryItem(
           true,
@@ -348,6 +436,13 @@ export function useTripItinerary(
 
         applyItineraryItems(
           nextItems,
+        )
+
+        syncExpensesCacheFromItineraryItem(
+          userId,
+          tripId,
+          updatedItem,
+          previousItem,
         )
 
         return updatedItem
@@ -386,6 +481,12 @@ export function useTripItinerary(
         return null
       }
 
+      const previousItem =
+        itineraryItemsRef.current.find(
+          (item) =>
+            item.id === itemId,
+        ) ?? null
+
       try {
         setIsUpdatingItinerarySchedule(
           true,
@@ -417,6 +518,13 @@ export function useTripItinerary(
 
         applyItineraryItems(
           nextItems,
+        )
+
+        syncExpensesCacheFromItineraryItem(
+          userId,
+          tripId,
+          updatedItem,
+          previousItem,
         )
 
         return updatedItem
@@ -452,6 +560,12 @@ export function useTripItinerary(
         return false
       }
 
+      const itemToDelete =
+        itineraryItemsRef.current.find(
+          (item) =>
+            item.id === itemId,
+        ) ?? null
+
       try {
         setIsDeletingItineraryItem(
           true,
@@ -474,6 +588,14 @@ export function useTripItinerary(
         applyItineraryItems(
           nextItems,
         )
+
+        if (itemToDelete) {
+          syncExpensesCacheAfterItineraryDelete(
+            userId,
+            tripId,
+            itemToDelete,
+          )
+        }
 
         return true
       } catch (error) {

@@ -7,7 +7,11 @@ import {
 import '../../css/components/trip-expenses-section.css'
 import { useExpenseSummary } from '../../hooks/trip-expenses/useExpenseSummary'
 import { useTripExpenses } from '../../hooks/trip-expenses/useTripExpenses'
-import ExpenseForm from './ExpenseForm'
+import TripEntryForm, {
+  TRIP_ENTRY_FORM_MODES,
+  TRIP_ENTRY_TYPES,
+} from '../trip-entry/TripEntryForm'
+import ExpenseDeleteConfirmation from './ExpenseDeleteConfirmation'
 import ExpenseSummary from './ExpenseSummary'
 
 function TripExpensesLoadingState() {
@@ -66,6 +70,24 @@ function DeleteIcon() {
   )
 }
 
+function getExpenseEntryType(
+  expense,
+) {
+  if (!expense?.itineraryItemId) {
+    return TRIP_ENTRY_TYPES.ONLY_EXPENSE
+  }
+
+  if (
+    expense.itineraryDate &&
+    expense.startTime &&
+    expense.endTime
+  ) {
+    return TRIP_ENTRY_TYPES.SCHEDULED
+  }
+
+  return TRIP_ENTRY_TYPES.PLAN_LATER
+}
+
 function TripExpensesSection({
   trip,
   isFocusMode = false,
@@ -73,7 +95,8 @@ function TripExpensesSection({
   onFocusStart,
   onFocusEnd,
 }) {
-  const expenseFormRef = useRef(null)
+  const expenseFormRef =
+    useRef(null)
 
   const [
     isAddingExpense,
@@ -126,59 +149,77 @@ function TripExpensesSection({
     deletingExpenseId,
 
     reloadExpenses,
+
     addExpense,
-    editExpense,
+    addExpenseActivity,
+
+    editExpenseEntry,
     removeExpense,
+
     clearExpenseActionError,
-  } = useTripExpenses(trip?.id)
+  } = useTripExpenses(
+    trip?.id,
+  )
 
   const expenseSummary =
     useExpenseSummary({
       expenses,
+
       budgetAmount:
         trip?.budgetAmount,
+
       budgetCurrency:
         trip?.budgetCurrency,
     })
 
-  const categories = useMemo(() => {
-    const uniqueCategories =
-      new Map()
+  const categories =
+    useMemo(() => {
+      const uniqueCategories =
+        new Map()
 
-    for (const expense of expenses) {
-      const category =
-        expense?.category?.trim()
-
-      if (!category) {
-        continue
-      }
-
-      const categoryKey =
-        category.toLowerCase()
-
-      if (
-        !uniqueCategories.has(
-          categoryKey,
-        )
+      for (
+        const expense
+        of expenses
       ) {
-        uniqueCategories.set(
-          categoryKey,
-          category,
-        )
-      }
-    }
+        const category =
+          expense?.category
+            ?.trim()
 
-    return Array.from(
-      uniqueCategories.values(),
-    ).sort((categoryA, categoryB) =>
-      categoryA.localeCompare(
-        categoryB,
-      ),
-    )
-  }, [expenses])
+        if (!category) {
+          continue
+        }
+
+        const categoryKey =
+          category.toLowerCase()
+
+        if (
+          !uniqueCategories.has(
+            categoryKey,
+          )
+        ) {
+          uniqueCategories.set(
+            categoryKey,
+            category,
+          )
+        }
+      }
+
+      return Array.from(
+        uniqueCategories.values(),
+      ).sort(
+        (
+          categoryA,
+          categoryB,
+        ) =>
+          categoryA.localeCompare(
+            categoryB,
+          ),
+      )
+    }, [expenses])
 
   const hasSelectedCategory =
-    selectedCategory === 'ALL' ||
+    selectedCategory ===
+      'ALL' ||
     categories.some(
       (category) =>
         category.toLowerCase() ===
@@ -192,7 +233,10 @@ function TripExpensesSection({
 
   const filteredExpenses =
     useMemo(() => {
-      if (activeCategory === 'ALL') {
+      if (
+        activeCategory ===
+        'ALL'
+      ) {
         return expenses
       }
 
@@ -201,7 +245,8 @@ function TripExpensesSection({
           expense.category
             ?.trim()
             .toLowerCase() ===
-          activeCategory.toLowerCase(),
+          activeCategory
+            .toLowerCase(),
       )
     }, [
       activeCategory,
@@ -211,8 +256,10 @@ function TripExpensesSection({
   const sortedExpenses =
     useMemo(() => {
       if (
-        sortOption === 'DEFAULT' ||
-        !expenseSummary.canSortByAmount
+        sortOption ===
+          'DEFAULT' ||
+        !expenseSummary
+          .canSortByAmount
       ) {
         return filteredExpenses
       }
@@ -222,7 +269,10 @@ function TripExpensesSection({
       ]
 
       sorted.sort(
-        (expenseA, expenseB) => {
+        (
+          expenseA,
+          expenseB,
+        ) => {
           const amountA =
             expenseSummary
               .convertedAmountsByExpenseId
@@ -234,8 +284,10 @@ function TripExpensesSection({
               .get(expenseB.id)
 
           if (
-            typeof amountA !== 'number' ||
-            typeof amountB !== 'number'
+            typeof amountA !==
+              'number' ||
+            typeof amountB !==
+              'number'
           ) {
             return 0
           }
@@ -244,34 +296,45 @@ function TripExpensesSection({
             sortOption ===
             'AMOUNT_DESC'
           ) {
-            return amountB - amountA
+            return (
+              amountB -
+              amountA
+            )
           }
 
-          return amountA - amountB
+          return (
+            amountA -
+            amountB
+          )
         },
       )
 
       return sorted
     }, [
-      expenseSummary.canSortByAmount,
+      expenseSummary
+        .canSortByAmount,
+
       expenseSummary
         .convertedAmountsByExpenseId,
+
       filteredExpenses,
       sortOption,
     ])
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      sortedExpenses.length /
-        itemsPerPage,
-    ),
-  )
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        sortedExpenses.length /
+          itemsPerPage,
+      ),
+    )
 
-  const activePage = Math.min(
-    currentPage,
-    totalPages,
-  )
+  const activePage =
+    Math.min(
+      currentPage,
+      totalPages,
+    )
 
   const pageStartIndex =
     (activePage - 1) *
@@ -298,7 +361,8 @@ function TripExpensesSection({
 
   const existingCategories =
     expenses.map(
-      (expense) => expense.category,
+      (expense) =>
+        expense.category,
     )
 
   useEffect(() => {
@@ -312,186 +376,278 @@ function TripExpensesSection({
       return
     }
 
-    expenseFormRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
+    expenseFormRef.current
+      ?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
   }, [
     isFocusMode,
     isAddingExpense,
     editingExpense,
   ])
 
-  const handleStartAdding = () => {
-    clearExpenseActionError()
+  const handleStartAdding =
+    () => {
+      clearExpenseActionError()
 
-    setEditingExpense(null)
+      setEditingExpense(null)
 
-    setDeleteConfirmationExpenseId(
-      null,
-    )
-
-    setIsAddingExpense(true)
-
-    onFocusStart?.()
-  }
-
-  const handleCancelAdding = () => {
-    clearExpenseActionError()
-    setIsAddingExpense(false)
-
-    onFocusEnd?.()
-  }
-
-  const handleAddExpense = async (
-    expenseData,
-  ) => {
-    const createdExpense =
-      await addExpense(expenseData)
-
-    if (!createdExpense) {
-      return
-    }
-
-    setIsAddingExpense(false)
-
-    onFocusEnd?.()
-  }
-
-  const handleStartEditing = (
-    expense,
-  ) => {
-    clearExpenseActionError()
-
-    setIsAddingExpense(false)
-
-    setDeleteConfirmationExpenseId(
-      null,
-    )
-
-    setEditingExpense(expense)
-
-    onFocusStart?.()
-  }
-
-  const handleCancelEditing = () => {
-    clearExpenseActionError()
-    setEditingExpense(null)
-
-    onFocusEnd?.()
-  }
-
-  const handleEditExpense = async (
-    expenseData,
-  ) => {
-    if (!editingExpense?.id) {
-      return
-    }
-
-    const updatedExpense =
-      await editExpense(
-        editingExpense.id,
-        expenseData,
+      setDeleteConfirmationExpenseId(
+        null,
       )
 
-    if (!updatedExpense) {
-      return
+      setIsAddingExpense(true)
+
+      onFocusStart?.()
     }
 
-    setEditingExpense(null)
+  const handleCancelAdding =
+    () => {
+      clearExpenseActionError()
 
-    onFocusEnd?.()
-  }
+      setIsAddingExpense(false)
 
-  const handleStartDeleting = (
-    expenseId,
-  ) => {
-    clearExpenseActionError()
+      onFocusEnd?.()
+    }
 
-    setIsAddingExpense(false)
-    setEditingExpense(null)
+  const handleAddExpense =
+    async (
+      entryData,
+    ) => {
+      if (
+        entryData.entryType ===
+        TRIP_ENTRY_TYPES.ONLY_EXPENSE
+      ) {
+        const createdExpense =
+          await addExpense({
+            category:
+              entryData.category,
 
-    setDeleteConfirmationExpenseId(
+            title:
+              entryData.title,
+
+            amount:
+              entryData.amount,
+
+            currency:
+              entryData.currency,
+
+            referenceUrl:
+              entryData.referenceUrl,
+
+            notes:
+              entryData.description,
+          })
+
+        if (!createdExpense) {
+          return
+        }
+
+        setIsAddingExpense(false)
+
+        onFocusEnd?.()
+
+        return
+      }
+
+      const createdItem =
+        await addExpenseActivity({
+          title:
+            entryData.title,
+
+          category:
+            entryData.category,
+
+          itineraryDate:
+            entryData.itineraryDate,
+
+          startTime:
+            entryData.startTime,
+
+          endTime:
+            entryData.endTime,
+
+          description:
+            entryData.description,
+
+          referenceUrl:
+            entryData.referenceUrl,
+
+          cost:
+            entryData.amount,
+
+          currency:
+            entryData.currency,
+        })
+
+      if (!createdItem) {
+        return
+      }
+
+      setIsAddingExpense(false)
+
+      onFocusEnd?.()
+    }
+
+  const handleStartEditing =
+    (expense) => {
+      clearExpenseActionError()
+
+      setIsAddingExpense(false)
+
+      setDeleteConfirmationExpenseId(
+        null,
+      )
+
+      setEditingExpense(
+        expense,
+      )
+
+      onFocusStart?.()
+    }
+
+  const handleCancelEditing =
+    () => {
+      clearExpenseActionError()
+
+      setEditingExpense(null)
+
+      onFocusEnd?.()
+    }
+
+  const handleEditExpense =
+    async (
+      entryData,
+    ) => {
+      if (
+        !editingExpense?.id
+      ) {
+        return
+      }
+
+      const updatedExpense =
+        await editExpenseEntry(
+          editingExpense.id,
+          entryData,
+        )
+
+      if (!updatedExpense) {
+        return
+      }
+
+      setEditingExpense(null)
+
+      onFocusEnd?.()
+    }
+
+  const handleStartDeleting =
+    (expenseId) => {
+      clearExpenseActionError()
+
+      setIsAddingExpense(false)
+      setEditingExpense(null)
+
+      setDeleteConfirmationExpenseId(
+        expenseId,
+      )
+    }
+
+  const handleCancelDeleting =
+    () => {
+      clearExpenseActionError()
+
+      setDeleteConfirmationExpenseId(
+        null,
+      )
+    }
+
+  const handleDeleteExpense =
+    async (
       expenseId,
-    )
-  }
+      deleteLinkedActivity =
+        null,
+    ) => {
+      const wasDeleted =
+        await removeExpense(
+          expenseId,
+          deleteLinkedActivity,
+        )
 
-  const handleCancelDeleting = () => {
-    clearExpenseActionError()
+      if (!wasDeleted) {
+        return
+      }
 
-    setDeleteConfirmationExpenseId(
-      null,
-    )
-  }
-
-  const handleDeleteExpense = async (
-    expenseId,
-  ) => {
-    const wasDeleted =
-      await removeExpense(expenseId)
-
-    if (!wasDeleted) {
-      return
+      setDeleteConfirmationExpenseId(
+        null,
+      )
     }
 
-    setDeleteConfirmationExpenseId(
-      null,
-    )
-  }
+  const handleCategoryChange =
+    (event) => {
+      setSelectedCategory(
+        event.target.value,
+      )
 
-  const handleCategoryChange = (
-    event,
-  ) => {
-    setSelectedCategory(
-      event.target.value,
-    )
+      setCurrentPage(1)
+    }
 
-    setCurrentPage(1)
-  }
+  const handleSortChange =
+    (event) => {
+      setSortOption(
+        event.target.value,
+      )
 
-  const handleSortChange = (
-    event,
-  ) => {
-    setSortOption(
-      event.target.value,
-    )
+      setCurrentPage(1)
+    }
 
-    setCurrentPage(1)
-  }
+  const handleItemsPerPageChange =
+    (event) => {
+      setItemsPerPage(
+        Number(
+          event.target.value,
+        ),
+      )
 
-  const handleItemsPerPageChange = (
-    event,
-  ) => {
-    setItemsPerPage(
-      Number(event.target.value),
-    )
+      setCurrentPage(1)
+    }
 
-    setCurrentPage(1)
-  }
+  const handlePreviousPage =
+    () => {
+      setCurrentPage(
+        (page) =>
+          Math.max(
+            page - 1,
+            1,
+          ),
+      )
+    }
 
-  const handlePreviousPage = () => {
-    setCurrentPage((page) =>
-      Math.max(page - 1, 1),
-    )
-  }
+  const handleNextPage =
+    () => {
+      setCurrentPage(
+        (page) =>
+          Math.min(
+            page + 1,
+            totalPages,
+          ),
+      )
+    }
 
-  const handleNextPage = () => {
-    setCurrentPage((page) =>
-      Math.min(
-        page + 1,
-        totalPages,
-      ),
-    )
-  }
+  const handleClearFilter =
+    () => {
+      setSelectedCategory(
+        'ALL',
+      )
 
-  const handleClearFilter = () => {
-    setSelectedCategory('ALL')
-    setCurrentPage(1)
-  }
+      setCurrentPage(1)
+    }
 
   const isFormOpen =
     isAddingExpense ||
-    Boolean(editingExpense)
+    Boolean(
+      editingExpense,
+    )
 
   const hasActiveExpenseInteraction =
     isFormOpen ||
@@ -506,12 +662,18 @@ function TripExpensesSection({
 
   return (
     <section
-      className={sectionClassName}
-      hidden={isHidden}
+      className={
+        sectionClassName
+      }
+      hidden={
+        isHidden
+      }
     >
       <div
         className="trip-expenses__normal-content"
-        hidden={isFocusMode}
+        hidden={
+          isFocusMode
+        }
       >
         <div className="trip-expenses__top">
           <div className="trip-expenses__header">
@@ -525,8 +687,9 @@ function TripExpensesSection({
               </h2>
 
               <p className="trip-expenses__description">
-                Keep all of your trip spending
-                organized in one place.
+                Keep all of your trip
+                spending organized in
+                one place.
               </p>
             </div>
 
@@ -545,13 +708,16 @@ function TripExpensesSection({
                     </button>
                   )}
 
-                  {expenses.length > 0 && (
+                  {expenses.length >
+                    0 && (
                     <button
                       className="trip-expenses__view-button"
                       type="button"
                       onClick={() =>
                         setIsExpensesVisible(
-                          (isVisible) =>
+                          (
+                            isVisible,
+                          ) =>
                             !isVisible,
                         )
                       }
@@ -625,7 +791,9 @@ function TripExpensesSection({
               <button
                 className="trip-expenses__retry-button"
                 type="button"
-                onClick={reloadExpenses}
+                onClick={
+                  reloadExpenses
+                }
               >
                 Try again
               </button>
@@ -634,7 +802,8 @@ function TripExpensesSection({
 
         {!isLoadingExpenses &&
           !expensesError &&
-          expenses.length === 0 &&
+          expenses.length ===
+            0 &&
           !isFormOpen && (
             <div className="trip-expenses__empty">
               <div
@@ -649,9 +818,9 @@ function TripExpensesSection({
               </h3>
 
               <p className="trip-expenses__empty-description">
-                Add your first expense to start
-                keeping track of your trip
-                spending.
+                Add your first expense
+                to start keeping track
+                of your trip spending.
               </p>
 
               <button
@@ -668,7 +837,8 @@ function TripExpensesSection({
 
         {!isLoadingExpenses &&
           !expensesError &&
-          expenses.length > 0 &&
+          expenses.length >
+            0 &&
           isExpensesVisible && (
             <div className="trip-expenses__browser">
               <div className="trip-expenses__controls">
@@ -684,7 +854,9 @@ function TripExpensesSection({
                     <select
                       id="expense-category-filter"
                       className="trip-expenses__filter-select"
-                      value={activeCategory}
+                      value={
+                        activeCategory
+                      }
                       onChange={
                         handleCategoryChange
                       }
@@ -694,12 +866,20 @@ function TripExpensesSection({
                       </option>
 
                       {categories.map(
-                        (category) => (
+                        (
+                          category,
+                        ) => (
                           <option
-                            key={category}
-                            value={category}
+                            key={
+                              category
+                            }
+                            value={
+                              category
+                            }
                           >
-                            {category}
+                            {
+                              category
+                            }
                           </option>
                         ),
                       )}
@@ -717,7 +897,9 @@ function TripExpensesSection({
                     <select
                       id="expense-sort"
                       className="trip-expenses__filter-select"
-                      value={sortOption}
+                      value={
+                        sortOption
+                      }
                       onChange={
                         handleSortChange
                       }
@@ -757,7 +939,9 @@ function TripExpensesSection({
                     <select
                       id="expense-page-size"
                       className="trip-expenses__filter-select"
-                      value={itemsPerPage}
+                      value={
+                        itemsPerPage
+                      }
                       onChange={
                         handleItemsPerPageChange
                       }
@@ -786,7 +970,9 @@ function TripExpensesSection({
                   </strong>{' '}
                   of{' '}
                   <strong>
-                    {sortedExpenses.length}
+                    {
+                      sortedExpenses.length
+                    }
                   </strong>{' '}
                   expenses
                 </p>
@@ -797,7 +983,9 @@ function TripExpensesSection({
                 <>
                   <div className="trip-expenses__items">
                     {paginatedExpenses.map(
-                      (expense) => {
+                      (
+                        expense,
+                      ) => {
                         const isConfirmingDelete =
                           deleteConfirmationExpenseId ===
                           expense.id
@@ -813,7 +1001,9 @@ function TripExpensesSection({
                                 ? 'trip-expenses__item trip-expenses__item--confirming'
                                 : 'trip-expenses__item'
                             }
-                            key={expense.id}
+                            key={
+                              expense.id
+                            }
                           >
                             <div className="trip-expenses__item-main">
                               <span className="trip-expenses__item-category">
@@ -845,54 +1035,28 @@ function TripExpensesSection({
                               </div>
 
                               {isConfirmingDelete ? (
-                                <div className="trip-expenses__delete-confirmation">
-                                  <p className="trip-expenses__delete-message">
-                                    Delete this expense?
-                                  </p>
-
-                                  {expenseActionError && (
-                                    <p
-                                      className="trip-expenses__delete-error"
-                                      role="alert"
-                                    >
-                                      {
-                                        expenseActionError
-                                      }
-                                    </p>
-                                  )}
-
-                                  <div className="trip-expenses__delete-actions">
-                                    <button
-                                      className="trip-expenses__delete-cancel"
-                                      type="button"
-                                      onClick={
-                                        handleCancelDeleting
-                                      }
-                                      disabled={
-                                        isDeletingThisExpense
-                                      }
-                                    >
-                                      Cancel
-                                    </button>
-
-                                    <button
-                                      className="trip-expenses__delete-confirm"
-                                      type="button"
-                                      onClick={() =>
-                                        handleDeleteExpense(
-                                          expense.id,
-                                        )
-                                      }
-                                      disabled={
-                                        isDeletingThisExpense
-                                      }
-                                    >
-                                      {isDeletingThisExpense
-                                        ? 'Deleting...'
-                                        : 'Delete'}
-                                    </button>
-                                  </div>
-                                </div>
+                                <ExpenseDeleteConfirmation
+                                  expense={
+                                    expense
+                                  }
+                                  isDeleting={
+                                    isDeletingThisExpense
+                                  }
+                                  error={
+                                    expenseActionError
+                                  }
+                                  onCancel={
+                                    handleCancelDeleting
+                                  }
+                                  onDelete={(
+                                    deleteLinkedActivity,
+                                  ) =>
+                                    handleDeleteExpense(
+                                      expense.id,
+                                      deleteLinkedActivity,
+                                    )
+                                  }
+                                />
                               ) : (
                                 <div className="trip-expenses__item-actions">
                                   <button
@@ -951,7 +1115,8 @@ function TripExpensesSection({
                     )}
                   </div>
 
-                  {totalPages > 1 && (
+                  {totalPages >
+                    1 && (
                     <nav
                       className="trip-expenses__pagination"
                       aria-label="Expenses pagination"
@@ -963,7 +1128,8 @@ function TripExpensesSection({
                           handlePreviousPage
                         }
                         disabled={
-                          activePage === 1
+                          activePage ===
+                          1
                         }
                       >
                         Previous
@@ -975,10 +1141,16 @@ function TripExpensesSection({
                             length:
                               totalPages,
                           },
-                          (_, index) =>
-                            index + 1,
+                          (
+                            _,
+                            index,
+                          ) =>
+                            index +
+                            1,
                         ).map(
-                          (pageNumber) => (
+                          (
+                            pageNumber,
+                          ) => (
                             <button
                               key={
                                 pageNumber
@@ -1002,7 +1174,9 @@ function TripExpensesSection({
                                   : undefined
                               }
                             >
-                              {pageNumber}
+                              {
+                                pageNumber
+                              }
                             </button>
                           ),
                         )}
@@ -1052,41 +1226,66 @@ function TripExpensesSection({
 
       {isAddingExpense && (
         <div
-          ref={expenseFormRef}
+          ref={
+            expenseFormRef
+          }
           className="trip-expenses__focus-area"
         >
-          <div className="trip-expenses__focus-heading">
-            <p className="trip-expenses__focus-eyebrow">
-              ADD EXPENSE
-            </p>
-
-            <h2 className="trip-expenses__focus-title">
-              Add a trip expense
-            </h2>
-
-            <p className="trip-expenses__focus-description">
-              Add a new expense and keep
-              your trip spending organized.
-            </p>
-          </div>
-
-          <ExpenseForm
+          <TripEntryForm
             key="add-expense"
-            defaultCurrency={
-              trip?.budgetCurrency ?? 'ILS'
+
+            formMode={
+              TRIP_ENTRY_FORM_MODES.CREATE_EXPENSE
             }
+
+            initialDate={
+              trip?.startDate ??
+              ''
+            }
+
+            minDate={
+              trip?.startDate ??
+              ''
+            }
+
+            maxDate={
+              trip?.endDate ??
+              ''
+            }
+
+            defaultCurrency={
+              trip?.budgetCurrency ??
+              'ILS'
+            }
+
             existingCategories={
               existingCategories
             }
+
+            initialEntryType={
+              TRIP_ENTRY_TYPES.ONLY_EXPENSE
+            }
+
+            allowOnlyExpense={
+              true
+            }
+
+            requireAmount={
+              true
+            }
+
             isSubmitting={
               isCreatingExpense
             }
-            submitError={
+
+            externalError={
               expenseActionError
             }
+
             onSubmit={
               handleAddExpense
             }
+
             onCancel={
               handleCancelAdding
             }
@@ -1096,45 +1295,99 @@ function TripExpensesSection({
 
       {editingExpense && (
         <div
-          ref={expenseFormRef}
+          ref={
+            expenseFormRef
+          }
           className="trip-expenses__focus-area"
         >
-          <div className="trip-expenses__focus-heading">
-            <p className="trip-expenses__focus-eyebrow">
-              EDIT EXPENSE
-            </p>
-
-            <h2 className="trip-expenses__focus-title">
-              Update expense details
-            </h2>
-
-            <p className="trip-expenses__focus-description">
-              Update the information
-              for this trip expense.
-            </p>
-          </div>
-
-          <ExpenseForm
-            key={editingExpense.id}
-            initialExpense={
-              editingExpense
+          <TripEntryForm
+            key={
+              editingExpense.id
             }
+
+            formMode={
+              TRIP_ENTRY_FORM_MODES.EDIT_EXPENSE
+            }
+
+            initialEntry={{
+              entryType:
+                getExpenseEntryType(
+                  editingExpense,
+                ),
+
+              title:
+                editingExpense.title,
+
+              category:
+                editingExpense.category,
+
+              itineraryDate:
+                editingExpense.itineraryDate,
+
+              startTime:
+                editingExpense.startTime,
+
+              endTime:
+                editingExpense.endTime,
+
+              amount:
+                editingExpense.amount,
+
+              currency:
+                editingExpense.currency,
+
+              description:
+                editingExpense.notes,
+
+              referenceUrl:
+                editingExpense.referenceUrl,
+            }}
+
+            initialDate={
+              trip?.startDate ??
+              ''
+            }
+
+            minDate={
+              trip?.startDate ??
+              ''
+            }
+
+            maxDate={
+              trip?.endDate ??
+              ''
+            }
+
             defaultCurrency={
-              trip?.budgetCurrency ?? 'ILS'
+              trip?.budgetCurrency ??
+              'ILS'
             }
+
             existingCategories={
               existingCategories
             }
+
+            allowOnlyExpense={
+              true
+            }
+
+            requireAmount={
+              true
+            }
+
             isSubmitting={
               updatingExpenseId ===
               editingExpense.id
             }
-            submitError={
+
+            externalError={
               expenseActionError
             }
+
             onSubmit={
               handleEditExpense
             }
+
             onCancel={
               handleCancelEditing
             }

@@ -491,6 +491,7 @@
 .trip-expenses__edit-button,
 .trip-expenses__delete-button,
 .trip-expenses__delete-cancel,
+.trip-expenses__delete-expense-only,
 .trip-expenses__delete-confirm {
   min-height:
     var(--tp-control-height-md);
@@ -542,6 +543,7 @@
 .trip-expenses__edit-button:focus-visible,
 .trip-expenses__delete-button:focus-visible,
 .trip-expenses__delete-cancel:focus-visible,
+.trip-expenses__delete-expense-only:focus-visible,
 .trip-expenses__delete-confirm:focus-visible {
   box-shadow: var(--tp-focus-ring);
 }
@@ -549,6 +551,7 @@
 .trip-expenses__edit-button:disabled,
 .trip-expenses__delete-button:disabled,
 .trip-expenses__delete-cancel:disabled,
+.trip-expenses__delete-expense-only:disabled,
 .trip-expenses__delete-confirm:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -568,11 +571,20 @@
   gap: var(--tp-space-2);
 }
 
+.trip-expenses__delete-confirmation--linked {
+  max-width: 30rem;
+}
+
 .trip-expenses__delete-message {
   color: var(--tp-color-text-secondary);
   font-size: var(--tp-font-size-sm);
   font-weight:
     var(--tp-font-weight-semibold);
+}
+
+.trip-expenses__delete-confirmation--linked
+  .trip-expenses__delete-message {
+  max-width: 27rem;
 }
 
 .trip-expenses__delete-error {
@@ -585,6 +597,8 @@
 .trip-expenses__delete-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: var(--tp-space-2);
 }
 
@@ -601,12 +615,29 @@
     var(--tp-color-surface-hover);
 }
 
+.trip-expenses__delete-expense-only {
+  border: 1px solid
+    rgba(217, 45, 32, 0.22);
+  color: var(--tp-color-danger);
+  background-color:
+    var(--tp-color-surface);
+}
+
+.trip-expenses__delete-expense-only:hover:not(:disabled) {
+  background-color:
+    var(--tp-color-danger-soft);
+}
+
 .trip-expenses__delete-confirm {
   border: 1px solid
     var(--tp-color-danger);
   color: var(--tp-color-text-inverse);
   background-color:
     var(--tp-color-danger);
+}
+
+.trip-expenses__delete-confirm:hover:not(:disabled) {
+  filter: brightness(0.94);
 }
 
 /* Pagination */
@@ -980,7 +1011,13 @@
   .trip-expenses__delete-confirmation {
     width: 100%;
     min-width: 0;
+    max-width: none;
     align-items: stretch;
+  }
+
+  .trip-expenses__delete-confirmation--linked
+    .trip-expenses__delete-message {
+    max-width: none;
   }
 
   .trip-expenses__delete-error {
@@ -990,11 +1027,15 @@
 
   .trip-expenses__delete-actions {
     width: 100%;
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .trip-expenses__delete-cancel,
+  .trip-expenses__delete-expense-only,
   .trip-expenses__delete-confirm {
-    flex: 1;
+    width: 100%;
+    flex: none;
   }
 
   /* Pagination */
