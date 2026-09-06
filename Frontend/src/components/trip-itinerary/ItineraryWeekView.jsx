@@ -6,6 +6,9 @@ import {
 } from 'react'
 import '../../css/components/itinerary-week-view.css'
 import {
+  useItineraryDrag,
+} from '../../hooks/trip-itinerary/useItineraryDrag'
+import {
   getItineraryCategoryKey,
   ITINERARY_CATEGORIES,
   ITINERARY_HOUR_HEIGHT,
@@ -25,6 +28,67 @@ const HOURS = Array.from(
   },
   (_, hour) => hour,
 )
+
+function getActionPosition(
+  event,
+  boundarySelector,
+) {
+  const cardRect =
+    event.currentTarget
+      .getBoundingClientRect()
+
+  const boundaryRect =
+    event.currentTarget
+      .closest(
+        boundarySelector,
+      )
+      ?.getBoundingClientRect()
+
+  const boundaryCenter =
+    boundaryRect
+      ? (
+          boundaryRect.left +
+          boundaryRect.right
+        ) / 2
+      : window.innerWidth / 2
+
+  return {
+    x:
+      event.clientX -
+      cardRect.left,
+
+    y:
+      event.clientY -
+      cardRect.top + 6,
+
+    alignEnd:
+      event.clientX >
+      boundaryCenter,
+  }
+}
+
+function getActionPopupStyle(
+  actionPosition,
+) {
+  if (!actionPosition) {
+    return undefined
+  }
+
+  return {
+    top:
+      `${actionPosition.y}px`,
+
+    left:
+      `${actionPosition.x}px`,
+
+    right: 'auto',
+
+    transform:
+      actionPosition.alignEnd
+        ? 'translateX(-100%)'
+        : 'none',
+  }
+}
 
 function ChevronLeftIcon() {
   return (
@@ -230,6 +294,7 @@ function layoutDayItems(items) {
 
 function ItineraryDeleteConfirmation({
   item,
+  actionPosition,
   isDeleting,
   error,
   onCancel,
@@ -260,6 +325,11 @@ function ItineraryDeleteConfirmation({
   return (
     <div
       className="itinerary-week__delete-confirmation"
+      style={
+        getActionPopupStyle(
+          actionPosition,
+        )
+      }
       onClick={(event) =>
         event.stopPropagation()
       }
@@ -320,9 +390,13 @@ function ItineraryDeleteConfirmation({
 function ItineraryEventCard({
   item,
   isSelected,
+  isDragging,
+  actionPosition,
   isConfirmingDelete,
   isDeleting,
   deleteError,
+  onPointerDown,
+  shouldSuppressClick,
   onToggleSelected,
   onEdit,
   onMoveToPlanLater,
@@ -374,12 +448,34 @@ function ItineraryEventCard({
       item.category,
     )
 
-  const handleDoubleClick =
+  const handleClick =
     (event) => {
       event.stopPropagation()
 
+      if (
+        shouldSuppressClick?.()
+      ) {
+        event.preventDefault()
+      }
+    }
+
+  const handleDoubleClick =
+    (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+
+      if (
+        shouldSuppressClick?.()
+      ) {
+        return
+      }
+
       onToggleSelected(
         item.id,
+        getActionPosition(
+          event,
+          '.itinerary-week__calendar-shell',
+        ),
       )
     }
 
@@ -400,27 +496,52 @@ function ItineraryEventCard({
       )
     }
 
+  const className = [
+    'itinerary-week__event',
+    `itinerary-week__event--${categoryKey}`,
+    isSelected
+      ? 'itinerary-week__event--selected'
+      : '',
+    isDragging
+      ? 'itinerary-week__event--dragging'
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <article
       className={
-        isSelected
-          ? `itinerary-week__event itinerary-week__event--${categoryKey} itinerary-week__event--selected`
-          : `itinerary-week__event itinerary-week__event--${categoryKey}`
+        className
       }
       style={{
         top: `${top}px`,
         height: `${height}px`,
         left: `calc(${leftPercentage}% + 4px)`,
         width: `calc(${widthPercentage}% - 8px)`,
+        cursor:
+          isDragging
+            ? 'grabbing'
+            : 'grab',
+        opacity:
+          isDragging
+            ? 0.82
+            : 1,
       }}
       tabIndex={0}
+      aria-grabbed={
+        isDragging
+      }
       aria-label={`${item.title}, ${formatTime(
         item.startTime,
       )} to ${formatTime(
         item.endTime,
-      )}. Double click for actions.`}
-      onClick={(event) =>
-        event.stopPropagation()
+      )}. Drag to reschedule or double click for actions.`}
+      onPointerDown={
+        onPointerDown
+      }
+      onClick={
+        handleClick
       }
       onDoubleClick={
         handleDoubleClick
@@ -444,12 +565,16 @@ function ItineraryEventCard({
       </strong>
 
       {isSelected &&
+        !isDragging &&
         (
           isConfirmingDelete
             ? (
                 <ItineraryDeleteConfirmation
                   item={
                     item
+                  }
+                  actionPosition={
+                    actionPosition
                   }
                   isDeleting={
                     isDeleting
@@ -469,6 +594,11 @@ function ItineraryEventCard({
               )
             : (
                 <ItineraryItemActions
+                  style={
+                    getActionPopupStyle(
+                      actionPosition,
+                    )
+                  }
                   onEdit={() =>
                     onEdit?.(
                       item,
@@ -505,9 +635,13 @@ function ItineraryEventCard({
 function UnscheduledItemCard({
   item,
   isSelected,
+  isDragging,
+  actionPosition,
   isConfirmingDelete,
   isDeleting,
   deleteError,
+  onPointerDown,
+  shouldSuppressClick,
   onToggleSelected,
   onEdit,
   onStartDelete,
@@ -519,12 +653,34 @@ function UnscheduledItemCard({
       item.category,
     )
 
-  const handleDoubleClick =
+  const handleClick =
     (event) => {
       event.stopPropagation()
 
+      if (
+        shouldSuppressClick?.()
+      ) {
+        event.preventDefault()
+      }
+    }
+
+  const handleDoubleClick =
+    (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+
+      if (
+        shouldSuppressClick?.()
+      ) {
+        return
+      }
+
       onToggleSelected(
         item.id,
+        getActionPosition(
+          event,
+          '.itinerary-week__unscheduled',
+        ),
       )
     }
 
@@ -545,17 +701,42 @@ function UnscheduledItemCard({
       )
     }
 
+  const className = [
+    'itinerary-week__unscheduled-card',
+    `itinerary-week__unscheduled-card--${categoryKey}`,
+    isSelected
+      ? 'itinerary-week__unscheduled-card--selected'
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <article
       className={
-        isSelected
-          ? `itinerary-week__unscheduled-card itinerary-week__unscheduled-card--${categoryKey} itinerary-week__unscheduled-card--selected`
-          : `itinerary-week__unscheduled-card itinerary-week__unscheduled-card--${categoryKey}`
+        className
       }
+      style={{
+        cursor:
+          isDragging
+            ? 'grabbing'
+            : 'grab',
+
+        opacity:
+          isDragging
+            ? 0.82
+            : 1,
+      }}
       tabIndex={0}
-      aria-label={`${item.title}. Double click for actions.`}
-      onClick={(event) =>
-        event.stopPropagation()
+      aria-grabbed={
+        isDragging
+      }
+      aria-label={`${item.title}. Drag to schedule or double click for actions.`}
+      onPointerDown={
+        onPointerDown
+      }
+      onClick={
+        handleClick
       }
       onDoubleClick={
         handleDoubleClick
@@ -573,12 +754,16 @@ function UnscheduledItemCard({
       </strong>
 
       {isSelected &&
+        !isDragging &&
         (
           isConfirmingDelete
             ? (
                 <ItineraryDeleteConfirmation
                   item={
                     item
+                  }
+                  actionPosition={
+                    actionPosition
                   }
                   isDeleting={
                     isDeleting
@@ -598,6 +783,11 @@ function UnscheduledItemCard({
               )
             : (
                 <ItineraryItemActions
+                  style={
+                    getActionPopupStyle(
+                      actionPosition,
+                    )
+                  }
                   onEdit={() =>
                     onEdit?.(
                       item,
@@ -626,6 +816,7 @@ function ItineraryWeekView({
   onNextWeek,
   onEditItem,
   onMoveItemToPlanLater,
+  onScheduleItemDrop,
   onDeleteItem,
   isDeletingItem,
   actionError,
@@ -633,9 +824,17 @@ function ItineraryWeekView({
   const calendarScrollRef =
     useRef(null)
 
+  const unscheduledDropRef =
+    useRef(null)
+
   const [
     selectedItemId,
     setSelectedItemId,
+  ] = useState(null)
+
+  const [
+    selectedActionPosition,
+    setSelectedActionPosition,
   ] = useState(null)
 
   const [
@@ -647,6 +846,71 @@ function ItineraryWeekView({
     hasDeleteAttempted,
     setHasDeleteAttempted,
   ] = useState(false)
+
+  const closeItemActions =
+    () => {
+      setSelectedItemId(null)
+
+      setSelectedActionPosition(
+        null,
+      )
+
+      setDeleteConfirmationItemId(
+        null,
+      )
+
+      setHasDeleteAttempted(false)
+    }
+
+  const {
+    dragPreview,
+    draggingItemId,
+    startDrag,
+    shouldSuppressClick,
+  } = useItineraryDrag({
+    calendarScrollRef,
+    unscheduledDropRef,
+
+    onDragStart:
+      closeItemActions,
+
+    onDrop:
+      onScheduleItemDrop,
+  })
+
+  const displayedItineraryItems =
+    useMemo(() => {
+      if (!dragPreview) {
+        return itineraryItems
+      }
+
+      return itineraryItems.map(
+        (item) => {
+          if (
+            item.id !==
+            dragPreview.itemId
+          ) {
+            return item
+          }
+
+          return {
+            ...item,
+
+            itineraryDate:
+              dragPreview.itineraryDate,
+
+            startTime:
+              dragPreview.startTime,
+
+            endTime:
+              dragPreview.endTime,
+          }
+        },
+      )
+    }, [
+      itineraryItems,
+      dragPreview,
+    ])
 
   useEffect(() => {
     const calendar =
@@ -669,6 +933,10 @@ function ItineraryWeekView({
 
     setSelectedItemId(null)
 
+    setSelectedActionPosition(
+      null,
+    )
+
     setDeleteConfirmationItemId(
       null,
     )
@@ -686,6 +954,10 @@ function ItineraryWeekView({
         }
 
         setSelectedItemId(null)
+
+        setSelectedActionPosition(
+          null,
+        )
 
         setDeleteConfirmationItemId(
           null,
@@ -735,7 +1007,7 @@ function ItineraryWeekView({
         },
       )
 
-      itineraryItems.forEach(
+      displayedItineraryItems.forEach(
         (item) => {
           if (
             !visibleDateValues.has(
@@ -756,14 +1028,14 @@ function ItineraryWeekView({
       return result
     }, [
       days,
-      itineraryItems,
+      displayedItineraryItems,
       visibleDateValues,
     ])
 
   const unscheduledItems =
     useMemo(
       () =>
-        itineraryItems.filter(
+        displayedItineraryItems.filter(
           (item) =>
             !item.startTime &&
             !item.endTime &&
@@ -775,25 +1047,36 @@ function ItineraryWeekView({
             ),
         ),
       [
-        itineraryItems,
+        displayedItineraryItems,
         visibleDateValues,
       ],
     )
 
   const handleToggleSelected =
-    (itemId) => {
+    (
+      itemId,
+      actionPosition = null,
+    ) => {
       if (
         isDeletingItem
       ) {
         return
       }
 
+      const isClosing =
+        selectedItemId ===
+        itemId
+
       setSelectedItemId(
-        (currentItemId) =>
-          currentItemId ===
-          itemId
-            ? null
-            : itemId,
+        isClosing
+          ? null
+          : itemId,
+      )
+
+      setSelectedActionPosition(
+        isClosing
+          ? null
+          : actionPosition,
       )
 
       setDeleteConfirmationItemId(
@@ -865,6 +1148,10 @@ function ItineraryWeekView({
       )
 
       setSelectedItemId(null)
+
+      setSelectedActionPosition(
+        null,
+      )
 
       setHasDeleteAttempted(false)
     }
@@ -1039,12 +1326,29 @@ function ItineraryWeekView({
                         dayItems,
                       )
 
+                    const isDragTarget =
+                      dragPreview
+                        ?.targetType ===
+                        'calendar' &&
+                      dragPreview
+                        .itineraryDate ===
+                        day.dateValue
+
                     return (
                       <div
                         className="itinerary-week__day-column"
+                        data-itinerary-date={
+                          day.dateValue
+                        }
                         key={
                           day.dateValue
                         }
+                        style={{
+                          boxShadow:
+                            isDragTarget
+                              ? 'inset 0 0 0 2px var(--tp-color-primary-400)'
+                              : undefined,
+                        }}
                       >
                         {HOURS.map(
                           (
@@ -1079,6 +1383,16 @@ function ItineraryWeekView({
                                 selectedItemId ===
                                 item.id
                               }
+                              isDragging={
+                                draggingItemId ===
+                                item.id
+                              }
+                              actionPosition={
+                                selectedItemId ===
+                                item.id
+                                  ? selectedActionPosition
+                                  : null
+                              }
                               isConfirmingDelete={
                                 deleteConfirmationItemId ===
                                 item.id
@@ -1092,6 +1406,18 @@ function ItineraryWeekView({
                                 hasDeleteAttempted
                                   ? actionError
                                   : ''
+                              }
+                              onPointerDown={
+                                (
+                                  event,
+                                ) =>
+                                  startDrag(
+                                    event,
+                                    item,
+                                  )
+                              }
+                              shouldSuppressClick={
+                                shouldSuppressClick
                               }
                               onToggleSelected={
                                 handleToggleSelected
@@ -1123,7 +1449,20 @@ function ItineraryWeekView({
           </div>
         </div>
 
-        <aside className="itinerary-week__unscheduled">
+        <aside
+          ref={
+            unscheduledDropRef
+          }
+          className="itinerary-week__unscheduled"
+          style={{
+            boxShadow:
+              dragPreview
+                ?.targetType ===
+                'unscheduled'
+                ? '0 0 0 2px var(--tp-color-primary-400), 0 10px 30px rgba(30, 65, 103, 0.08)'
+                : undefined,
+          }}
+        >
           <div className="itinerary-week__unscheduled-header">
             <p className="itinerary-week__unscheduled-eyebrow">
               UNSCHEDULED
@@ -1161,6 +1500,16 @@ function ItineraryWeekView({
                       selectedItemId ===
                       item.id
                     }
+                    isDragging={
+                      draggingItemId ===
+                      item.id
+                    }
+                    actionPosition={
+                      selectedItemId ===
+                      item.id
+                        ? selectedActionPosition
+                        : null
+                    }
                     isConfirmingDelete={
                       deleteConfirmationItemId ===
                       item.id
@@ -1174,6 +1523,18 @@ function ItineraryWeekView({
                       hasDeleteAttempted
                         ? actionError
                         : ''
+                    }
+                    onPointerDown={
+                      (
+                        event,
+                      ) =>
+                        startDrag(
+                          event,
+                          item,
+                        )
+                    }
+                    shouldSuppressClick={
+                      shouldSuppressClick
                     }
                     onToggleSelected={
                       handleToggleSelected

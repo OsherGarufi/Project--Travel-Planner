@@ -101,6 +101,7 @@ function TripItineraryPage() {
     addItineraryItem,
     updateItineraryItem,
     updateItinerarySchedule,
+    queueItineraryScheduleUpdate,
     deleteItineraryItem,
 
     clearItineraryActionError,
@@ -338,6 +339,23 @@ function TripItineraryPage() {
       )
     }
 
+  const handleDropActivity =
+    (
+      item,
+      scheduleData,
+    ) => {
+      if (!item?.id) {
+        return null
+      }
+
+      clearItineraryActionError()
+
+      return queueItineraryScheduleUpdate(
+        item.id,
+        scheduleData,
+      )
+    }
+
   const handleDeleteActivity =
     async (item) => {
       if (
@@ -551,6 +569,9 @@ function TripItineraryPage() {
           }
           onMoveItemToPlanLater={
             handleMoveActivityToPlanLater
+          }
+          onScheduleItemDrop={
+            handleDropActivity
           }
           onDeleteItem={
             handleDeleteActivity

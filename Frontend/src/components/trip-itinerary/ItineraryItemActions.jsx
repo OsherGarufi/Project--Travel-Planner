@@ -70,6 +70,7 @@ function DeleteIcon() {
 }
 
 function ItineraryItemActions({
+  style,
   onEdit,
   onMoveToPlanLater,
   onDelete,
@@ -85,6 +86,7 @@ function ItineraryItemActions({
   return (
     <div
       className="itinerary-week__item-actions"
+      style={style}
       aria-label="Activity actions"
       onClick={(event) =>
         event.stopPropagation()
