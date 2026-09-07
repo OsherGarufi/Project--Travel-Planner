@@ -6,6 +6,7 @@ import {
 import {
   getTripItineraryCache,
   getTripItineraryCacheKey,
+  ITINERARY_CACHE_UPDATED_EVENT,
   setTripItineraryCache,
 } from '../../services/itinerary/itineraryCache'
 import {
@@ -784,6 +785,32 @@ export function useTripItinerary(
         tripId,
       )
 
+    const applyCachedItems =
+      () => {
+        const nextItems =
+          getTripItineraryCache(
+            userId,
+            tripId,
+          )
+
+        if (
+          !Array.isArray(
+            nextItems,
+          )
+        ) {
+          return
+        }
+
+        itineraryItemsRef.current =
+          nextItems
+
+        setItineraryItems(
+          nextItems,
+        )
+
+        setItineraryError('')
+      }
+
     const handleStorageChange = (
       event,
     ) => {
@@ -796,28 +823,22 @@ export function useTripItinerary(
         return
       }
 
-      const nextItems =
-        getTripItineraryCache(
-          userId,
-          tripId,
-        )
+      applyCachedItems()
+    }
 
+    const handleLocalCacheUpdate = (
+      event,
+    ) => {
       if (
-        !Array.isArray(
-          nextItems,
-        )
+        event.detail?.userId !==
+          userId ||
+        event.detail?.tripId !==
+          tripId
       ) {
         return
       }
 
-      itineraryItemsRef.current =
-        nextItems
-
-      setItineraryItems(
-        nextItems,
-      )
-
-      setItineraryError('')
+      applyCachedItems()
     }
 
     window.addEventListener(
@@ -825,10 +846,20 @@ export function useTripItinerary(
       handleStorageChange,
     )
 
+    window.addEventListener(
+      ITINERARY_CACHE_UPDATED_EVENT,
+      handleLocalCacheUpdate,
+    )
+
     return () => {
       window.removeEventListener(
         'storage',
         handleStorageChange,
+      )
+
+      window.removeEventListener(
+        ITINERARY_CACHE_UPDATED_EVENT,
+        handleLocalCacheUpdate,
       )
     }
   }, [

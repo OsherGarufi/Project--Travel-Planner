@@ -1,14 +1,18 @@
 import {
-    useCallback,
-    useEffect,
-    useState,
+  useCallback,
+  useEffect,
+  useState,
 } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTrips } from '../useTrips'
 
 export function useTripDetails() {
   const { tripId } = useParams()
-  const { loadTripById } = useTrips()
+
+  const {
+    trips,
+    loadTripById,
+  } = useTrips()
 
   const hasTripId = Boolean(tripId)
 
@@ -75,6 +79,30 @@ export function useTripDetails() {
       isActive = false
     }
   }, [loadTripById, tripId])
+
+  useEffect(() => {
+    if (
+      !tripId ||
+      !Array.isArray(trips)
+    ) {
+      return
+    }
+
+    const cachedTrip =
+      trips.find(
+        (tripItem) =>
+          tripItem.id === tripId,
+      )
+
+    if (!cachedTrip) {
+      return
+    }
+
+    setTrip(cachedTrip)
+  }, [
+    tripId,
+    trips,
+  ])
 
   const replaceTrip = useCallback(
     (updatedTrip) => {

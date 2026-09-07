@@ -1,7 +1,7 @@
 const TRIPS_CACHE_TTL =
   24 * 60 * 60 * 1000
 
-function getTripsCacheKey(userId) {
+export function getTripsCacheKey(userId) {
   return `travelPlannerTrips:${userId}`
 }
 

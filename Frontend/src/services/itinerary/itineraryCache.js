@@ -4,6 +4,9 @@ const ITINERARY_CACHE_TTL_MS =
 const ITINERARY_CACHE_PREFIX =
   'trip-itinerary'
 
+export const ITINERARY_CACHE_UPDATED_EVENT =
+  'trip-itinerary-cache-updated'
+
 export function getTripItineraryCacheKey(
   userId,
   tripId,
@@ -161,6 +164,18 @@ export function updateTripItineraryCacheForDateRange(
     userId,
     tripId,
     nextItems,
+  )
+
+  window.dispatchEvent(
+    new CustomEvent(
+      ITINERARY_CACHE_UPDATED_EVENT,
+      {
+        detail: {
+          userId,
+          tripId,
+        },
+      },
+    ),
   )
 }
 

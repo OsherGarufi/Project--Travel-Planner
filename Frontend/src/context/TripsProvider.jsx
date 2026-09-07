@@ -11,6 +11,7 @@ import {
   getTrips,
 } from '../services/tripService'
 import {
+  getTripsCacheKey,
   readTripsCache,
   removeTripsCache,
   writeTripsCache,
@@ -85,6 +86,61 @@ function TripsProviderForUser({
     },
     [userId],
   )
+
+  useEffect(() => {
+    if (!userId) {
+      return undefined
+    }
+
+    const cacheKey =
+      getTripsCacheKey(userId)
+
+    const handleStorageChange = (
+      event,
+    ) => {
+      if (
+        event.storageArea !==
+          window.localStorage ||
+        event.key !== cacheKey
+      ) {
+        return
+      }
+
+      const cachedTrips =
+        readTripsCache(userId)
+
+      if (!cachedTrips) {
+        applyTrips(
+          [],
+          false,
+          false,
+        )
+
+        return
+      }
+
+      applyTrips(
+        cachedTrips.trips,
+        cachedTrips.isComplete,
+        false,
+      )
+    }
+
+    window.addEventListener(
+      'storage',
+      handleStorageChange,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        handleStorageChange,
+      )
+    }
+  }, [
+    applyTrips,
+    userId,
+  ])
 
   const loadTrips = useCallback(
     async ({ forceRefresh = false } = {}) => {
