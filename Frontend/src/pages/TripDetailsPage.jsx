@@ -52,6 +52,25 @@ function ArrowLeftIcon() {
   )
 }
 
+function CalendarIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M7 3v3M17 3v3M4.5 9h15M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function TripDetailsLoadingState() {
   return (
     <div
@@ -358,6 +377,16 @@ function TripDetailsPage() {
       setActiveFocusMode(null)
     }
 
+  const handleOpenItinerary = () => {
+    if (!trip?.id || isDeleting) {
+      return
+    }
+
+    navigate(
+      `/trips/${trip.id}/itinerary`,
+    )
+  }
+
   const handleEditStartDateChange =
     (event) => {
       clearEditWeather()
@@ -614,6 +643,26 @@ function TripDetailsPage() {
 
             <span>
               Back to My Trips
+            </span>
+          </button>
+
+          <button
+            className="trip-details-page__itinerary"
+            type="button"
+            onClick={
+              handleOpenItinerary
+            }
+            disabled={isDeleting}
+          >
+            <span
+              className="trip-details-page__itinerary-icon"
+              aria-hidden="true"
+            >
+              <CalendarIcon />
+            </span>
+
+            <span>
+              Open itinerary
             </span>
           </button>
         </div>
