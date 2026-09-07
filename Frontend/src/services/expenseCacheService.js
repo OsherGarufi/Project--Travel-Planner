@@ -230,3 +230,59 @@ export function clearCachedTripExpenses(
     ),
   )
 }
+
+/**
+ * Removes every Expenses cache entry that belongs
+ * to the specified user.
+ *
+ * Used when the authenticated user signs out or
+ * changes, so private expense data does not remain
+ * in this browser profile.
+ */
+export function clearUserExpensesCache(
+  userId,
+) {
+  if (!userId) {
+    return
+  }
+
+  const userCachePrefix =
+    `${EXPENSES_CACHE_PREFIX}:${userId}:`
+
+  for (
+    const cacheKey
+    of expensesMemoryCache.keys()
+  ) {
+    if (
+      cacheKey.startsWith(
+        userCachePrefix,
+      )
+    ) {
+      expensesMemoryCache.delete(
+        cacheKey,
+      )
+    }
+  }
+
+  try {
+    Object.keys(
+      localStorage,
+    )
+      .filter(
+        (cacheKey) =>
+          cacheKey.startsWith(
+            userCachePrefix,
+          ),
+      )
+      .forEach(
+        (cacheKey) => {
+          localStorage.removeItem(
+            cacheKey,
+          )
+        },
+      )
+  } catch {
+    // Cache cleanup failure
+    // should never block logout.
+  }
+}

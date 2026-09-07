@@ -13,26 +13,47 @@ import {
   registerWithEmail,
   syncFirebaseUserWithBackend,
 } from '../services/authService'
+import {
+  clearUserExpensesCache,
+} from '../services/expenseCacheService'
+import {
+  clearUserItineraryCache,
+} from '../services/itinerary/itineraryCache'
+import {
+  removeTripsCache,
+} from '../services/trips/tripsCache'
 import { AuthContext } from './AuthContext'
 
 function getEmailLoginErrorMessage(loginError) {
-  if (loginError.message === 'EMAIL_NOT_VERIFIED') {
+  if (
+    loginError.message ===
+    'EMAIL_NOT_VERIFIED'
+  ) {
     return 'Please verify your email address before signing in.'
   }
 
   if (
-    loginError.code === 'auth/invalid-credential' ||
-    loginError.code === 'auth/user-not-found' ||
-    loginError.code === 'auth/wrong-password'
+    loginError.code ===
+      'auth/invalid-credential' ||
+    loginError.code ===
+      'auth/user-not-found' ||
+    loginError.code ===
+      'auth/wrong-password'
   ) {
     return 'The email address or password is incorrect.'
   }
 
-  if (loginError.code === 'auth/invalid-email') {
+  if (
+    loginError.code ===
+    'auth/invalid-email'
+  ) {
     return 'Please enter a valid email address.'
   }
 
-  if (loginError.code === 'auth/too-many-requests') {
+  if (
+    loginError.code ===
+    'auth/too-many-requests'
+  ) {
     return 'Too many failed login attempts. Please try again later.'
   }
 
@@ -46,17 +67,26 @@ function getEmailLoginErrorMessage(loginError) {
   return 'Login failed. Please try again.'
 }
 
-function getRegistrationErrorMessage(registerError) {
-  if (registerError.code === 'auth/email-already-in-use') {
+function getRegistrationErrorMessage(
+  registerError,
+) {
+  if (
+    registerError.code ===
+    'auth/email-already-in-use'
+  ) {
     return 'An account with this email already exists. Please use a different email or sign in instead.'
   }
 
-  if (registerError.code === 'auth/invalid-email') {
+  if (
+    registerError.code ===
+    'auth/invalid-email'
+  ) {
     return 'Please enter a valid email address.'
   }
 
   if (
-    registerError.code === 'auth/weak-password' ||
+    registerError.code ===
+      'auth/weak-password' ||
     registerError.code ===
       'auth/password-does-not-meet-requirements'
   ) {
@@ -70,7 +100,10 @@ function getRegistrationErrorMessage(registerError) {
     return 'Network error. Please check your internet connection and try again.'
   }
 
-  if (registerError.code === 'auth/too-many-requests') {
+  if (
+    registerError.code ===
+    'auth/too-many-requests'
+  ) {
     return 'Too many registration attempts. Please wait a moment and try again.'
   }
 
@@ -84,123 +117,229 @@ function getRegistrationErrorMessage(registerError) {
   return 'We could not create your account. Please try again.'
 }
 
-export function AuthProvider({ children }) {
-  const [firebaseUser, setFirebaseUser] =
-    useState(null)
+function clearPrivateUserCache(
+  userId,
+) {
+  if (!userId) {
+    return
+  }
 
-  const [backendUser, setBackendUser] =
-    useState(null)
-
-  const [idToken, setIdToken] = useState(null)
-  const [error, setError] = useState('')
-  const [isLoading, setIsLoading] =
-    useState(true)
-
-  const isAuthActionInProgress = useRef(false)
-  const authRestoreRequestIdRef = useRef(0)
-
-  const applyAuthResult = useCallback(
-    (loginResult) => {
-      setFirebaseUser(loginResult.firebaseUser)
-      setBackendUser(loginResult.backendUser)
-      setIdToken(loginResult.idToken)
-    },
-    [],
+  removeTripsCache(
+    userId,
   )
 
-  const clearAuthState = useCallback(() => {
-    setFirebaseUser(null)
-    setBackendUser(null)
-    setIdToken(null)
-  }, [])
+  clearUserExpensesCache(
+    userId,
+  )
 
-  const clearError = useCallback(() => {
-    setError('')
-  }, [])
+  clearUserItineraryCache(
+    userId,
+  )
+}
+
+export function AuthProvider({
+  children,
+}) {
+  const [
+    firebaseUser,
+    setFirebaseUser,
+  ] = useState(null)
+
+  const [
+    backendUser,
+    setBackendUser,
+  ] = useState(null)
+
+  const [
+    idToken,
+    setIdToken,
+  ] = useState(null)
+
+  const [
+    error,
+    setError,
+  ] = useState('')
+
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true)
+
+  const isAuthActionInProgress =
+    useRef(false)
+
+  const authRestoreRequestIdRef =
+    useRef(0)
+
+  const activeUserIdRef =
+    useRef(null)
+
+  const applyAuthResult =
+    useCallback(
+      (loginResult) => {
+        const nextUserId =
+          loginResult
+            .firebaseUser
+            ?.uid ?? null
+
+        const previousUserId =
+          activeUserIdRef.current
+
+        if (
+          previousUserId &&
+          previousUserId !==
+            nextUserId
+        ) {
+          clearPrivateUserCache(
+            previousUserId,
+          )
+        }
+
+        activeUserIdRef.current =
+          nextUserId
+
+        setFirebaseUser(
+          loginResult.firebaseUser,
+        )
+
+        setBackendUser(
+          loginResult.backendUser,
+        )
+
+        setIdToken(
+          loginResult.idToken,
+        )
+      },
+      [],
+    )
+
+  const clearAuthState =
+    useCallback(() => {
+      const currentUserId =
+        activeUserIdRef.current
+
+      if (currentUserId) {
+        clearPrivateUserCache(
+          currentUserId,
+        )
+      }
+
+      activeUserIdRef.current =
+        null
+
+      setFirebaseUser(null)
+      setBackendUser(null)
+      setIdToken(null)
+    }, [])
+
+  const clearError =
+    useCallback(() => {
+      setError('')
+    }, [])
 
   const beginAuthAction = () => {
-    isAuthActionInProgress.current = true
+    isAuthActionInProgress.current =
+      true
 
-    authRestoreRequestIdRef.current += 1
+    authRestoreRequestIdRef.current +=
+      1
 
     setIsLoading(true)
     setError('')
   }
 
   const finishAuthAction = () => {
-    isAuthActionInProgress.current = false
+    isAuthActionInProgress.current =
+      false
+
     setIsLoading(false)
   }
 
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(
-      auth,
-      async (currentFirebaseUser) => {
-        const restoreRequestId =
-          ++authRestoreRequestIdRef.current
+    const unsubscribe =
+      onIdTokenChanged(
+        auth,
+        async (
+          currentFirebaseUser,
+        ) => {
+          const restoreRequestId =
+            ++authRestoreRequestIdRef.current
 
-        if (isAuthActionInProgress.current) {
-          return
-        }
+          if (
+            isAuthActionInProgress.current
+          ) {
+            return
+          }
 
-        if (!currentFirebaseUser) {
-          clearAuthState()
-          setIsLoading(false)
+          if (
+            !currentFirebaseUser
+          ) {
+            clearAuthState()
+            setIsLoading(false)
 
-          return
-        }
+            return
+          }
 
-        try {
-          setIsLoading(true)
-          setError('')
+          try {
+            setIsLoading(true)
+            setError('')
 
-          const loginResult =
-            await syncFirebaseUserWithBackend(
-              currentFirebaseUser,
+            const loginResult =
+              await syncFirebaseUserWithBackend(
+                currentFirebaseUser,
+              )
+
+            if (
+              authRestoreRequestIdRef.current !==
+              restoreRequestId
+            ) {
+              return
+            }
+
+            applyAuthResult(
+              loginResult,
+            )
+          } catch (
+            restoreError
+          ) {
+            if (
+              authRestoreRequestIdRef.current !==
+              restoreRequestId
+            ) {
+              return
+            }
+
+            console.error(
+              'Authentication restore failed:',
+              restoreError,
             )
 
-          if (
-            authRestoreRequestIdRef.current !==
-            restoreRequestId
-          ) {
-            return
+            clearAuthState()
+
+            setError(
+              'Could not restore the authentication session. Please try signing in again.',
+            )
+          } finally {
+            if (
+              authRestoreRequestIdRef.current ===
+              restoreRequestId
+            ) {
+              setIsLoading(false)
+            }
           }
-
-          applyAuthResult(loginResult)
-        } catch (restoreError) {
-          if (
-            authRestoreRequestIdRef.current !==
-            restoreRequestId
-          ) {
-            return
-          }
-
-          console.error(
-            'Authentication restore failed:',
-            restoreError,
-          )
-
-          clearAuthState()
-
-          setError(
-            'Could not restore the authentication session. Please try signing in again.',
-          )
-        } finally {
-          if (
-            authRestoreRequestIdRef.current ===
-            restoreRequestId
-          ) {
-            setIsLoading(false)
-          }
-        }
-      },
-    )
+        },
+      )
 
     return () => {
-      authRestoreRequestIdRef.current += 1
+      authRestoreRequestIdRef.current +=
+        1
+
       unsubscribe()
     }
-  }, [applyAuthResult, clearAuthState])
+  }, [
+    applyAuthResult,
+    clearAuthState,
+  ])
 
   const login = async () => {
     beginAuthAction()
@@ -209,10 +348,14 @@ export function AuthProvider({ children }) {
       const loginResult =
         await loginWithGoogle()
 
-      applyAuthResult(loginResult)
+      applyAuthResult(
+        loginResult,
+      )
 
       return loginResult
-    } catch (loginError) {
+    } catch (
+      loginError
+    ) {
       console.error(
         'Google login failed:',
         loginError,
@@ -228,36 +371,44 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const loginWithEmailAndPassword = async (
-    email,
-    password,
-  ) => {
-    beginAuthAction()
+  const loginWithEmailAndPassword =
+    async (
+      email,
+      password,
+    ) => {
+      beginAuthAction()
 
-    try {
-      const loginResult = await loginWithEmail(
-        email,
-        password,
-      )
+      try {
+        const loginResult =
+          await loginWithEmail(
+            email,
+            password,
+          )
 
-      applyAuthResult(loginResult)
+        applyAuthResult(
+          loginResult,
+        )
 
-      return loginResult
-    } catch (loginError) {
-      console.error(
-        'Email login failed:',
-        loginError,
-      )
+        return loginResult
+      } catch (
+        loginError
+      ) {
+        console.error(
+          'Email login failed:',
+          loginError,
+        )
 
-      setError(
-        getEmailLoginErrorMessage(loginError),
-      )
+        setError(
+          getEmailLoginErrorMessage(
+            loginError,
+          ),
+        )
 
-      throw loginError
-    } finally {
-      finishAuthAction()
+        throw loginError
+      } finally {
+        finishAuthAction()
+      }
     }
-  }
 
   const register = async (
     displayName,
@@ -272,14 +423,18 @@ export function AuthProvider({ children }) {
         email,
         password,
       )
-    } catch (registerError) {
+    } catch (
+      registerError
+    ) {
       console.error(
         'Registration failed:',
         registerError,
       )
 
       setError(
-        getRegistrationErrorMessage(registerError),
+        getRegistrationErrorMessage(
+          registerError,
+        ),
       )
 
       throw registerError
@@ -293,8 +448,11 @@ export function AuthProvider({ children }) {
 
     try {
       await logoutFromFirebase()
+
       clearAuthState()
-    } catch (logoutError) {
+    } catch (
+      logoutError
+    ) {
       console.error(
         'Logout failed:',
         logoutError,
@@ -324,7 +482,11 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={authContextValue}>
+    <AuthContext.Provider
+      value={
+        authContextValue
+      }
+    >
       {children}
     </AuthContext.Provider>
   )

@@ -1,11 +1,14 @@
 const ITINERARY_CACHE_TTL_MS =
   30 * 60 * 1000
 
+const ITINERARY_CACHE_PREFIX =
+  'trip-itinerary'
+
 export function getTripItineraryCacheKey(
   userId,
   tripId,
 ) {
-  return `trip-itinerary:${userId}:${tripId}`
+  return `${ITINERARY_CACHE_PREFIX}:${userId}:${tripId}`
 }
 
 export function getTripItineraryCache(
@@ -181,5 +184,46 @@ export function clearTripItineraryCache(
     )
   } catch {
     // Cache cleanup is best-effort only.
+  }
+}
+
+/**
+ * Removes every itinerary cache entry that belongs
+ * to the specified user.
+ *
+ * Used when authentication ends or switches to
+ * another user so private itinerary data does not
+ * remain in this browser profile.
+ */
+export function clearUserItineraryCache(
+  userId,
+) {
+  if (!userId) {
+    return
+  }
+
+  const userCachePrefix =
+    `${ITINERARY_CACHE_PREFIX}:${userId}:`
+
+  try {
+    Object.keys(
+      localStorage,
+    )
+      .filter(
+        (cacheKey) =>
+          cacheKey.startsWith(
+            userCachePrefix,
+          ),
+      )
+      .forEach(
+        (cacheKey) => {
+          localStorage.removeItem(
+            cacheKey,
+          )
+        },
+      )
+  } catch {
+    // Cache cleanup failure
+    // should never block logout.
   }
 }

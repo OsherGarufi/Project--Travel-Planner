@@ -1,25 +1,25 @@
 import {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import {
-    getTripById,
-    getTrips,
+  getTripById,
+  getTrips,
 } from '../services/tripService'
 import {
-    readTripsCache,
-    removeTripsCache,
-    writeTripsCache,
+  readTripsCache,
+  removeTripsCache,
+  writeTripsCache,
 } from '../services/trips/tripsCache'
 import {
-    getOrCreateTripDetailsRequest,
-    getOrCreateTripsRequest,
-    releaseTripDetailsRequest,
-    releaseTripsRequest,
+  getOrCreateTripDetailsRequest,
+  getOrCreateTripsRequest,
+  releaseTripDetailsRequest,
+  releaseTripsRequest,
 } from '../services/trips/tripsRequestManager'
 import { TripsContext } from './TripsContext'
 
@@ -333,22 +333,6 @@ export function TripsProvider({ children }) {
   const { firebaseUser, idToken } = useAuth()
 
   const userId = firebaseUser?.uid ?? null
-
-  const previousUserIdRef = useRef(userId)
-
-  useEffect(() => {
-    const previousUserId =
-      previousUserIdRef.current
-
-    if (
-      previousUserId &&
-      previousUserId !== userId
-    ) {
-      removeTripsCache(previousUserId)
-    }
-
-    previousUserIdRef.current = userId
-  }, [userId])
 
   return (
     <TripsProviderForUser
