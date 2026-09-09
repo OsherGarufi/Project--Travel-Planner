@@ -7,6 +7,7 @@ import {
   useNavigate,
 } from 'react-router-dom'
 import TripEntryForm from '../components/trip-entry/TripEntryForm'
+import TripAttractionsSection from '../components/trip-attractions/TripAttractionsSection'
 import ItineraryItemForm from '../components/trip-itinerary/ItineraryItemForm'
 import ItineraryWeekView from '../components/trip-itinerary/ItineraryWeekView'
 import '../css/pages/trip-itinerary-page.css'
@@ -78,6 +79,11 @@ function TripItineraryPage() {
   const [
     editingItem,
     setEditingItem,
+  ] = useState(null)
+
+  const [
+    selectedAttraction,
+    setSelectedAttraction,
   ] = useState(null)
 
   const {
@@ -224,9 +230,24 @@ function TripItineraryPage() {
     () => {
       clearItineraryActionError()
 
+      setSelectedAttraction(null)
       setEditingItem(null)
       setIsAddingActivity(true)
     }
+
+  const handleAddAttraction = (attraction) => {
+    if (
+      !attraction?.placeId ||
+      isSubmittingActivity
+    ) {
+      return
+    }
+
+    clearItineraryActionError()
+    setSelectedAttraction(attraction)
+    setEditingItem(null)
+    setIsAddingActivity(true)
+  }
 
   const handleOpenEditActivity =
     (item) => {
@@ -236,6 +257,7 @@ function TripItineraryPage() {
 
       clearItineraryActionError()
 
+      setSelectedAttraction(null)
       setIsAddingActivity(false)
       setEditingItem(item)
     }
@@ -250,6 +272,7 @@ function TripItineraryPage() {
 
       clearItineraryActionError()
 
+      setSelectedAttraction(null)
       setIsAddingActivity(false)
       setEditingItem(null)
     }
@@ -292,6 +315,7 @@ function TripItineraryPage() {
         return null
       }
 
+      setSelectedAttraction(null)
       setIsAddingActivity(false)
 
       return createdItem
@@ -459,9 +483,41 @@ function TripItineraryPage() {
         </div>
       )}
 
+      <div hidden={isActivityFormOpen}>
+        <TripAttractionsSection
+          trip={trip}
+          onAddToItinerary={handleAddAttraction}
+        />
+      </div>
+
       {isAddingActivity && (
         <TripEntryForm
-          key="new-activity"
+          key={
+            selectedAttraction
+              ? `attraction:${tripId}:${selectedAttraction.placeId}`
+              : 'new-activity'
+          }
+          initialEntry={
+            selectedAttraction
+              ? {
+                  title: selectedAttraction.name,
+                  category: 'Activities',
+                  description:
+                    selectedAttraction.description || '',
+                  referenceUrl:
+                    selectedAttraction.website || '',
+                  amount: '',
+                  itineraryDate: null,
+                  startTime: null,
+                  endTime: null,
+                }
+              : null
+          }
+          initialEntryType={
+            selectedAttraction
+              ? 'plan-later'
+              : undefined
+          }
           initialDate={
             visibleDays[0]
               ?.dateValue ??

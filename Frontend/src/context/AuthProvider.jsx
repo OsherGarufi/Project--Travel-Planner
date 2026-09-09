@@ -22,6 +22,12 @@ import {
 import {
   removeTripsCache,
 } from '../services/trips/tripsCache'
+import {
+  clearUserAttractionsCache,
+} from '../services/attractions/attractionsCache'
+import {
+  invalidateUserAttractionsRequests,
+} from '../services/attractions/attractionsRequestManager'
 import { AuthContext } from './AuthContext'
 
 function getEmailLoginErrorMessage(loginError) {
@@ -123,6 +129,14 @@ function clearPrivateUserCache(
   if (!userId) {
     return
   }
+
+  invalidateUserAttractionsRequests(
+    userId,
+  )
+
+  clearUserAttractionsCache(
+    userId,
+  )
 
   removeTripsCache(
     userId,
