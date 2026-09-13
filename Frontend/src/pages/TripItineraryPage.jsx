@@ -1,13 +1,15 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import {
   useNavigate,
+  useLocation,
 } from 'react-router-dom'
 import TripEntryForm from '../components/trip-entry/TripEntryForm'
-import TripAttractionsSection from '../components/trip-attractions/TripAttractionsSection'
+import { safeAttractionUrl } from '../services/attractions/attractionsService'
 import ItineraryItemForm from '../components/trip-itinerary/ItineraryItemForm'
 import ItineraryWeekView from '../components/trip-itinerary/ItineraryWeekView'
 import '../css/pages/trip-itinerary-page.css'
@@ -65,6 +67,8 @@ function PlusIcon() {
 function TripItineraryPage() {
   const navigate =
     useNavigate()
+  const location = useLocation()
+  const consumedDrafts = useRef(new Set())
 
   const [
     weekStartIndex,
@@ -82,8 +86,8 @@ function TripItineraryPage() {
   ] = useState(null)
 
   const [
-    selectedAttraction,
-    setSelectedAttraction,
+    attractionDraft,
+    setAttractionDraft,
   ] = useState(null)
 
   const {
@@ -114,6 +118,66 @@ function TripItineraryPage() {
   } = useTripItinerary(
     tripId,
   )
+
+  useEffect(() => {
+    if (
+      !location.state ||
+      typeof location.state !== 'object' ||
+      !Object.hasOwn(location.state, 'attractionDraft') ||
+      isLoadingTrip ||
+      isLoadingItinerary
+    ) {
+      return undefined
+    }
+
+    // Wait for the requested trip, rather than consuming against a stale trip.
+    if (trip && trip.id !== tripId && !tripError) {
+      return undefined
+    }
+
+    const draft = location.state.attractionDraft
+    const isObject = draft !== null && typeof draft === 'object' && !Array.isArray(draft)
+    const placeId = isObject && typeof draft.placeId === 'string' ? draft.placeId.trim() : ''
+    const name = isObject && typeof draft.name === 'string' ? draft.name.trim() : ''
+    const isValid = isObject && !tripError && !itineraryError && trip &&
+      typeof draft.tripId === 'string' && draft.tripId === trip.id &&
+      trip.id === tripId && placeId && name &&
+      (draft.description === undefined || typeof draft.description === 'string') &&
+      (draft.website === undefined || typeof draft.website === 'string')
+
+    let active = true
+    // StrictMode cleanup cancels obsolete work before any draft is consumed.
+    queueMicrotask(() => {
+      if (!active) return
+      if (!consumedDrafts.current.has(location.key)) {
+        consumedDrafts.current.add(location.key)
+        if (isValid) {
+          clearItineraryActionError()
+          setAttractionDraft({
+            placeId,
+            name,
+            description: draft.description?.trim() ?? '',
+            website: safeAttractionUrl(draft.website),
+            navigationKey: location.key,
+          })
+          setEditingItem(null)
+          setIsAddingActivity(true)
+        }
+      }
+
+      // Remove valid and malformed drafts alike; retain other navigation state.
+      const remainingState = { ...location.state }
+      delete remainingState.attractionDraft
+      navigate(location.pathname + location.search + location.hash, {
+        replace: true,
+        state: Object.keys(remainingState).length ? remainingState : null,
+      })
+    })
+    return () => { active = false }
+  }, [
+    location, navigate, trip, tripId, tripError, itineraryError,
+    isLoadingTrip, isLoadingItinerary, clearItineraryActionError,
+  ])
 
   const isEditingActivity =
     Boolean(editingItem)
@@ -230,24 +294,10 @@ function TripItineraryPage() {
     () => {
       clearItineraryActionError()
 
-      setSelectedAttraction(null)
+      setAttractionDraft(null)
       setEditingItem(null)
       setIsAddingActivity(true)
     }
-
-  const handleAddAttraction = (attraction) => {
-    if (
-      !attraction?.placeId ||
-      isSubmittingActivity
-    ) {
-      return
-    }
-
-    clearItineraryActionError()
-    setSelectedAttraction(attraction)
-    setEditingItem(null)
-    setIsAddingActivity(true)
-  }
 
   const handleOpenEditActivity =
     (item) => {
@@ -257,7 +307,7 @@ function TripItineraryPage() {
 
       clearItineraryActionError()
 
-      setSelectedAttraction(null)
+      setAttractionDraft(null)
       setIsAddingActivity(false)
       setEditingItem(item)
     }
@@ -272,7 +322,7 @@ function TripItineraryPage() {
 
       clearItineraryActionError()
 
-      setSelectedAttraction(null)
+      setAttractionDraft(null)
       setIsAddingActivity(false)
       setEditingItem(null)
     }
@@ -315,7 +365,7 @@ function TripItineraryPage() {
         return null
       }
 
-      setSelectedAttraction(null)
+      setAttractionDraft(null)
       setIsAddingActivity(false)
 
       return createdItem
@@ -483,29 +533,22 @@ function TripItineraryPage() {
         </div>
       )}
 
-      <div hidden={isActivityFormOpen}>
-        <TripAttractionsSection
-          trip={trip}
-          onAddToItinerary={handleAddAttraction}
-        />
-      </div>
-
       {isAddingActivity && (
         <TripEntryForm
           key={
-            selectedAttraction
-              ? `attraction:${tripId}:${selectedAttraction.placeId}`
+            attractionDraft
+              ? `attraction:${tripId}:${attractionDraft.placeId}:${attractionDraft.navigationKey}`
               : 'new-activity'
           }
           initialEntry={
-            selectedAttraction
+            attractionDraft
               ? {
-                  title: selectedAttraction.name,
+                  title: attractionDraft.name,
                   category: 'Activities',
                   description:
-                    selectedAttraction.description || '',
+                    attractionDraft.description,
                   referenceUrl:
-                    selectedAttraction.website || '',
+                    attractionDraft.website,
                   amount: '',
                   itineraryDate: null,
                   startTime: null,
@@ -514,7 +557,7 @@ function TripItineraryPage() {
               : null
           }
           initialEntryType={
-            selectedAttraction
+            attractionDraft
               ? 'plan-later'
               : undefined
           }

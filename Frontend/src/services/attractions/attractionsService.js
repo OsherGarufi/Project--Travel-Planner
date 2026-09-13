@@ -3,15 +3,7 @@ import {
   assertAttractionsCurrent, getAttractionsGeneration, requestAttractions,
 } from './attractionsRequestManager'
 
-const GROUPS = {
-  Sights: ['tourism.sights', 'tourism.attraction'],
-  Museums: ['entertainment.museum'],
-  Nature: ['natural', 'national_park', 'leisure.park', 'leisure.park.nature_reserve'],
-  Family: ['entertainment.activity_park', 'entertainment.theme_park',
-    'entertainment.water_park', 'entertainment.zoo', 'entertainment.aquarium', 'leisure.playground'],
-  Extreme: ['entertainment.activity_park.climbing', 'entertainment.flying_fox', 'sport.dive_centre', 'ski'],
-}
-export const ATTRACTION_CATEGORIES = ['All', ...Object.keys(GROUPS)]
+import { friendlyCategory, resolveCategory } from './attractionCategories'
 export const ATTRACTIONS_PAGE_SIZE = 20
 const LANGUAGE = 'en'
 
@@ -34,10 +26,9 @@ function text(value) {
 
 function categoryFor(categories = []) {
   if (!Array.isArray(categories)) return ''
-  // Match the specific Extreme subcategory before its broader Family parent.
-  return ['Extreme', 'Museums', 'Nature', 'Family', 'Sights'].find((group) =>
-    GROUPS[group].some((prefix) => categories.some((category) =>
-      category === prefix || category.startsWith(prefix + '.')))) ?? ''
+  const category = categories.filter((value) => typeof value === 'string')
+    .sort((a, b) => b.split('.').length - a.split('.').length)[0]
+  return category ? friendlyCategory(category) : ''
 }
 
 function richFields(properties) {
@@ -73,14 +64,14 @@ export function normalizeAttraction(feature) {
   }
 }
 
-function searchParameters({ latitude, longitude, radius = 10000, category = 'All', offset = 0 }) {
+function searchParameters({ latitude, longitude, radius = 10000, category, offset = 0 }) {
   if (!Number.isFinite(latitude) || Math.abs(latitude) > 90 ||
       !Number.isFinite(longitude) || Math.abs(longitude) > 180 ||
       ![10000, 25000, 50000].includes(radius) ||
-      !ATTRACTION_CATEGORIES.includes(category) || !Number.isInteger(offset) || offset < 0) {
+      !resolveCategory(category) || !Number.isInteger(offset) || offset < 0) {
     throw new Error('Choose a valid destination and search area.')
   }
-  const categories = category === 'All' ? [...new Set(Object.values(GROUPS).flat())] : GROUPS[category]
+  const categories = resolveCategory(category).categories
   return new URLSearchParams({
     categories: [...categories].sort().join(','),
     filter: `circle:${longitude},${latitude},${radius}`,

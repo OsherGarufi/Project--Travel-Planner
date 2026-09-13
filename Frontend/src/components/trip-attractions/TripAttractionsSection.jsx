@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { useTripAttractions } from '../../hooks/trip-attractions/useTripAttractions'
 import AttractionCard from './AttractionCard'
@@ -7,6 +7,8 @@ import '../../css/components/trip-attractions-section.css'
 
 function AttractionsContent({ trip, userId, onAddToItinerary }) {
   const attractions = useTripAttractions(trip, userId)
+  const [visible, setVisible] = useState(true)
+  const contentId = useId()
   const [userPosition, setUserPosition] = useState(null)
   const [locationMessage, setLocationMessage] = useState('')
   const [locating, setLocating] = useState(false)
@@ -45,11 +47,19 @@ function AttractionsContent({ trip, userId, onAddToItinerary }) {
           <h2>Explore attractions</h2>
           <p>Find your next stop around {trip.destinationCity}, {trip.destinationCountryName}.</p>
         </div>
-        <span className="trip-attractions__badge">Your trip, your pace</span>
+        <button type="button" className="attractions-button" aria-expanded={visible}
+          aria-controls={contentId} onClick={() => setVisible((value) => !value)}>
+          {visible ? 'Hide attractions' : `View attractions (${attractions.loadedCount})`}
+        </button>
       </header>
+      <div id={contentId} hidden={!visible}>
       <AttractionsFilters filters={attractions.filters} onChange={attractions.setFilters}
         onSearch={attractions.search} searching={searching}
-        disabled={!attractions.configured || !userId} />
+        userId={userId} perPage={attractions.perPage} onPerPageChange={attractions.changePerPage}
+        disabled={!attractions.configured || !userId || !trip.destinationCity || !trip.destinationCountryCode} />
+      {(!trip.destinationCity || !trip.destinationCountryCode) && <p className="trip-attractions__error">
+        This trip needs a destination city and country to explore attractions.
+      </p>}
       {!attractions.configured && <p className="trip-attractions__error" role="alert">
         Attractions is not configured. Set VITE_GEOAPIFY_API_KEY to enable search.
       </p>}
@@ -58,17 +68,17 @@ function AttractionsContent({ trip, userId, onAddToItinerary }) {
       </p>}
       {searching && <div className="trip-attractions__state" role="status">
         <span className="trip-attractions__spinner" aria-hidden="true" />
-        {attractions.status === 'resolving' ? 'Locating your destination…' : 'Finding attractions…'}
+        {attractions.status === 'resolving' ? 'Locating your destination.' : 'Finding attractions.'}
       </div>}
       {attractions.error && <p className="trip-attractions__error" role="alert">{attractions.error}</p>}
       {attractions.status === 'ready' && <div className="trip-attractions__results-bar">
-        <p role="status">{attractions.items.length} attractions
-          {attractions.searchedFilters && ` · ${attractions.searchedFilters.category} · within ${attractions.searchedFilters.radius / 1000} km of the destination`}
+        <p role="status">{attractions.items.length} shown / {attractions.loadedCount} loaded
+          {attractions.searchedFilters && ` · ${attractions.searchedFilters.label} · within ${attractions.searchedFilters.radius / 1000} km of the destination`}
           {enriching > 0 && ` · Adding details to ${enriching}`}
         </p>
         {attractions.items.length > 0 && !userPosition && <button type="button"
           className="trip-attractions__location" onClick={locate} disabled={locating}>
-          {locating ? 'Locating…' : 'Use my location for distances'}
+          {locating ? 'Locating.' : 'Use my location for distances'}
         </button>}
       </div>}
       {locationMessage && <p className="trip-attractions__note" role="status">{locationMessage}</p>}
@@ -80,16 +90,26 @@ function AttractionsContent({ trip, userId, onAddToItinerary }) {
           attraction={item} userPosition={userPosition} onAdd={onAddToItinerary} />)}
       </div>
       {attractions.moreError && <p className="trip-attractions__error" role="alert">{attractions.moreError}</p>}
-      {attractions.hasMore && <div className="trip-attractions__more">
-        <button type="button" className="attractions-button" onClick={attractions.showMore}
-          disabled={attractions.loadingMore || searching}>
-          {attractions.loadingMore ? 'Loading more…' : attractions.moreError ? 'Retry show more' : 'Show more'}
+      {attractions.canLoadMore && <div className="trip-attractions__more">
+        <button type="button" className="attractions-button" onClick={attractions.loadMore}
+          disabled={attractions.busy || searching}>
+          {attractions.busy ? 'Loading...' : 'Load 3 more'}
         </button>
       </div>}
+      {attractions.status === 'ready' && <nav className="trip-attractions__pagination" aria-label="Attractions pages">
+        <button type="button" className="attractions-button"
+          disabled={attractions.currentPage === 1 || attractions.busy}
+          onClick={() => attractions.changePage(attractions.currentPage - 1)}>Previous</button>
+        <span>Page {attractions.currentPage}</span>
+        <button type="button" className="attractions-button"
+          disabled={!attractions.canNext || attractions.busy}
+          onClick={() => attractions.changePage(attractions.currentPage + 1)}>Next</button>
+      </nav>}
       <footer className="trip-attractions__credits">
         Places by <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a>
         {' · '}<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>
       </footer>
+      </div>
     </section>
   )
 }

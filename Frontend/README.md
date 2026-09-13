@@ -15,7 +15,7 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
-## Attractions V1
+## Attractions V2
 
 Attractions uses the Geoapify Places API and Place Details API directly
 from the browser. Requests do not pass through the ASP.NET backend.
@@ -38,20 +38,40 @@ and does not send provider requests.
 
 ### Search and details
 
-Explore attractions is available on the trip itinerary page.
+Explore attractions is on Trip Details, between Notes and Expenses.
+Hide/View preserves the mounted search and makes no requests.
 Destination coordinates are resolved through the existing city service.
 
 Search runs only after an explicit Search action. Changing controls
 does not issue a search. Available search radii are 10, 25, and 50 km
 around the destination.
 
-Each Places request returns up to 20 results. Base cards render first,
-then receive Place Details automatically in progressive groups of four.
-Cached details are merged without another provider request.
-An individual Details failure leaves the base card available.
+Each Places request loads up to 20 BASE results. Initially only three cards
+are revealed, with Details requested only for those uncached cards.
+Load 3 more explicitly reveals/enriches at most three more cards.
+Hidden base results never automatically request Details. Cached details
+are reused without another provider request. Failed Details leave base cards
+usable and are not retried during the active search session.
 
-Show more explicitly requests the next page. Results are appended and
-deduplicated by place ID; the next page is never prefetched.
+Per Page offers 3 / 6 / 9 (default 9). Page changes start with at most three
+cards; changing Per Page resets to page one without a Places search.
+Next becomes available only after the current page capacity is fully revealed
+and another page can exist. Provider pagination follows actual reveal demand,
+not page capacity. Each explicit action can fetch at most one additional
+Places batch, with no prefetch loops. Offsets advance by RAW response count
+before normalization or place-ID deduplication.
+
+Category is a closed searchable combobox: typing filters valid labels locally
+using case-insensitive startsWith matching. Invalid text disables Search.
+Recommended choices appear first, followed by the full supported A-Z catalog.
+Labels use friendly category names with concise parent context. Exact standalone
+Recommended duplicates are omitted from the full catalog; specific children remain.
+The documented Geoapify MCP `list_place_categories` tool loads lazily on first
+focus/open, through the same request manager. Its public memory/localStorage
+cache expires after seven days, preserving timestamps on hydration. Invalid
+persisted entries are removed. Catalog failure leaves Recommended choices usable;
+typing never makes Places calls. Nature & Parks excludes `highway.path`;
+Nature Reserves & Hiking Trails includes it.
 
 Places and Details share client-side request management with in-flight
 deduplication, cancellation, and pacing of at most five provider request
@@ -74,7 +94,11 @@ Attraction search results are not persisted to the database. Only items
 explicitly added by the user are persisted through the existing
 TripEntryForm and itinerary creation flow.
 
-Add to itinerary opens the existing form prefilled and defaults to
+Add to itinerary navigates to the existing itinerary route with a minimal
+normalized attractionDraft in React Router state. The itinerary page validates
+and consumes it, then replaces navigation state to prevent refresh/back replay,
+preserving unrelated state. Invalid drafts are discarded too.
+It opens the existing form prefilled and defaults to
 Plan Later. Unknown prices remain blank. If the user enters a positive
 cost, the existing itinerary/expense transaction handles creation.
 

@@ -13,6 +13,8 @@ import TripEditForm from '../components/trip-details/TripEditForm'
 import TripNotesEditForm from '../components/trip-details/TripNotesEditForm'
 import TripSummary from '../components/trip-details/TripSummary'
 import TripExpensesSection from '../components/trip-expenses/TripExpensesSection'
+import TripAttractionsSection from '../components/trip-attractions/TripAttractionsSection'
+import { safeAttractionUrl } from '../services/attractions/attractionsService'
 import '../css/pages/trip-details-page.css'
 import useTripWeather from '../hooks/plan-trip/useTripWeather'
 import { useTripDelete } from '../hooks/trip-details/useTripDelete'
@@ -377,6 +379,37 @@ function TripDetailsPage() {
       setActiveFocusMode(null)
     }
 
+  const handleAddAttraction = (attraction) => {
+    const placeId =
+      typeof attraction?.placeId === 'string'
+        ? attraction.placeId.trim()
+        : ''
+
+    const name =
+      typeof attraction?.name === 'string'
+        ? attraction.name.trim()
+        : ''
+
+    if (!trip?.id || isDeleting || !placeId || !name) {
+      return
+    }
+
+    navigate(`/trips/${trip.id}/itinerary`, {
+      state: {
+        attractionDraft: {
+          tripId: trip.id,
+          placeId,
+          name,
+          description:
+            typeof attraction.description === 'string'
+              ? attraction.description.trim()
+              : '',
+          website: safeAttractionUrl(attraction.website),
+        },
+      },
+    })
+  }
+
   const handleOpenItinerary = () => {
     if (!trip?.id || isDeleting) {
       return
@@ -685,6 +718,13 @@ function TripDetailsPage() {
           isNotesEditDisabled={
             isDeleting
           }
+        />
+      </div>
+
+      <div hidden={isRegularContentHidden}>
+        <TripAttractionsSection
+          trip={trip}
+          onAddToItinerary={handleAddAttraction}
         />
       </div>
 
