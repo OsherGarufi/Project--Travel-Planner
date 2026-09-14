@@ -6,17 +6,10 @@ import '../../css/components/itinerary-item-form.css'
 import '../../css/components/trip-entry-form.css'
 import CurrencySelector from '../currency/CurrencySelector'
 
-export const TRIP_ENTRY_TYPES = {
-  SCHEDULED: 'scheduled',
-  PLAN_LATER: 'plan-later',
-  ONLY_EXPENSE: 'only-expense',
-}
-
-export const TRIP_ENTRY_FORM_MODES = {
-  CREATE_ACTIVITY: 'create-activity',
-  CREATE_EXPENSE: 'create-expense',
-  EDIT_EXPENSE: 'edit-expense',
-}
+import {
+  TRIP_ENTRY_TYPES,
+  TRIP_ENTRY_FORM_MODES,
+} from './tripEntryConstants'
 
 const BUILT_IN_CATEGORIES = [
   'Flights',

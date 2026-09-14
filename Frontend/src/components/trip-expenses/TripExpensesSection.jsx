@@ -7,10 +7,11 @@ import {
 import '../../css/components/trip-expenses-section.css'
 import { useExpenseSummary } from '../../hooks/trip-expenses/useExpenseSummary'
 import { useTripExpenses } from '../../hooks/trip-expenses/useTripExpenses'
-import TripEntryForm, {
+import TripEntryForm from '../trip-entry/TripEntryForm'
+import {
   TRIP_ENTRY_FORM_MODES,
   TRIP_ENTRY_TYPES,
-} from '../trip-entry/TripEntryForm'
+} from '../trip-entry/tripEntryConstants'
 import ExpenseDeleteConfirmation from './ExpenseDeleteConfirmation'
 import ExpenseSummary from './ExpenseSummary'
 

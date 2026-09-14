@@ -124,21 +124,6 @@ export function useTripExpenses(
   }
 
   useEffect(() => {
-    if (
-      !tripId ||
-      !userId ||
-      !idToken ||
-      !expensesContextKey
-    ) {
-      expensesRef.current = []
-
-      setExpenses([])
-      setLoadedContextKey(null)
-      setExpensesError('')
-
-      return undefined
-    }
-
     let isActive = true
     let expensesRequest = null
 
@@ -147,6 +132,21 @@ export function useTripExpenses(
         await Promise.resolve()
 
         if (!isActive) {
+          return
+        }
+
+        if (
+          !tripId ||
+          !userId ||
+          !idToken ||
+          !expensesContextKey
+        ) {
+          expensesRef.current = []
+
+          setExpenses([])
+          setLoadedContextKey(null)
+          setExpensesError('')
+
           return
         }
 

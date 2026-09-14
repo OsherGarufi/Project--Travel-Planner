@@ -690,8 +690,7 @@ export function useItineraryDrag({
             .item.endTime,
         )
 
-      let didScheduleChange =
-        false
+      let didScheduleChange
 
       if (
         preview.targetType ===

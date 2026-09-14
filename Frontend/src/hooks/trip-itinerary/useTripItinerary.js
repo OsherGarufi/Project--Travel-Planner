@@ -633,67 +633,73 @@ export function useTripItinerary(
     }
 
   useEffect(() => {
-    if (
-      !tripId ||
-      !userId ||
-      !idToken ||
-      !itineraryContextKey
-    ) {
-      itineraryItemsRef.current =
-        []
-
-      setItineraryItems([])
-      setLoadedContextKey(null)
-      setItineraryError('')
-
-      return undefined
-    }
-
-    const cachedItems =
-      getTripItineraryCache(
-        userId,
-        tripId,
-      )
-
-    if (cachedItems) {
-      itineraryItemsRef.current =
-        cachedItems
-
-      setItineraryItems(
-        cachedItems,
-      )
-
-      setItineraryError('')
-
-      setLoadedContextKey(
-        itineraryContextKey,
-      )
-
-      return undefined
-    }
-
-    itineraryItemsRef.current =
-      []
-
-    setItineraryItems([])
-    setLoadedContextKey(null)
-    setItineraryError('')
-
     let isActive = true
-
-    const itineraryRequest =
-      getOrCreateTripItineraryRequest(
-        userId,
-        tripId,
-        () =>
-          getTripItinerary(
-            tripId,
-            idToken,
-          ),
-      )
 
     const loadItinerary =
       async () => {
+        await Promise.resolve()
+
+        if (!isActive) {
+          return
+        }
+
+        if (
+          !tripId ||
+          !userId ||
+          !idToken ||
+          !itineraryContextKey
+        ) {
+          itineraryItemsRef.current =
+            []
+
+          setItineraryItems([])
+          setLoadedContextKey(null)
+          setItineraryError('')
+
+          return
+        }
+
+        const cachedItems =
+          getTripItineraryCache(
+            userId,
+            tripId,
+          )
+
+        if (cachedItems) {
+          itineraryItemsRef.current =
+            cachedItems
+
+          setItineraryItems(
+            cachedItems,
+          )
+
+          setItineraryError('')
+
+          setLoadedContextKey(
+            itineraryContextKey,
+          )
+
+          return
+        }
+
+        itineraryItemsRef.current =
+          []
+
+        setItineraryItems([])
+        setLoadedContextKey(null)
+        setItineraryError('')
+
+        const itineraryRequest =
+          getOrCreateTripItineraryRequest(
+            userId,
+            tripId,
+            () =>
+              getTripItinerary(
+                tripId,
+                idToken,
+              ),
+          )
+
         try {
           const result =
             await itineraryRequest

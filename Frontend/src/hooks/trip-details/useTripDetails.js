@@ -16,7 +16,14 @@ export function useTripDetails() {
 
   const hasTripId = Boolean(tripId)
 
-  const [trip, setTrip] = useState(null)
+  const [loadedTrip, setTrip] = useState(null)
+
+  const cachedTrip = Array.isArray(trips)
+    ? trips.find((tripItem) => tripItem.id === tripId)
+    : null
+
+  // Shared-cache edits are reflected directly, without copying props into state.
+  const trip = cachedTrip ?? (loadedTrip?.id === tripId ? loadedTrip : null)
 
   const [isLoadingTrip, setIsLoadingTrip] =
     useState(hasTripId)
@@ -79,30 +86,6 @@ export function useTripDetails() {
       isActive = false
     }
   }, [loadTripById, tripId])
-
-  useEffect(() => {
-    if (
-      !tripId ||
-      !Array.isArray(trips)
-    ) {
-      return
-    }
-
-    const cachedTrip =
-      trips.find(
-        (tripItem) =>
-          tripItem.id === tripId,
-      )
-
-    if (!cachedTrip) {
-      return
-    }
-
-    setTrip(cachedTrip)
-  }, [
-    tripId,
-    trips,
-  ])
 
   const replaceTrip = useCallback(
     (updatedTrip) => {
