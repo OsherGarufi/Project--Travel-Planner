@@ -1,28 +1,44 @@
 .trip-itinerary-page {
   position: relative;
+
   display: flex;
+
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+
   flex-direction: column;
+
   gap:
     var(--tp-space-4);
+
+  overflow-x: clip;
 }
 
 .trip-itinerary-page--adding {
   min-height: 0;
+
   gap: 0;
 }
 
 .trip-itinerary-page::before {
   content: '';
+
   position: absolute;
+
   top: -4rem;
   right: -12rem;
+
   z-index: -1;
+
   width: 30rem;
   height: 30rem;
+
   border-radius:
     var(--tp-radius-full);
+
   pointer-events: none;
+
   background:
     radial-gradient(
       circle,
@@ -32,14 +48,20 @@
     );
 }
 
-
-/* Topbar */
+/* =========================
+   Topbar
+   ========================= */
 
 .trip-itinerary-page__topbar {
   display: flex;
+
+  width: 100%;
+  min-width: 0;
   min-height: 2.5rem;
+
   align-items: center;
   justify-content: space-between;
+
   gap:
     var(--tp-space-4);
 }
@@ -47,13 +69,18 @@
 .trip-itinerary-page__back,
 .trip-itinerary-page__add {
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
+
   outline: none;
+
   font-size:
     var(--tp-font-size-sm);
+
   font-weight:
     var(--tp-font-weight-medium);
+
   transition:
     color
       var(--tp-duration-fast)
@@ -67,14 +94,24 @@
 }
 
 .trip-itinerary-page__back {
+  min-width: 0;
+
+  flex: 1 1 auto;
+
+  justify-content: flex-start;
+
   gap:
     var(--tp-space-2);
+
   padding:
     var(--tp-space-1);
+
   border-radius:
     var(--tp-radius-sm);
+
   color:
     var(--tp-color-text-muted);
+
   background-color:
     transparent;
 }
@@ -82,6 +119,7 @@
 .trip-itinerary-page__back:hover {
   color:
     var(--tp-color-primary-700);
+
   background-color:
     var(--tp-color-primary-50);
 }
@@ -94,8 +132,12 @@
 
 .trip-itinerary-page__back-icon {
   display: grid;
+
   width: 1.125rem;
   height: 1.125rem;
+
+  flex: 0 0 auto;
+
   place-items: center;
 }
 
@@ -105,35 +147,51 @@
 }
 
 .trip-itinerary-page__add {
+  flex: 0 0 auto;
+
   gap:
     var(--tp-space-2);
+
   min-height:
     var(--tp-control-height-sm);
+
   padding:
     0
     var(--tp-space-4);
+
   border: 1px solid
     var(--tp-color-primary-600);
+
   border-radius:
     var(--tp-radius-md);
+
   color: #fff;
+
   background-color:
     var(--tp-color-primary-600);
+
   font-weight:
     var(--tp-font-weight-semibold);
+
+  white-space: nowrap;
 }
 
 .trip-itinerary-page__add:hover {
   border-color:
     var(--tp-color-primary-700);
+
   background-color:
     var(--tp-color-primary-700);
 }
 
 .trip-itinerary-page__add-icon {
   display: grid;
+
   width: 1rem;
   height: 1rem;
+
+  flex: 0 0 auto;
+
   place-items: center;
 }
 
@@ -142,10 +200,13 @@
   height: 100%;
 }
 
-
-/* Week view */
+/* =========================
+   Week view
+   ========================= */
 
 .trip-itinerary-page__week-view {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -153,35 +214,44 @@
   display: none;
 }
 
-
-/* Loading */
+/* =========================
+   Loading
+   ========================= */
 
 .trip-itinerary-page__loading {
   padding:
     var(--tp-space-12);
+
   color:
     var(--tp-color-text-muted);
+
   text-align: center;
 }
 
-
-/* Error */
+/* =========================
+   Error
+   ========================= */
 
 .trip-itinerary-page__error-state {
   padding:
     var(--tp-space-8);
+
   border: 1px solid
     rgba(217, 45, 32, 0.18);
+
   border-radius:
     var(--tp-radius-xl);
+
   background-color:
     var(--tp-color-danger-soft);
 }
 
 .trip-itinerary-page__error-title {
   margin: 0;
+
   color:
     var(--tp-color-text-primary);
+
   font-size:
     var(--tp-font-size-2xl);
 }
@@ -189,12 +259,14 @@
 .trip-itinerary-page__error-description {
   margin-top:
     var(--tp-space-3);
+
   color:
     var(--tp-color-text-secondary);
 }
 
-
-/* Tablet */
+/* =========================
+   Tablet
+   ========================= */
 
 @media (max-width: 56rem) {
   .trip-itinerary-page {
@@ -207,17 +279,49 @@
   }
 }
 
-
-/* Mobile */
+/* =========================
+   Mobile
+   ========================= */
 
 @media (max-width: 40rem) {
+  .trip-itinerary-page {
+    width: 100%;
+    max-width: 100%;
+  }
+
   .trip-itinerary-page::before {
     display: none;
   }
 
+  .trip-itinerary-page__topbar {
+    gap:
+      var(--tp-space-2);
+  }
+
+  .trip-itinerary-page__back {
+    font-size:
+      var(--tp-font-size-sm);
+
+    white-space: nowrap;
+  }
+
   .trip-itinerary-page__add {
+    min-height:
+      2.25rem;
+
+    gap:
+      var(--tp-space-1);
+
     padding:
       0
       var(--tp-space-3);
+
+    font-size:
+      var(--tp-font-size-xs);
+  }
+
+  .trip-itinerary-page__add-icon {
+    width: 0.9rem;
+    height: 0.9rem;
   }
 }

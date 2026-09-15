@@ -396,6 +396,7 @@ function ItineraryEventCard({
   isDeleting,
   deleteError,
   onPointerDown,
+  onTouchStart,
   shouldSuppressClick,
   onToggleSelected,
   onEdit,
@@ -519,14 +520,28 @@ function ItineraryEventCard({
         height: `${height}px`,
         left: `calc(${leftPercentage}% + 4px)`,
         width: `calc(${widthPercentage}% - 8px)`,
+
         cursor:
           isDragging
             ? 'grabbing'
             : 'grab',
+
         opacity:
           isDragging
             ? 0.82
             : 1,
+
+        touchAction:
+          'manipulation',
+
+        WebkitTouchCallout:
+          'none',
+
+        WebkitUserSelect:
+          'none',
+
+        userSelect:
+          'none',
       }}
       tabIndex={0}
       aria-grabbed={
@@ -539,6 +554,9 @@ function ItineraryEventCard({
       )}. Drag to reschedule or double click for actions.`}
       onPointerDown={
         onPointerDown
+      }
+      onTouchStart={
+        onTouchStart
       }
       onClick={
         handleClick
@@ -641,6 +659,7 @@ function UnscheduledItemCard({
   isDeleting,
   deleteError,
   onPointerDown,
+  onTouchStart,
   shouldSuppressClick,
   onToggleSelected,
   onEdit,
@@ -726,6 +745,18 @@ function UnscheduledItemCard({
           isDragging
             ? 0.82
             : 1,
+
+        touchAction:
+          'manipulation',
+
+        WebkitTouchCallout:
+          'none',
+
+        WebkitUserSelect:
+          'none',
+
+        userSelect:
+          'none',
       }}
       tabIndex={0}
       aria-grabbed={
@@ -734,6 +765,9 @@ function UnscheduledItemCard({
       aria-label={`${item.title}. Drag to schedule or double click for actions.`}
       onPointerDown={
         onPointerDown
+      }
+      onTouchStart={
+        onTouchStart
       }
       onClick={
         handleClick
@@ -866,6 +900,7 @@ function ItineraryWeekView({
     dragPreview,
     draggingItemId,
     startDrag,
+    startTouchDrag,
     shouldSuppressClick,
   } = useItineraryDrag({
     calendarScrollRef,
@@ -1416,6 +1451,23 @@ function ItineraryWeekView({
                                     item,
                                   )
                               }
+                              onTouchStart={
+                                (
+                                  event,
+                                ) =>
+                                  startTouchDrag(
+                                    event,
+                                    item,
+                                    (touchEvent) =>
+                                      handleToggleSelected(
+                                        item.id,
+                                        getActionPosition(
+                                          touchEvent,
+                                          '.itinerary-week__calendar-shell',
+                                        ),
+                                      ),
+                                  )
+                              }
                               shouldSuppressClick={
                                 shouldSuppressClick
                               }
@@ -1531,6 +1583,23 @@ function ItineraryWeekView({
                         startDrag(
                           event,
                           item,
+                        )
+                    }
+                    onTouchStart={
+                      (
+                        event,
+                      ) =>
+                        startTouchDrag(
+                          event,
+                          item,
+                          (touchEvent) =>
+                            handleToggleSelected(
+                              item.id,
+                              getActionPosition(
+                                touchEvent,
+                                '.itinerary-week__unscheduled',
+                              ),
+                            ),
                         )
                     }
                     shouldSuppressClick={

@@ -5,11 +5,10 @@ import {
   useState,
 } from 'react'
 import {
-  useNavigate,
   useLocation,
+  useNavigate,
 } from 'react-router-dom'
 import TripEntryForm from '../components/trip-entry/TripEntryForm'
-import { safeAttractionUrl } from '../services/attractions/attractionsService'
 import ItineraryItemForm from '../components/trip-itinerary/ItineraryItemForm'
 import ItineraryWeekView from '../components/trip-itinerary/ItineraryWeekView'
 import '../css/pages/trip-itinerary-page.css'
@@ -19,6 +18,7 @@ import {
 import {
   useTripItinerary,
 } from '../hooks/trip-itinerary/useTripItinerary'
+import { safeAttractionUrl } from '../services/attractions/attractionsService'
 import {
   ITINERARY_DAYS_PER_WEEK,
 } from '../services/itinerary/itineraryConstants'
@@ -67,8 +67,12 @@ function PlusIcon() {
 function TripItineraryPage() {
   const navigate =
     useNavigate()
-  const location = useLocation()
-  const consumedDrafts = useRef(new Set())
+
+  const location =
+    useLocation()
+
+  const consumedDrafts =
+    useRef(new Set())
 
   const [
     weekStartIndex,
@@ -123,60 +127,132 @@ function TripItineraryPage() {
     if (
       !location.state ||
       typeof location.state !== 'object' ||
-      !Object.hasOwn(location.state, 'attractionDraft') ||
+      !Object.hasOwn(
+        location.state,
+        'attractionDraft',
+      ) ||
       isLoadingTrip ||
       isLoadingItinerary
     ) {
       return undefined
     }
 
-    // Wait for the requested trip, rather than consuming against a stale trip.
-    if (trip && trip.id !== tripId && !tripError) {
+    if (
+      trip &&
+      trip.id !== tripId &&
+      !tripError
+    ) {
       return undefined
     }
 
-    const draft = location.state.attractionDraft
-    const isObject = draft !== null && typeof draft === 'object' && !Array.isArray(draft)
-    const placeId = isObject && typeof draft.placeId === 'string' ? draft.placeId.trim() : ''
-    const name = isObject && typeof draft.name === 'string' ? draft.name.trim() : ''
-    const isValid = isObject && !tripError && !itineraryError && trip &&
-      typeof draft.tripId === 'string' && draft.tripId === trip.id &&
-      trip.id === tripId && placeId && name &&
-      (draft.description === undefined || typeof draft.description === 'string') &&
-      (draft.website === undefined || typeof draft.website === 'string')
+    const draft =
+      location.state.attractionDraft
+
+    const isObject =
+      draft !== null &&
+      typeof draft === 'object' &&
+      !Array.isArray(draft)
+
+    const placeId =
+      isObject &&
+      typeof draft.placeId === 'string'
+        ? draft.placeId.trim()
+        : ''
+
+    const name =
+      isObject &&
+      typeof draft.name === 'string'
+        ? draft.name.trim()
+        : ''
+
+    const isValid =
+      isObject &&
+      !tripError &&
+      !itineraryError &&
+      trip &&
+      typeof draft.tripId === 'string' &&
+      draft.tripId === trip.id &&
+      trip.id === tripId &&
+      placeId &&
+      name &&
+      (
+        draft.description === undefined ||
+        typeof draft.description === 'string'
+      )
 
     let active = true
-    // StrictMode cleanup cancels obsolete work before any draft is consumed.
+
     queueMicrotask(() => {
-      if (!active) return
-      if (!consumedDrafts.current.has(location.key)) {
-        consumedDrafts.current.add(location.key)
+      if (!active) {
+        return
+      }
+
+      if (
+        !consumedDrafts.current.has(
+          location.key,
+        )
+      ) {
+        consumedDrafts.current.add(
+          location.key,
+        )
+
         if (isValid) {
           clearItineraryActionError()
+
           setAttractionDraft({
             placeId,
             name,
-            description: draft.description?.trim() ?? '',
-            website: safeAttractionUrl(draft.website),
-            navigationKey: location.key,
+            description:
+              draft.description?.trim() ??
+              '',
+            website:
+              safeAttractionUrl(
+                draft.website,
+              ),
+            navigationKey:
+              location.key,
           })
+
           setEditingItem(null)
           setIsAddingActivity(true)
         }
       }
 
-      // Remove valid and malformed drafts alike; retain other navigation state.
-      const remainingState = { ...location.state }
+      const remainingState = {
+        ...location.state,
+      }
+
       delete remainingState.attractionDraft
-      navigate(location.pathname + location.search + location.hash, {
-        replace: true,
-        state: Object.keys(remainingState).length ? remainingState : null,
-      })
+
+      navigate(
+        location.pathname +
+          location.search +
+          location.hash,
+        {
+          replace: true,
+          state:
+            Object.keys(
+              remainingState,
+            ).length
+              ? remainingState
+              : null,
+        },
+      )
     })
-    return () => { active = false }
+
+    return () => {
+      active = false
+    }
   }, [
-    location, navigate, trip, tripId, tripError, itineraryError,
-    isLoadingTrip, isLoadingItinerary, clearItineraryActionError,
+    location,
+    navigate,
+    trip,
+    tripId,
+    tripError,
+    itineraryError,
+    isLoadingTrip,
+    isLoadingItinerary,
+    clearItineraryActionError,
   ])
 
   const isEditingActivity =
@@ -189,39 +265,6 @@ function TripItineraryPage() {
   const isSubmittingActivity =
     isCreatingItineraryItem ||
     isUpdatingItineraryItem
-
-  useEffect(() => {
-    if (!isActivityFormOpen) {
-      return undefined
-    }
-
-    const previousBodyOverflow =
-      document.body.style.overflow
-
-    const previousHtmlOverflow =
-      document.documentElement
-        .style
-        .overflow
-
-    document.body.style.overflow =
-      'hidden'
-
-    document.documentElement
-      .style
-      .overflow = 'hidden'
-
-    return () => {
-      document.body.style.overflow =
-        previousBodyOverflow
-
-      document.documentElement
-        .style
-        .overflow =
-          previousHtmlOverflow
-    }
-  }, [
-    isActivityFormOpen,
-  ])
 
   const tripDays =
     useMemo(
@@ -261,9 +304,7 @@ function TripItineraryPage() {
   const handlePreviousWeek =
     () => {
       setWeekStartIndex(
-        (
-          currentIndex,
-        ) =>
+        (currentIndex) =>
           Math.max(
             0,
             currentIndex -
@@ -275,9 +316,7 @@ function TripItineraryPage() {
   const handleNextWeek =
     () => {
       setWeekStartIndex(
-        (
-          currentIndex,
-        ) =>
+        (currentIndex) =>
           Math.min(
             Math.max(
               0,
@@ -314,21 +353,29 @@ function TripItineraryPage() {
 
   const handleCancelActivityForm =
     () => {
-      if (
-        isSubmittingActivity
-      ) {
+      if (isSubmittingActivity) {
         return
       }
+
+      const shouldReturnToAttractions =
+        Boolean(attractionDraft)
 
       clearItineraryActionError()
 
       setAttractionDraft(null)
       setIsAddingActivity(false)
       setEditingItem(null)
+
+      if (shouldReturnToAttractions) {
+        navigate(-1)
+      }
     }
 
   const handleAddActivity =
     async (entryData) => {
+      const shouldReturnToAttractions =
+        Boolean(attractionDraft)
+
       const createdItem =
         await addItineraryItem({
           title:
@@ -367,6 +414,10 @@ function TripItineraryPage() {
 
       setAttractionDraft(null)
       setIsAddingActivity(false)
+
+      if (shouldReturnToAttractions) {
+        navigate(-1)
+      }
 
       return createdItem
     }
@@ -543,8 +594,10 @@ function TripItineraryPage() {
           initialEntry={
             attractionDraft
               ? {
-                  title: attractionDraft.name,
-                  category: 'Activities',
+                  title:
+                    attractionDraft.name,
+                  category:
+                    'Activities',
                   description:
                     attractionDraft.description,
                   referenceUrl:

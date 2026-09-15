@@ -1,5 +1,6 @@
 .itinerary-week {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -9,54 +10,80 @@
 
 .itinerary-week__heading-layout {
   display: grid;
+
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+
   grid-template-columns:
     minmax(0, 1fr)
     15.625rem;
-  gap: var(--tp-space-4);
+
+  gap:
+    var(--tp-space-4);
+
   margin-bottom:
     var(--tp-space-4);
 }
 
 .itinerary-week__heading-main {
   display: flex;
+
   min-width: 0;
+
   grid-column: 1;
+
   align-items: baseline;
+
   justify-content:
     space-between;
-  gap: var(--tp-space-6);
+
+  gap:
+    var(--tp-space-6);
 }
 
 .itinerary-week__title {
   min-width: 0;
+
   margin: 0;
+
   color:
     var(--tp-color-text-primary);
+
   font-size:
     clamp(
       2rem,
       3vw,
       2.75rem
     );
+
   font-weight:
     var(--tp-font-weight-semibold);
+
   line-height: 1.05;
+
   letter-spacing: -0.045em;
 }
 
 .itinerary-week__date-range {
   flex: 0 0 auto;
+
   margin: 0;
+
   color:
     var(--tp-color-text-muted);
+
   font-size:
     var(--tp-font-size-md);
+
   font-weight:
     var(--tp-font-weight-medium);
+
   line-height:
     var(--tp-line-height-relaxed);
+
   text-align: right;
+
   white-space: nowrap;
 }
 
@@ -66,33 +93,47 @@
 
 .itinerary-week__legend {
   display: flex;
+
+  min-width: 0;
+
   flex-wrap: wrap;
+
   align-items: center;
+
   gap:
     var(--tp-space-2)
     var(--tp-space-4);
+
   margin-bottom:
     var(--tp-space-4);
 }
 
 .itinerary-week__legend-item {
   display: inline-flex;
+
   align-items: center;
+
   gap:
     var(--tp-space-2);
+
   color:
     var(--tp-color-text-muted);
+
   font-size:
     var(--tp-font-size-xs);
+
   font-weight:
     var(--tp-font-weight-medium);
+
   white-space: nowrap;
 }
 
 .itinerary-week__legend-color {
   width: 0.5625rem;
   height: 0.5625rem;
+
   flex: 0 0 auto;
+
   border-radius:
     var(--tp-radius-full);
 }
@@ -103,11 +144,18 @@
 
 .itinerary-week__layout {
   display: grid;
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
   grid-template-columns:
     minmax(0, 1fr)
     15.625rem;
+
   gap:
     var(--tp-space-4);
+
   align-items: start;
 }
 
@@ -117,14 +165,22 @@
 
 .itinerary-week__calendar-shell {
   position: relative;
+
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+
   overflow: hidden;
+
   border: 1px solid
     var(--tp-color-border-subtle);
+
   border-radius:
     var(--tp-radius-xl);
+
   background-color:
     var(--tp-color-surface);
+
   box-shadow:
     0 1px 2px
       rgba(13, 34, 56, 0.04),
@@ -133,25 +189,36 @@
 }
 
 .itinerary-week__calendar-scroll {
+  width: 100%;
+  max-width: 100%;
+
   height:
     clamp(
       24rem,
       calc(100dvh - 24rem),
       38rem
     );
+
   min-height: 0;
+
   overflow: auto;
+
   overscroll-behavior:
     contain;
+
   scrollbar-gutter: stable;
+
   scrollbar-width: thin;
+
   -webkit-overflow-scrolling:
     touch;
 }
 
 .itinerary-week__calendar {
   display: grid;
+
   min-width: 940px;
+
   grid-template-columns:
     68px
     repeat(
@@ -166,26 +233,39 @@
 
 .itinerary-week__week-nav {
   position: absolute;
+
   top: 18px;
+
   z-index: 40;
+
   display: grid;
+
   width: 2.25rem;
   height: 2.25rem;
+
   place-items: center;
+
   border: 1px solid
     var(--tp-color-border-subtle);
+
   border-radius:
     var(--tp-radius-md);
+
   outline: none;
+
   color:
     var(--tp-color-text-secondary);
+
   background-color:
     rgba(255, 255, 255, 0.94);
+
   box-shadow:
     0 1px 3px
       rgba(13, 34, 56, 0.08);
+
   backdrop-filter:
     blur(8px);
+
   transition:
     color
       var(--tp-duration-fast)
@@ -211,8 +291,10 @@
 .itinerary-week__week-nav:hover:not(:disabled) {
   border-color:
     var(--tp-color-primary-200);
+
   color:
     var(--tp-color-primary-700);
+
   background-color:
     var(--tp-color-primary-50);
 }
@@ -224,10 +306,13 @@
 
 .itinerary-week__week-nav:disabled {
   cursor: not-allowed;
+
   color:
     var(--tp-color-text-disabled);
+
   background-color:
     var(--tp-color-surface-muted);
+
   box-shadow: none;
 }
 
@@ -243,27 +328,38 @@
 .itinerary-week__header-spacer,
 .itinerary-week__day-header {
   position: sticky;
+
   top: 0;
+
   z-index: 12;
+
   height: 72px;
+
   border-bottom: 1px solid
     var(--tp-color-border);
+
   background-color:
     var(--tp-color-surface-muted);
 }
 
 .itinerary-week__header-spacer {
   left: 0;
+
   z-index: 30;
+
   border-right: 1px solid
     var(--tp-color-border-subtle);
 }
 
 .itinerary-week__day-header {
   display: flex;
+
   flex-direction: column;
+
   align-items: center;
+
   justify-content: center;
+
   border-right: 1px solid
     var(--tp-color-border-subtle);
 }
@@ -275,20 +371,28 @@
 .itinerary-week__day-name {
   margin-bottom:
     var(--tp-space-1);
+
   color:
     var(--tp-color-text-muted);
+
   font-size:
     var(--tp-font-size-xs);
+
   font-weight:
     var(--tp-font-weight-semibold);
+
   letter-spacing: 0.08em;
+
   text-transform: uppercase;
 }
 
 .itinerary-week__day-date-row {
   display: inline-flex;
+
   align-items: center;
+
   justify-content: center;
+
   gap:
     var(--tp-space-2);
 }
@@ -296,8 +400,10 @@
 .itinerary-week__day-date {
   color:
     var(--tp-color-text-primary);
+
   font-size:
     var(--tp-font-size-sm);
+
   font-weight:
     var(--tp-font-weight-semibold);
 }
@@ -305,11 +411,15 @@
 .itinerary-week__day-indicator {
   width: 0.5rem;
   height: 0.5rem;
+
   flex: 0 0 auto;
+
   border-radius:
     var(--tp-radius-full);
+
   background-color:
     var(--tp-color-primary-700);
+
   box-shadow:
     0 0 0 2px
       rgba(255, 255, 255, 0.72);
@@ -321,9 +431,13 @@
 
 .itinerary-week__timeline {
   position: relative;
+
   display: grid;
+
   height: 1536px;
+
   grid-column: 1 / -1;
+
   grid-template-columns:
     68px
     repeat(
@@ -334,43 +448,59 @@
 
 .itinerary-week__hours {
   position: sticky;
+
   left: 0;
+
   z-index: 10;
+
   border-right: 1px solid
     var(--tp-color-border-subtle);
+
   background-color:
     var(--tp-color-surface-muted);
 }
 
 .itinerary-week__hour-label {
   position: absolute;
+
   right:
     var(--tp-space-3);
+
   z-index: 2;
+
   transform:
     translateY(-50%);
+
   color:
     var(--tp-color-text-muted);
+
   font-size:
     var(--tp-font-size-xs);
+
   font-weight:
     var(--tp-font-weight-medium);
+
   line-height: 1;
+
   white-space: nowrap;
 }
 
 .itinerary-week__hour-label:first-child {
   padding-top:
     var(--tp-space-2);
+
   transform:
     translateY(0);
 }
 
 .itinerary-week__day-column {
   position: relative;
+
   min-width: 0;
+
   border-right: 1px solid
     var(--tp-color-border-subtle);
+
   background-color:
     var(--tp-color-surface);
 }
@@ -381,11 +511,15 @@
 
 .itinerary-week__hour-line {
   position: absolute;
+
   right: 0;
   left: 0;
+
   height: 1px;
+
   background-color:
     var(--tp-color-border-subtle);
+
   pointer-events: none;
 }
 
@@ -395,17 +529,25 @@
 
 .itinerary-week__event {
   position: absolute;
+
   z-index: 3;
+
   min-height: 34px;
+
   overflow: hidden;
+
   padding:
     var(--tp-space-1)
     var(--tp-space-2);
+
   border: 1px solid
     transparent;
+
   border-radius:
     var(--tp-radius-sm);
+
   outline: none;
+
   cursor: default;
 
   user-select: none;
@@ -437,6 +579,7 @@
 
 .itinerary-week__event--selected {
   z-index: 80;
+
   overflow: visible;
 
   box-shadow:
@@ -448,26 +591,41 @@
 
 .itinerary-week__event-time {
   display: block;
+
   margin-bottom: 2px;
+
   overflow: hidden;
+
   font-size: 0.5625rem;
+
   font-weight:
     var(--tp-font-weight-semibold);
+
   line-height: 1.15;
+
   text-overflow: ellipsis;
+
   white-space: nowrap;
+
   opacity: 0.72;
 }
 
 .itinerary-week__event-title {
   display: -webkit-box;
+
   overflow: hidden;
+
   font-size: 0.6875rem;
+
   font-weight:
     var(--tp-font-weight-semibold);
+
   line-height: 1.25;
+
   line-clamp: 2;
+
   -webkit-box-orient: vertical;
+
   -webkit-line-clamp: 2;
 }
 
@@ -477,15 +635,19 @@
 
 .itinerary-week__item-actions {
   position: absolute;
+
   top:
     calc(
       100% +
       var(--tp-space-1)
     );
+
   right: 0;
+
   z-index: 90;
 
   display: flex;
+
   align-items: center;
 
   gap:
@@ -783,7 +945,9 @@
 .itinerary-week__delete-cancel:disabled,
 .itinerary-week__delete-confirm:disabled {
   cursor: not-allowed;
+
   opacity: 0.55;
+
   transform: none;
 }
 
@@ -793,6 +957,7 @@
 
 .itinerary-week__unscheduled {
   position: sticky;
+
   top:
     var(--tp-space-6);
 
@@ -1061,7 +1226,9 @@
 .itinerary-week__event--flights,
 .itinerary-week__unscheduled-card--flights {
   border-color: #c4b5fd;
+
   background-color: #ede9fe;
+
   color: #5b21b6;
 }
 
@@ -1072,7 +1239,9 @@
 .itinerary-week__event--accommodation,
 .itinerary-week__unscheduled-card--accommodation {
   border-color: #bfdbfe;
+
   background-color: #dbeafe;
+
   color: #1d4ed8;
 }
 
@@ -1083,7 +1252,9 @@
 .itinerary-week__event--food,
 .itinerary-week__unscheduled-card--food {
   border-color: #bbf7d0;
+
   background-color: #dcfce7;
+
   color: #166534;
 }
 
@@ -1094,7 +1265,9 @@
 .itinerary-week__event--transportation,
 .itinerary-week__unscheduled-card--transportation {
   border-color: #bae6fd;
+
   background-color: #e0f2fe;
+
   color: #0369a1;
 }
 
@@ -1105,7 +1278,9 @@
 .itinerary-week__event--activities,
 .itinerary-week__unscheduled-card--activities {
   border-color: #fed7aa;
+
   background-color: #ffedd5;
+
   color: #9a3412;
 }
 
@@ -1116,7 +1291,9 @@
 .itinerary-week__event--shopping,
 .itinerary-week__unscheduled-card--shopping {
   border-color: #fbcfe8;
+
   background-color: #fce7f3;
+
   color: #9d174d;
 }
 
@@ -1127,7 +1304,9 @@
 .itinerary-week__event--insurance,
 .itinerary-week__unscheduled-card--insurance {
   border-color: #fde68a;
+
   background-color: #fef3c7;
+
   color: #92400e;
 }
 
@@ -1138,7 +1317,9 @@
 .itinerary-week__event--other,
 .itinerary-week__unscheduled-card--other {
   border-color: #cbd5e1;
+
   background-color: #f1f5f9;
+
   color: #475569;
 }
 
@@ -1204,117 +1385,307 @@
 
 /* =========================
    Mobile
-   Dedicated mobile UX
-   will be refined later.
    ========================= */
 
 @media (max-width: 45rem) {
+  .itinerary-week {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: clip;
+  }
+
+  .itinerary-week__heading-layout {
+    width: 100%;
+    max-width: 100%;
+
+    margin-bottom:
+      var(--tp-space-3);
+  }
+
+  .itinerary-week__heading-main {
+    width: 100%;
+    max-width: 100%;
+
+    gap:
+      var(--tp-space-1);
+  }
+
   .itinerary-week__title {
-    font-size: 2rem;
+    max-width: 100%;
+
+    overflow-wrap: anywhere;
+
+    font-size:
+      clamp(
+        1.65rem,
+        8vw,
+        2rem
+      );
+
+    line-height: 1.08;
+
+    letter-spacing: -0.035em;
   }
 
   .itinerary-week__date-range {
     font-size:
       var(--tp-font-size-sm);
+
+    line-height:
+      var(--tp-line-height-body);
   }
 
+  /*
+    On mobile the legend wraps naturally.
+    No horizontal legend scrolling and
+    no labels cut off at the viewport edge.
+  */
+
   .itinerary-week__legend {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
 
     gap:
-      var(--tp-space-4);
+      0.45rem
+      0.8rem;
 
     margin-bottom:
       var(--tp-space-3);
 
-    padding-bottom:
-      var(--tp-space-1);
+    padding: 0;
 
-    overflow-x: auto;
-
-    scrollbar-width: none;
-  }
-
-  .itinerary-week__legend::-webkit-scrollbar {
-    display: none;
+    overflow: visible;
   }
 
   .itinerary-week__legend-item {
     flex: 0 0 auto;
+
+    gap:
+      0.35rem;
+
+    font-size: 0.68rem;
+  }
+
+  .itinerary-week__legend-color {
+    width: 0.45rem;
+    height: 0.45rem;
+  }
+
+  .itinerary-week__layout {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    gap:
+      var(--tp-space-3);
+  }
+
+  /*
+    The page itself never becomes wider than
+    the phone. Only the calendar's own scroll
+    area may move horizontally between days.
+  */
+
+  .itinerary-week__calendar-shell {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    border-radius:
+      var(--tp-radius-lg);
   }
 
   .itinerary-week__calendar-scroll {
+    width: 100%;
+    max-width: 100%;
+
     height:
       clamp(
-        25rem,
-        calc(100dvh - 18rem),
-        34rem
+        24rem,
+        calc(100dvh - 19rem),
+        32rem
       );
+
+    overflow-x: auto;
+    overflow-y: auto;
+
+    scrollbar-gutter: auto;
+
+    overscroll-behavior:
+      contain;
+
+    -webkit-overflow-scrolling:
+      touch;
   }
 
+  /*
+    Mobile:
+    - compact sticky time column
+    - one comfortable day column
+    - additional days remain inside the
+      calendar's horizontal scroll area
+  */
+
   .itinerary-week__calendar {
+    --itinerary-mobile-hours-width:
+      3.25rem;
+
+    --itinerary-mobile-day-width:
+      max(
+        13.5rem,
+        calc(100vw - 6.75rem)
+      );
+
     min-width: max-content;
 
     grid-template-columns:
-      3.5rem
+      var(--itinerary-mobile-hours-width)
       repeat(
         var(--itinerary-day-count),
-        minmax(
-          16rem,
-          calc(100vw - 7rem)
-        )
+        var(--itinerary-mobile-day-width)
       );
   }
 
   .itinerary-week__timeline {
     grid-template-columns:
-      3.5rem
+      var(--itinerary-mobile-hours-width)
       repeat(
         var(--itinerary-day-count),
-        minmax(
-          16rem,
-          calc(100vw - 7rem)
-        )
+        var(--itinerary-mobile-day-width)
       );
   }
 
   .itinerary-week__header-spacer,
   .itinerary-week__day-header {
-    height: 64px;
+    height: 60px;
+  }
+
+  .itinerary-week__day-name {
+    margin-bottom:
+      0.2rem;
+
+    font-size: 0.66rem;
+  }
+
+  .itinerary-week__day-date {
+    font-size: 0.78rem;
+  }
+
+  .itinerary-week__day-date-row {
+    gap:
+      0.35rem;
+  }
+
+  .itinerary-week__day-indicator {
+    width: 0.4rem;
+    height: 0.4rem;
   }
 
   .itinerary-week__hour-label {
     right:
-      var(--tp-space-2);
+      0.45rem;
 
-    font-size: 0.625rem;
+    font-size: 0.6rem;
   }
 
+  /*
+    Navigation always stays inside
+    the visible calendar shell.
+  */
+
   .itinerary-week__week-nav {
-    top: 14px;
+    top: 13px;
 
     width: 2rem;
-
     height: 2rem;
+
+    border-radius:
+      var(--tp-radius-sm);
   }
 
   .itinerary-week__week-nav--previous {
     left:
-      var(--tp-space-3);
+      0.5rem;
   }
 
   .itinerary-week__week-nav--next {
     right:
-      var(--tp-space-3);
+      0.5rem;
+  }
+
+  /*
+    Slightly clearer event text on phones.
+  */
+
+  .itinerary-week__event {
+    padding:
+      0.25rem
+      0.35rem;
+  }
+
+  .itinerary-week__event-time {
+    font-size: 0.58rem;
+  }
+
+  .itinerary-week__event-title {
+    font-size: 0.72rem;
+
+    line-height: 1.2;
+  }
+
+  /*
+    Action menus remain compact and
+    cannot force the page wider.
+  */
+
+  .itinerary-week__item-actions {
+    max-width:
+      calc(100vw - 2rem);
   }
 
   .itinerary-week__delete-confirmation,
   .itinerary-week__unscheduled-card
     .itinerary-week__delete-confirmation {
-    width: 13rem;
+    width:
+      min(
+        13rem,
+        calc(100vw - 3rem)
+      );
+
+    max-width:
+      calc(100vw - 3rem);
+
+    padding:
+      var(--tp-space-3);
   }
 
+  .itinerary-week__delete-actions {
+    gap:
+      var(--tp-space-1);
+  }
+
+  .itinerary-week__delete-cancel,
+  .itinerary-week__delete-confirm {
+    min-height:
+      2.25rem;
+
+    padding:
+      0
+      var(--tp-space-3);
+
+    font-size:
+      var(--tp-font-size-xs);
+  }
+
+  /*
+    Plan Later becomes a normal full-width
+    mobile section below the calendar.
+  */
+
   .itinerary-week__unscheduled {
+    width: 100%;
+    max-width: 100%;
+
     border-radius:
       var(--tp-radius-lg);
   }
@@ -1326,5 +1697,52 @@
 
   .itinerary-week__unscheduled-list {
     grid-template-columns: 1fr;
+
+    padding:
+      var(--tp-space-3);
+  }
+
+  .itinerary-week__unscheduled-card {
+    min-width: 0;
+  }
+}
+
+/* =========================
+   Very small phones
+   ========================= */
+
+@media (max-width: 23.5rem) {
+  .itinerary-week__title {
+    font-size: 1.55rem;
+  }
+
+  .itinerary-week__legend {
+    gap:
+      0.4rem
+      0.65rem;
+  }
+
+  .itinerary-week__legend-item {
+    font-size: 0.64rem;
+  }
+
+  .itinerary-week__calendar {
+    --itinerary-mobile-hours-width:
+      3rem;
+
+    --itinerary-mobile-day-width:
+      max(
+        12.75rem,
+        calc(100vw - 6.25rem)
+      );
+  }
+
+  .itinerary-week__hour-label {
+    font-size: 0.56rem;
+  }
+
+  .itinerary-week__week-nav {
+    width: 1.9rem;
+    height: 1.9rem;
   }
 }
