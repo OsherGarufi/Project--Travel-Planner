@@ -33,19 +33,17 @@ export const RECOMMENDED_OPTIONS = RECOMMENDED_GROUPS.flatMap((group) => [
   group, ...group.children.map((child) => ({ ...child, child: true })),
 ])
 export const DEFAULT_CATEGORY = RECOMMENDED_OPTIONS[0].value
-const CACHE_KEY = 'travelPlanner:attractions:categoryCatalog:v1'
+const CACHE_KEY = 'travelPlanner:attractions:categoryCatalog:v2'
 const TTL = 7 * 24 * 60 * 60 * 1000
 let memory = null
 let hydrated = false
 const EMPTY_CATALOG = []
 const optionsByCatalog = new WeakMap()
-const standaloneIdentifiers = new Set(RECOMMENDED_OPTIONS
-  .filter((item) => item.categories.length === 1).map((item) => item.categories[0]))
 const collator = new Intl.Collator(undefined, { sensitivity: 'base' })
 
 function validCategories(categories) {
   return Array.isArray(categories) && categories.length > 0 &&
-    categories.every((value) => typeof value === 'string' && /^[a-z][a-z0-9_]*(\.[a-z0-9_]+)*$/.test(value))
+    categories.every((value) => typeof value === 'string' && /^[a-z][a-z0-9_-]*(\.[a-z0-9_-]+)*$/.test(value))
 }
 
 function clearInvalidCatalog() {
@@ -82,16 +80,21 @@ function titleCase(part) {
 export function friendlyCategory(identifier) {
   const parts = identifier.split('.')
   const leaf = titleCase(parts.at(-1))
-  return parts.length > 2 ? leaf + ' (' + titleCase(parts.at(-2)) + ')' : leaf
+  return parts.length > 1 ? leaf + ' (' + titleCase(parts.at(-2)) + ')' : leaf
 }
 
 export function catalogOptions(categories) {
   if (optionsByCatalog.has(categories)) return optionsByCatalog.get(categories)
   if (!validCategories(categories)) return EMPTY_CATALOG
-  const items = [...new Set(categories)].filter((identifier) => !standaloneIdentifiers.has(identifier))
+  const items = [...new Set(categories)]
     .map((identifier) => ({
       value: 'catalog:' + identifier, label: friendlyCategory(identifier), categories: [identifier],
     }))
+    // Only omit a standalone option represented identically in Recommended.
+    // A group containing the identifier is not a substitute for selecting it alone.
+    .filter((item) => !RECOMMENDED_OPTIONS.some((recommended) =>
+      recommended.categories.length === 1 && recommended.categories[0] === item.categories[0] &&
+      collator.compare(recommended.label, item.label) === 0))
   const labels = new Map()
   for (const item of items) {
     const key = item.label.toLocaleLowerCase()
@@ -102,11 +105,12 @@ export function catalogOptions(categories) {
   for (const item of items) {
     const parts = item.categories[0].split('.')
     if (labels.get(item.label.toLocaleLowerCase()) > 1 || usedLabels.has(item.label.toLocaleLowerCase())) {
-      const context = parts.length > 2 ? parts[0] : parts.at(-2)
-      if (context) {
-        item.label = parts.length > 2
-          ? titleCase(parts.at(-1)) + ' (' + titleCase(parts.at(-2)) + ', ' + titleCase(context) + ')'
-          : titleCase(parts.at(-1)) + ' (' + titleCase(context) + ')'
+      const peers = items.filter((other) => other !== item &&
+        friendlyCategory(other.categories[0]).toLocaleLowerCase() === item.label.toLocaleLowerCase())
+      const ancestor = parts.slice(0, -2).reverse().find((part) =>
+        peers.every((other) => !other.categories[0].split('.').slice(0, -2).includes(part)))
+      if (ancestor) {
+        item.label = titleCase(parts.at(-1)) + ' (' + titleCase(parts.at(-2)) + ', ' + titleCase(ancestor) + ')'
       }
     }
     const label = item.label

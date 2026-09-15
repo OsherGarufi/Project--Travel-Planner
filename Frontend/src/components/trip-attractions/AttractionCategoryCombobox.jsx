@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   RECOMMENDED_OPTIONS, catalogOptions, loadCategoryCatalog, readCategoryCatalog,
 } from '../../services/attractions/attractionCategories'
@@ -13,10 +13,13 @@ export default function AttractionCategoryCombobox({ value, onChange, userId }) 
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(-1)
   const [status, setStatus] = useState('')
-  const all = [...RECOMMENDED_OPTIONS, ...catalogOptions(catalog)]
+  const all = useMemo(() => [...RECOMMENDED_OPTIONS, ...catalogOptions(catalog)], [catalog])
   const selected = all.find((item) => item.value === value)
   const prefix = query.trim().toLowerCase().replace(/\s+/g, ' ')
-  const options = all.filter((item) => item.label.toLowerCase().startsWith(prefix))
+  const options = useMemo(() => all.filter((item) =>
+    item.label.trim().toLowerCase().replace(/\s+/g, ' ').startsWith(prefix)), [all, prefix])
+  const catalogMessage = catalog.length
+    ? `${catalog.length} provider categories loaded. Type to filter or scroll through A–Z.` : ''
 
   useEffect(() => () => controller.current?.abort(), [])
   useEffect(() => {
@@ -63,7 +66,7 @@ export default function AttractionCategoryCombobox({ value, onChange, userId }) 
       <input id={id} role="combobox" autoComplete="off"
         aria-autocomplete="list" aria-expanded={open} aria-controls={id + '-list'}
         aria-activedescendant={open && options[active] ? id + '-option-' + active : undefined}
-        aria-invalid={!selected} aria-describedby={status ? id + '-status' : undefined}
+        aria-invalid={!selected} aria-describedby={status || catalogMessage ? id + '-status' : undefined}
         value={open ? query : selected?.label ?? query}
         placeholder={selected?.label ?? 'Choose a category'}
         onFocus={openList} onClick={openList}
@@ -92,8 +95,14 @@ export default function AttractionCategoryCombobox({ value, onChange, userId }) 
         }} />
       {open && <div className="attractions-category__list" id={id + '-list'} role="listbox" aria-label="Attraction categories">
         {options.map((item, index) => <div key={item.value}>
-          {!prefix && index === 0 && <div className="attractions-category__heading">Recommended</div>}
-          {!prefix && index === RECOMMENDED_OPTIONS.length && <div className="attractions-category__heading">All categories A–Z</div>}
+          {!prefix && index === 0 && <div className="attractions-category__heading" role="presentation">Recommended</div>}
+          {!prefix && index === RECOMMENDED_OPTIONS.length && <div className="attractions-category__heading" role="presentation">
+            All Categories ({all.length - RECOMMENDED_OPTIONS.length})
+          </div>}
+          {!prefix && index >= RECOMMENDED_OPTIONS.length &&
+            (index === RECOMMENDED_OPTIONS.length ||
+              item.label[0].toLocaleUpperCase() !== options[index - 1].label[0].toLocaleUpperCase()) &&
+            <div className="attractions-category__heading" role="presentation">{item.label[0].toLocaleUpperCase()}</div>}
           <div id={id + '-option-' + index} role="option" aria-selected={item.value === value}
             className={'attractions-category__option' + (active === index ? ' is-active' : '') + (!prefix && item.child ? ' is-child' : '')}
             onPointerDown={(event) => event.preventDefault()}
@@ -101,9 +110,9 @@ export default function AttractionCategoryCombobox({ value, onChange, userId }) 
             {item.label}
           </div>
         </div>)}
-        {!options.length && <div className="attractions-category__heading">No matching categories</div>}
+        {!options.length && <div className="attractions-category__heading">No matching category</div>}
       </div>}
-      {status && <small id={id + '-status'} role="status">{status}</small>}
+      {(status || catalogMessage) && <small id={id + '-status'} role="status">{status || catalogMessage}</small>}
     </div>
   )
 }
