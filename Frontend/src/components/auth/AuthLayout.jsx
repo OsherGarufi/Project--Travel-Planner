@@ -1,4 +1,4 @@
-import LoginPageImage from '../../assets/loginPage.png'
+import LoginPageImage from '../../assets/LoginPage.png'
 import TravelPlannerLogo from '../../assets/TP_logoW.png'
 import '../../css/components/auth-layout.css'
 
