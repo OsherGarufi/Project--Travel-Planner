@@ -7,7 +7,6 @@ import { Link } from 'react-router-dom'
 import HomeTripCard from '../components/home/HomeTripCard'
 import NextTripCard from '../components/home/NextTripCard'
 import TravelCarousel from '../components/home/TravelCarousel'
-import TravelerRecommendations from '../components/home/TravelerRecommendations'
 import '../css/pages/home-page.css'
 import { useAuth } from '../hooks/useAuth'
 import { useTrips } from '../hooks/useTrips'
@@ -365,8 +364,6 @@ function HomePage() {
           </div>
         )}
       </section>
-
-      <TravelerRecommendations />
     </div>
   )
 }
