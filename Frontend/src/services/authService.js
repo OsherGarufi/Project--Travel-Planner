@@ -11,7 +11,7 @@ import { auth } from '../config/firebase'
 import { apiRequest } from './apiClient'
 
 export async function syncFirebaseUserWithBackend(firebaseUser) {
-  const idToken = await firebaseUser.getIdToken(true)
+  const idToken = await firebaseUser.getIdToken()
 
   const backendUser = await apiRequest('/api/Auth/login', {
     method: 'POST',
