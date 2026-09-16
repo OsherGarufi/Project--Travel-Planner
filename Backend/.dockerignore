@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+
+*.user
+*.suo
+*.cache
+
+firebase-adminsdk*.json
+service-account*.json
+serviceAccount*.json
+credentials*.json
+
+Dockerfile*
+docker-compose*
