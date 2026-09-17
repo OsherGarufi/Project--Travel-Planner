@@ -33,11 +33,71 @@ FirebaseApp.Create(
     new AppOptions
     {
         Credential =
-            GoogleCredential.FromFile(
-                firebaseCredentialsPath
-            )
+            CredentialFactory
+                .FromFile<ServiceAccountCredential>(
+                    firebaseCredentialsPath
+                )
+                .ToGoogleCredential()
     }
 );
+
+// Reads allowed frontend origins from configuration.
+// Multiple origins can be separated by commas.
+var configuredOrigins =
+    builder.Configuration[
+        "Cors:AllowedOrigins"
+    ];
+
+var allowedOrigins =
+    string.IsNullOrWhiteSpace(
+        configuredOrigins
+    )
+        ? Array.Empty<string>()
+        : configuredOrigins
+            .Split(
+                ',',
+                StringSplitOptions
+                    .RemoveEmptyEntries
+                | StringSplitOptions
+                    .TrimEntries
+            )
+            .Select(
+                origin =>
+                    origin.TrimEnd('/')
+            )
+            .Distinct(
+                StringComparer.OrdinalIgnoreCase
+            )
+            .ToArray();
+
+// Local Vite frontend is allowed automatically in Development.
+if (
+    builder.Environment
+        .IsDevelopment()
+)
+{
+    allowedOrigins =
+        allowedOrigins
+            .Append(
+                "http://localhost:5173"
+            )
+            .Distinct(
+                StringComparer.OrdinalIgnoreCase
+            )
+            .ToArray();
+}
+
+// Production must explicitly define at least one allowed frontend.
+if (
+    builder.Environment
+        .IsProduction()
+    && allowedOrigins.Length == 0
+)
+{
+    throw new InvalidOperationException(
+        "Missing CORS allowed origins."
+    );
+}
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -94,7 +154,9 @@ builder.Services.AddCors(
             policy =>
             {
                 policy
-                    .AllowAnyOrigin()
+                    .WithOrigins(
+                        allowedOrigins
+                    )
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             }
@@ -215,7 +277,13 @@ if (
     );
 }
 
-app.UseHttpsRedirection();
+if (
+    app.Environment
+        .IsDevelopment()
+)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors(
     FrontendCorsPolicy
