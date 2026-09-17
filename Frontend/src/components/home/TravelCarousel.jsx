@@ -1,14 +1,14 @@
 import {
-    useEffect,
-    useRef,
-    useState,
+  useEffect,
+  useRef,
+  useState,
 } from 'react'
-import homeBeachImage from '../../assets/homeBeach.png'
-import photoCityImage from '../../assets/photoCity.png'
-import photoClimbImage from '../../assets/photoClimb.png'
-import photoNatureImage from '../../assets/photoNature.png'
-import photoShoppingImage from '../../assets/photoShopping.png'
-import photoVacationImage from '../../assets/photoVacation.png'
+import homeBeachImage from '../../assets/webp/homeBeach.webp'
+import photoCityImage from '../../assets/webp/photoCity.webp'
+import photoClimbImage from '../../assets/webp/photoClimb.webp'
+import photoNatureImage from '../../assets/webp/photoNature.webp'
+import photoShoppingImage from '../../assets/webp/photoShopping.webp'
+import photoVacationImage from '../../assets/webp/photoVacation.webp'
 import '../../css/components/travel-carousel.css'
 
 const slides = [
