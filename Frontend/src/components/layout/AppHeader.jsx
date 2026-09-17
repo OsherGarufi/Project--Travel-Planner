@@ -1,14 +1,14 @@
 import {
-    useEffect,
-    useRef,
-    useState,
+  useEffect,
+  useRef,
+  useState,
 } from 'react'
 import {
-    Link,
-    NavLink,
-    useNavigate,
+  Link,
+  NavLink,
+  useNavigate,
 } from 'react-router-dom'
-import TravelPlannerLogo from '../../assets/TP_logoW.png'
+import TravelPlannerLogo from '../../assets/webp/TP_logoW.webp'
 import '../../css/components/app-header.css'
 import { useAuth } from '../../hooks/useAuth'
 import ProfileAvatar from '../ProfileAvatar'

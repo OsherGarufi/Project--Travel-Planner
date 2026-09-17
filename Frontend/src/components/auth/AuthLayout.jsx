@@ -1,5 +1,5 @@
-import LoginPageImage from '../../assets/LoginPage.png'
-import TravelPlannerLogo from '../../assets/TP_logoW.png'
+import LoginPageImage from '../../assets/webp/LoginPage.webp'
+import TravelPlannerLogo from '../../assets/webp/TP_logoW.webp'
 import '../../css/components/auth-layout.css'
 
 function AuthLayout({ children }) {
