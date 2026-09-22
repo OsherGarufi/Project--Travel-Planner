@@ -1,4 +1,5 @@
 import '../../css/components/destination-form.css'
+import TripDateRangeFields from '../trip/TripDateRangeFields'
 import AdditionalCitySearch from './AdditionalCitySearch'
 
 function ArrowIcon() {
@@ -107,6 +108,7 @@ function DestinationForm({
   majorCities,
   startDate,
   endDate,
+  minimumTravelDate,
 
   isLoadingCountries,
   countriesError,
@@ -355,42 +357,25 @@ function DestinationForm({
           </div>
         </div>
 
-        <div className="destination-form__grid">
-          <div className="destination-form__field">
-            <label
-              className="destination-form__label"
-              htmlFor="startDate"
-            >
-              Start date
-            </label>
-
-            <input
-              id="startDate"
-              className="destination-form__input"
-              type="date"
-              value={startDate}
-              onChange={onStartDateChange}
-            />
-          </div>
-
-          <div className="destination-form__field">
-            <label
-              className="destination-form__label"
-              htmlFor="endDate"
-            >
-              End date
-            </label>
-
-            <input
-              id="endDate"
-              className="destination-form__input"
-              type="date"
-              value={endDate}
-              min={startDate}
-              onChange={onEndDateChange}
-            />
-          </div>
-        </div>
+        <TripDateRangeFields
+          startDate={startDate}
+          endDate={endDate}
+          startDateMinimum={
+            minimumTravelDate
+          }
+          endDateMinimum={
+            startDate ||
+            minimumTravelDate
+          }
+          startDateId="startDate"
+          endDateId="endDate"
+          onStartDateChange={
+            onStartDateChange
+          }
+          onEndDateChange={
+            onEndDateChange
+          }
+        />
       </section>
 
       <div className="destination-form__footer">

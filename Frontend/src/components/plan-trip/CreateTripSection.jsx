@@ -146,6 +146,7 @@ function formatBudgetAmount(amount) {
 }
 
 function CreateTripSection({
+  tripTitle,
   countryName,
   cityName,
   startDate,
@@ -155,8 +156,12 @@ function CreateTripSection({
   isCreatingTrip,
   isCreateDisabled,
   createTripError,
+  onTripTitleChange,
   onCreateTrip,
 }) {
+  const normalizedTripTitle =
+    tripTitle.trim()
+
   const hasValidBudget =
     typeof budgetAmount === 'number' &&
     Number.isFinite(budgetAmount) &&
@@ -165,7 +170,8 @@ function CreateTripSection({
     /^[A-Z]{3}$/.test(budgetCurrency)
 
   const hasTripSummary = Boolean(
-    countryName &&
+    normalizedTripTitle &&
+      countryName &&
       cityName &&
       startDate &&
       endDate &&
@@ -214,8 +220,49 @@ function CreateTripSection({
         )}
       </div>
 
+      <div className="create-trip-section__field">
+        <label
+          className="create-trip-section__label"
+          htmlFor="create-trip-title-input"
+        >
+          Trip title
+        </label>
+
+        <input
+          id="create-trip-title-input"
+          className="create-trip-section__input"
+          type="text"
+          value={tripTitle}
+          maxLength={100}
+          placeholder="e.g. Summer in Rome"
+          autoComplete="off"
+          required
+          disabled={isCreatingTrip}
+          onChange={onTripTitleChange}
+        />
+      </div>
+
       {hasTripSummary ? (
         <div className="create-trip-section__summary">
+          <div className="create-trip-section__summary-item">
+            <span
+              className="create-trip-section__summary-icon"
+              aria-hidden="true"
+            >
+              <CheckIcon />
+            </span>
+
+            <div>
+              <p className="create-trip-section__summary-label">
+                Trip title
+              </p>
+
+              <p className="create-trip-section__summary-value">
+                {normalizedTripTitle}
+              </p>
+            </div>
+          </div>
+
           <div className="create-trip-section__summary-item">
             <span
               className="create-trip-section__summary-icon"
@@ -291,8 +338,9 @@ function CreateTripSection({
             </p>
 
             <p className="create-trip-section__pending-description">
-              Choose a country, city, travel dates and
-              planned budget to unlock trip creation.
+              Enter a title, then choose a country, city,
+              travel dates and planned budget to unlock
+              trip creation.
             </p>
           </div>
         </div>

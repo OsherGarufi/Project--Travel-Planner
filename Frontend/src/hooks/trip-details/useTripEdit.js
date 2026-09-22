@@ -4,6 +4,7 @@ import {
 } from '../../services/itinerary/itineraryCache'
 import { updateTrip } from '../../services/tripService'
 import { buildTripUpdatePayload } from '../../utils/tripUpdateUtils'
+import { formatDateForInput } from '../../utils/dateUtils'
 import { useAuth } from '../useAuth'
 import { useTrips } from '../useTrips'
 
@@ -24,22 +25,6 @@ function normalizeDateInputValue(value) {
   }
 
   return value.slice(0, 10)
-}
-
-function getTodayDateInputValue() {
-  const today = new Date()
-
-  const year = today.getFullYear()
-
-  const month = String(
-    today.getMonth() + 1,
-  ).padStart(2, '0')
-
-  const day = String(
-    today.getDate(),
-  ).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
 }
 
 export function useTripEdit({
@@ -83,7 +68,7 @@ export function useTripEdit({
     useState('')
 
   const minimumTravelDate =
-    getTodayDateInputValue()
+    formatDateForInput(new Date())
 
   const originalStartDate =
     normalizeDateInputValue(

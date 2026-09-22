@@ -1,5 +1,6 @@
 import '../../css/components/trip-edit-form.css'
 import BudgetSection from '../plan-trip/BudgetSection'
+import TripDateRangeFields from '../trip/TripDateRangeFields'
 
 function EditIcon() {
   return (
@@ -182,43 +183,25 @@ function TripEditForm({
           />
         </div>
 
-        <div className="trip-edit-form__field">
-          <label
-            className="trip-edit-form__label"
-            htmlFor="editTripStartDate"
-          >
-            Start date
-          </label>
-
-          <input
-            id="editTripStartDate"
-            className="trip-edit-form__input"
-            type="date"
-            value={startDate}
-            min={startDateMinimum}
-            onChange={
-              onStartDateChange
-            }
-          />
-        </div>
-
-        <div className="trip-edit-form__field">
-          <label
-            className="trip-edit-form__label"
-            htmlFor="editTripEndDate"
-          >
-            End date
-          </label>
-
-          <input
-            id="editTripEndDate"
-            className="trip-edit-form__input"
-            type="date"
-            value={endDate}
-            min={endDateMinimum}
-            onChange={onEndDateChange}
-          />
-        </div>
+        <TripDateRangeFields
+          className="trip-edit-form__date-range"
+          startDate={startDate}
+          endDate={endDate}
+          startDateMinimum={
+            startDateMinimum
+          }
+          endDateMinimum={
+            endDateMinimum
+          }
+          startDateId="editTripStartDate"
+          endDateId="editTripEndDate"
+          onStartDateChange={
+            onStartDateChange
+          }
+          onEndDateChange={
+            onEndDateChange
+          }
+        />
 
         {hasDateChanges &&
           hasValidDates &&

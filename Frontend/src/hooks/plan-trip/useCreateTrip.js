@@ -22,6 +22,12 @@ export function useCreateTrip({
   const [createTripError, setCreateTripError] =
     useState('')
 
+  const [tripTitle, setTripTitle] =
+    useState('')
+
+  const normalizedTripTitle =
+    tripTitle.trim()
+
   const hasValidBudget =
     typeof budgetAmount === 'number' &&
     Number.isFinite(budgetAmount) &&
@@ -32,6 +38,7 @@ export function useCreateTrip({
     /^[A-Z]{3}$/.test(budgetCurrency)
 
   const isCreateTripDisabled =
+    !normalizedTripTitle ||
     !selectedCountry ||
     !selectedCity ||
     !startDate ||
@@ -45,16 +52,20 @@ export function useCreateTrip({
     setCreateTripError('')
   }
 
+  const handleTripTitleChange = (
+    event,
+  ) => {
+    setTripTitle(event.target.value)
+    setCreateTripError('')
+  }
+
   const createSelectedTrip = async () => {
     if (isCreateTripDisabled) {
       return
     }
 
     const tripData = {
-      title: `Trip to ${selectedCity.name}`.slice(
-        0,
-        100,
-      ),
+      title: normalizedTripTitle,
       destinationCountryCode:
         selectedCountry.code,
       destinationCountryName:
@@ -100,10 +111,12 @@ export function useCreateTrip({
   }
 
   return {
+    tripTitle,
     isCreatingTrip,
     createTripError,
     isCreateTripDisabled,
     clearCreateTripError,
+    handleTripTitleChange,
     createSelectedTrip,
   }
 }

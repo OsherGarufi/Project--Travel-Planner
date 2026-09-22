@@ -79,6 +79,7 @@
 }
 
 .trip-edit-form__field--full,
+.trip-edit-form__date-range,
 .trip-edit-form__budget {
   grid-column: 1 / -1;
 }

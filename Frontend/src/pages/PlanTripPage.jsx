@@ -19,20 +19,7 @@ import {
   WEATHER_FORECAST_DAYS,
 } from '../services/weather/weatherService'
 import { getPreferredLocalCurrency } from '../utils/currencyUtils'
-
-function getTodayDateInputValue() {
-  const today = new Date()
-
-  const year = today.getFullYear()
-  const month = String(
-    today.getMonth() + 1,
-  ).padStart(2, '0')
-  const day = String(
-    today.getDate(),
-  ).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
+import { formatDateForInput } from '../utils/dateUtils'
 
 function PlanTripPage() {
   const weatherSectionRef = useRef(null)
@@ -83,7 +70,7 @@ function PlanTripPage() {
   } = useTripBudget()
 
   const minimumTravelDate =
-    getTodayDateInputValue()
+    formatDateForInput(new Date())
 
   const localCurrency =
     getPreferredLocalCurrency(
@@ -111,10 +98,12 @@ function PlanTripPage() {
   })
 
   const {
+    tripTitle,
     isCreatingTrip,
     createTripError,
     isCreateTripDisabled,
     clearCreateTripError,
+    handleTripTitleChange,
     createSelectedTrip,
   } = useCreateTrip({
     selectedCountry,
@@ -374,6 +363,7 @@ function PlanTripPage() {
           countryName={
             selectedCountry?.name ?? ''
           }
+          tripTitle={tripTitle}
           cityName={
             selectedCity?.name ?? ''
           }
@@ -393,6 +383,9 @@ function PlanTripPage() {
           }
           createTripError={
             createTripError
+          }
+          onTripTitleChange={
+            handleTripTitleChange
           }
           onCreateTrip={
             createSelectedTrip
