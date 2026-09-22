@@ -420,9 +420,16 @@
   grid-template-columns:
     minmax(12rem, 0.8fr)
     minmax(0, 1.7fr);
-  align-items: end;
+  align-items: start;
   gap:
     var(--tp-space-4);
+}
+
+.itinerary-item-form__time-range {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .itinerary-item-form__time-group {
@@ -447,6 +454,20 @@
     var(--tp-color-text-muted);
   font-size:
     var(--tp-font-size-base);
+}
+
+.itinerary-item-form__time-error {
+  margin-top: var(--tp-space-2);
+  color: var(--tp-color-danger);
+  font-size: var(--tp-font-size-xs);
+  line-height:
+    var(--tp-line-height-body);
+}
+
+.itinerary-item-form__control[aria-invalid='true'] {
+  border-color: var(--tp-color-danger);
+  box-shadow:
+    0 0 0 3px rgba(217, 45, 32, 0.1);
 }
 
 

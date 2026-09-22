@@ -25,6 +25,7 @@ import {
   updateTripItinerarySchedule,
 } from '../../services/itinerary/itineraryService'
 import { useAuth } from '../useAuth'
+import { useFeedback } from '../useFeedback'
 
 const ITINERARY_SCHEDULE_SAVE_DELAY_MS =
   5000
@@ -36,6 +37,9 @@ export function useTripItinerary(
     firebaseUser,
     idToken,
   } = useAuth()
+
+  const { showError } =
+    useFeedback()
 
   const userId =
     firebaseUser?.uid ?? null
@@ -462,6 +466,10 @@ export function useTripItinerary(
         )
 
         setItineraryActionError(
+          'Could not save the new activity schedule. The previous schedule was restored.',
+        )
+
+        showError(
           'Could not save the new activity schedule. The previous schedule was restored.',
         )
       }
@@ -934,6 +942,10 @@ export function useTripItinerary(
           'Could not add the itinerary item. Please try again.',
         )
 
+        showError(
+          'Could not add the itinerary item. Please try again.',
+        )
+
         return null
       } finally {
         setIsCreatingItineraryItem(
@@ -1017,6 +1029,10 @@ export function useTripItinerary(
         )
 
         setItineraryActionError(
+          'Could not update the itinerary item. Please try again.',
+        )
+
+        showError(
           'Could not update the itinerary item. Please try again.',
         )
 
@@ -1106,6 +1122,10 @@ export function useTripItinerary(
           'Could not update the activity schedule. Please try again.',
         )
 
+        showError(
+          'Could not update the activity schedule. Please try again.',
+        )
+
         return null
       } finally {
         setIsUpdatingItinerarySchedule(
@@ -1177,6 +1197,10 @@ export function useTripItinerary(
         )
 
         setItineraryActionError(
+          'Could not delete the itinerary item. Please try again.',
+        )
+
+        showError(
           'Could not delete the itinerary item. Please try again.',
         )
 

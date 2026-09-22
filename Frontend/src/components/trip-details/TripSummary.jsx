@@ -1,5 +1,6 @@
 import '../../css/components/trip-summary.css'
 import CurrencyConversion from '../currency/CurrencyConversion'
+import ExpenseSummary from '../trip-expenses/ExpenseSummary'
 
 function LocationIcon() {
   return (
@@ -235,6 +236,9 @@ function TripSummary({
   trip,
   flagUrl,
   localCurrency,
+  expenseSummary,
+  isLoadingExpenses,
+  expensesError,
   onEditTrip,
   onEditNotes,
   isTripEditDisabled = false,
@@ -293,6 +297,13 @@ function TripSummary({
     hasBudget &&
     hasValidBudgetCurrency &&
     localCurrency
+
+  const expenseSummaryStatus =
+    isLoadingExpenses
+      ? 'loading'
+      : expensesError
+        ? 'unavailable'
+        : expenseSummary.status
 
   return (
     <div className="trip-summary">
@@ -446,6 +457,18 @@ function TripSummary({
           </div>
         </div>
       </section>
+
+      <ExpenseSummary
+        status={expenseSummaryStatus}
+        currency={expenseSummary.currency}
+        hasExpenses={expenseSummary.hasExpenses}
+        hasBudget={expenseSummary.hasBudget}
+        budgetAmount={expenseSummary.budgetAmount}
+        spentAmount={expenseSummary.spentAmount}
+        remainingAmount={expenseSummary.remainingAmount}
+        percentageUsed={expenseSummary.percentageUsed}
+        isEstimated={expenseSummary.isEstimated}
+      />
 
       <section
         className="trip-summary__notes"

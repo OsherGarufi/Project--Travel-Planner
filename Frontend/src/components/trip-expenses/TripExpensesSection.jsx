@@ -5,15 +5,13 @@ import {
   useState,
 } from 'react'
 import '../../css/components/trip-expenses-section.css'
-import { useExpenseSummary } from '../../hooks/trip-expenses/useExpenseSummary'
-import { useTripExpenses } from '../../hooks/trip-expenses/useTripExpenses'
+import { useFeedback } from '../../hooks/useFeedback'
 import TripEntryForm from '../trip-entry/TripEntryForm'
 import {
   TRIP_ENTRY_FORM_MODES,
   TRIP_ENTRY_TYPES,
 } from '../trip-entry/tripEntryConstants'
 import ExpenseDeleteConfirmation from './ExpenseDeleteConfirmation'
-import ExpenseSummary from './ExpenseSummary'
 
 function TripExpensesLoadingState() {
   return (
@@ -91,11 +89,16 @@ function getExpenseEntryType(
 
 function TripExpensesSection({
   trip,
+  expensesController,
+  expenseSummary,
   isFocusMode = false,
   isHidden = false,
   onFocusStart,
   onFocusEnd,
 }) {
+  const { showSuccess } =
+    useFeedback()
+
   const expenseFormRef =
     useRef(null)
 
@@ -158,20 +161,7 @@ function TripExpensesSection({
     removeExpense,
 
     clearExpenseActionError,
-  } = useTripExpenses(
-    trip?.id,
-  )
-
-  const expenseSummary =
-    useExpenseSummary({
-      expenses,
-
-      budgetAmount:
-        trip?.budgetAmount,
-
-      budgetCurrency:
-        trip?.budgetCurrency,
-    })
+  } = expensesController
 
   const categories =
     useMemo(() => {
@@ -447,6 +437,8 @@ function TripExpensesSection({
 
         setIsAddingExpense(false)
 
+        showSuccess('Expense added.')
+
         onFocusEnd?.()
 
         return
@@ -487,6 +479,8 @@ function TripExpensesSection({
       }
 
       setIsAddingExpense(false)
+
+      showSuccess('Trip item added.')
 
       onFocusEnd?.()
     }
@@ -539,6 +533,8 @@ function TripExpensesSection({
 
       setEditingExpense(null)
 
+      showSuccess('Expense updated.')
+
       onFocusEnd?.()
     }
 
@@ -582,6 +578,8 @@ function TripExpensesSection({
       setDeleteConfirmationExpenseId(
         null,
       )
+
+      showSuccess('Expense deleted.')
     }
 
   const handleCategoryChange =
@@ -735,38 +733,6 @@ function TripExpensesSection({
               )}
           </div>
 
-          {!isLoadingExpenses &&
-            !expensesError && (
-              <ExpenseSummary
-                status={
-                  expenseSummary.status
-                }
-                currency={
-                  expenseSummary.currency
-                }
-                hasExpenses={
-                  expenseSummary.hasExpenses
-                }
-                hasBudget={
-                  expenseSummary.hasBudget
-                }
-                budgetAmount={
-                  expenseSummary.budgetAmount
-                }
-                spentAmount={
-                  expenseSummary.spentAmount
-                }
-                remainingAmount={
-                  expenseSummary.remainingAmount
-                }
-                percentageUsed={
-                  expenseSummary.percentageUsed
-                }
-                isEstimated={
-                  expenseSummary.isEstimated
-                }
-              />
-            )}
         </div>
 
         {isLoadingExpenses && (

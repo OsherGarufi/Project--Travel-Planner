@@ -18,6 +18,7 @@ import {
 import {
   useTripItinerary,
 } from '../hooks/trip-itinerary/useTripItinerary'
+import { useFeedback } from '../hooks/useFeedback'
 import { safeAttractionUrl } from '../services/attractions/attractionsService'
 import {
   ITINERARY_DAYS_PER_WEEK,
@@ -65,6 +66,9 @@ function PlusIcon() {
 }
 
 function TripItineraryPage() {
+  const { showSuccess } =
+    useFeedback()
+
   const navigate =
     useNavigate()
 
@@ -415,6 +419,8 @@ function TripItineraryPage() {
       setAttractionDraft(null)
       setIsAddingActivity(false)
 
+      showSuccess('Activity added to the itinerary.')
+
       if (shouldReturnToAttractions) {
         navigate(-1)
       }
@@ -439,6 +445,8 @@ function TripItineraryPage() {
       }
 
       setEditingItem(null)
+
+      showSuccess('Activity updated.')
 
       return updatedItem
     }
@@ -492,9 +500,16 @@ function TripItineraryPage() {
 
       clearItineraryActionError()
 
-      return deleteItineraryItem(
-        item.id,
-      )
+      const wasDeleted =
+        await deleteItineraryItem(
+          item.id,
+        )
+
+      if (wasDeleted) {
+        showSuccess('Activity deleted.')
+      }
+
+      return wasDeleted
     }
 
   if (

@@ -594,7 +594,7 @@ function ItineraryItemForm({
             </div>
 
             <fieldset className="itinerary-item-form__schedule">
-              <legend className="sr-only">
+              <legend className="visually-hidden">
                 Activity schedule
               </legend>
 

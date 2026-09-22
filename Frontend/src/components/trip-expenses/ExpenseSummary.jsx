@@ -1,4 +1,5 @@
 import '../../css/components/expense-summary.css'
+import BudgetProgress from './BudgetProgress'
 
 function formatMoney(amount) {
   if (
@@ -63,14 +64,6 @@ function ExpenseSummary({
     hasBudget &&
     remainingAmount !== null &&
     remainingAmount < 0
-
-  const progressPercentage =
-    typeof percentageUsed === 'number'
-      ? Math.min(
-          Math.max(percentageUsed, 0),
-          100,
-        )
-      : 0
 
   const spentLabel =
     hasExpenses && isEstimated
@@ -162,42 +155,11 @@ function ExpenseSummary({
           )}
       </div>
 
-      {hasBudget &&
-        typeof percentageUsed ===
-          'number' && (
-          <div className="expense-summary__progress">
-            <div className="expense-summary__progress-header">
-              <span>
-                Budget used
-              </span>
-
-              <strong>
-                {Math.round(
-                  percentageUsed,
-                )}
-                %
-              </strong>
-            </div>
-
-            <div
-              className="expense-summary__progress-track"
-              role="progressbar"
-              aria-label="Budget used"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow={
-                progressPercentage
-              }
-            >
-              <span
-                className="expense-summary__progress-value"
-                style={{
-                  width: `${progressPercentage}%`,
-                }}
-              />
-            </div>
-          </div>
-        )}
+      {hasBudget && (
+        <BudgetProgress
+          percentageUsed={percentageUsed}
+        />
+      )}
 
       {hasExpenses &&
         isEstimated && (

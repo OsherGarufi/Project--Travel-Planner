@@ -8,19 +8,21 @@ import { useNavigate } from 'react-router-dom'
 import ForecastUnavailable from '../components/plan-trip/ForecastUnavailable'
 import HistoricalWeather from '../components/plan-trip/HistoricalWeather'
 import WeatherForecast from '../components/plan-trip/WeatherForecast'
+import TripAttractionsSection from '../components/trip-attractions/TripAttractionsSection'
 import DeleteTripSection from '../components/trip-details/DeleteTripSection'
 import TripEditForm from '../components/trip-details/TripEditForm'
 import TripNotesEditForm from '../components/trip-details/TripNotesEditForm'
 import TripSummary from '../components/trip-details/TripSummary'
 import TripExpensesSection from '../components/trip-expenses/TripExpensesSection'
-import TripAttractionsSection from '../components/trip-attractions/TripAttractionsSection'
-import { safeAttractionUrl } from '../services/attractions/attractionsService'
 import '../css/pages/trip-details-page.css'
 import useTripWeather from '../hooks/plan-trip/useTripWeather'
 import { useTripDelete } from '../hooks/trip-details/useTripDelete'
 import { useTripDetails } from '../hooks/trip-details/useTripDetails'
 import { useTripEdit } from '../hooks/trip-details/useTripEdit'
 import { useTripNotesEdit } from '../hooks/trip-details/useTripNotesEdit'
+import { useExpenseSummary } from '../hooks/trip-expenses/useExpenseSummary'
+import { useTripExpenses } from '../hooks/trip-expenses/useTripExpenses'
+import { safeAttractionUrl } from '../services/attractions/attractionsService'
 import { searchCities } from '../services/city/cityService'
 import { getCountries } from '../services/countryService'
 import {
@@ -144,6 +146,19 @@ function TripDetailsPage() {
     tripError,
     replaceTrip,
   } = useTripDetails()
+
+  const tripExpenses =
+    useTripExpenses(trip?.id)
+
+  const expenseSummary =
+    useExpenseSummary({
+      expenses:
+        tripExpenses.expenses,
+      budgetAmount:
+        trip?.budgetAmount,
+      budgetCurrency:
+        trip?.budgetCurrency,
+    })
 
   const {
     hasChanges,
@@ -702,6 +717,16 @@ function TripDetailsPage() {
 
         <TripSummary
           trip={trip}
+          expenseSummary={
+            expenseSummary
+          }
+          isLoadingExpenses={
+            tripExpenses
+              .isLoadingExpenses
+          }
+          expensesError={
+            tripExpenses.expensesError
+          }
           flagUrl={flagUrl}
           localCurrency={
             localCurrency
@@ -730,6 +755,12 @@ function TripDetailsPage() {
 
       <TripExpensesSection
         trip={trip}
+        expensesController={
+          tripExpenses
+        }
+        expenseSummary={
+          expenseSummary
+        }
         isFocusMode={
           activeFocusMode ===
           FOCUS_MODE.EXPENSE

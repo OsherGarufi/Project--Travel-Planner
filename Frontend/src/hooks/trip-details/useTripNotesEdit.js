@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { updateTrip } from '../../services/tripService'
 import { buildTripUpdatePayload } from '../../utils/tripUpdateUtils'
 import { useAuth } from '../useAuth'
+import { useFeedback } from '../useFeedback'
 import { useTrips } from '../useTrips'
 
 export function useTripNotesEdit({
@@ -9,6 +10,8 @@ export function useTripNotesEdit({
   replaceTrip,
 }) {
   const { idToken } = useAuth()
+  const { showSuccess, showError } =
+    useFeedback()
   const { updateTripInCache } =
     useTrips()
 
@@ -100,6 +103,8 @@ export function useTripNotesEdit({
         updatedTrip,
       )
 
+      showSuccess('Trip notes updated.')
+
       return true
     } catch (error) {
       console.error(
@@ -109,6 +114,10 @@ export function useTripNotesEdit({
 
       setNotesSaveError(
         'Could not save the notes. Please try again.',
+      )
+
+      showError(
+        'Could not update the trip notes. Please try again.',
       )
 
       return false

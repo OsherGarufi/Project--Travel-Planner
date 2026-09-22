@@ -1,0 +1,45 @@
+.budget-progress {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--tp-space-2);
+}
+
+.budget-progress__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tp-space-3);
+  color: var(--tp-color-text-muted);
+  font-size: var(--tp-font-size-xs);
+}
+
+.budget-progress__header strong {
+  color: var(--tp-color-text-secondary);
+  font-weight:
+    var(--tp-font-weight-semibold);
+}
+
+.budget-progress__track {
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--tp-radius-full);
+  background-color:
+    var(--tp-color-surface-hover);
+}
+
+.budget-progress__value {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      var(--tp-color-primary-600),
+      var(--tp-color-accent-500)
+    );
+  transition:
+    width var(--tp-duration-fast)
+      var(--tp-ease-standard);
+}

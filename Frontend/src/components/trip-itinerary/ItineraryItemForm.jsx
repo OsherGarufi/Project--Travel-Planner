@@ -199,6 +199,11 @@ function ItineraryItemForm({
     setValidationError,
   ] = useState('')
 
+  const [
+    timeRangeError,
+    setTimeRangeError,
+  ] = useState('')
+
   const isCustomCategory =
     categoryOption === 'CUSTOM'
 
@@ -233,6 +238,7 @@ function ItineraryItemForm({
     }
 
     setValidationError('')
+    setTimeRangeError('')
   }
 
   const handleScheduleTypeChange = (
@@ -240,6 +246,7 @@ function ItineraryItemForm({
   ) => {
     setScheduleType(nextScheduleType)
     setValidationError('')
+    setTimeRangeError('')
 
     if (
       nextScheduleType ===
@@ -270,6 +277,9 @@ function ItineraryItemForm({
     event,
   ) => {
     event.preventDefault()
+
+    setValidationError('')
+    setTimeRangeError('')
 
     const normalizedTitle =
       title.trim()
@@ -327,7 +337,7 @@ function ItineraryItemForm({
         !startTime ||
         !endTime
       ) {
-        setValidationError(
+        setTimeRangeError(
           'Please choose both a start time and an end time.',
         )
 
@@ -337,7 +347,7 @@ function ItineraryItemForm({
       if (
         endTime <= startTime
       ) {
-        setValidationError(
+        setTimeRangeError(
           'End time must be later than start time.',
         )
 
@@ -384,6 +394,7 @@ function ItineraryItemForm({
     }
 
     setValidationError('')
+    setTimeRangeError('')
 
     return onSubmit({
       title:
@@ -594,7 +605,7 @@ function ItineraryItemForm({
             </div>
 
             <fieldset className="itinerary-item-form__schedule">
-              <legend className="sr-only">
+              <legend className="visually-hidden">
                 Activity schedule
               </legend>
 
@@ -689,8 +700,13 @@ function ItineraryItemForm({
                   />
                 </div>
 
-                <div className="itinerary-item-form__time-group">
-                  <div className="itinerary-item-form__field">
+                <fieldset className="itinerary-item-form__time-range">
+                  <legend className="visually-hidden">
+                    Activity time range
+                  </legend>
+
+                  <div className="itinerary-item-form__time-group">
+                    <div className="itinerary-item-form__field">
                     <label
                       className="itinerary-item-form__label"
                       htmlFor="itinerary-start-time"
@@ -698,33 +714,42 @@ function ItineraryItemForm({
                       Start time
                     </label>
 
-                    <input
-                      className="itinerary-item-form__control"
-                      id="itinerary-start-time"
-                      type="time"
-                      value={
-                        startTime
-                      }
-                      step={900}
-                      disabled={
-                        isSubmitting
-                      }
-                      onChange={(event) =>
-                        setStartTime(
-                          event.target.value,
-                        )
-                      }
-                    />
-                  </div>
+                      <input
+                        className="itinerary-item-form__control"
+                        id="itinerary-start-time"
+                        type="time"
+                        value={
+                          startTime
+                        }
+                        step={900}
+                        aria-invalid={
+                          Boolean(timeRangeError)
+                        }
+                        aria-describedby={
+                          timeRangeError
+                            ? 'itinerary-time-range-error'
+                            : undefined
+                        }
+                        disabled={
+                          isSubmitting
+                        }
+                        onChange={(event) => {
+                          setStartTime(
+                            event.target.value,
+                          )
+                          setTimeRangeError('')
+                        }}
+                      />
+                    </div>
 
-                  <div
-                    className="itinerary-item-form__time-divider"
-                    aria-hidden="true"
-                  >
-                    →
-                  </div>
+                    <div
+                      className="itinerary-item-form__time-divider"
+                      aria-hidden="true"
+                    >
+                      →
+                    </div>
 
-                  <div className="itinerary-item-form__field">
+                    <div className="itinerary-item-form__field">
                     <label
                       className="itinerary-item-form__label"
                       htmlFor="itinerary-end-time"
@@ -732,25 +757,49 @@ function ItineraryItemForm({
                       End time
                     </label>
 
-                    <input
-                      className="itinerary-item-form__control"
-                      id="itinerary-end-time"
-                      type="time"
-                      value={
-                        endTime
-                      }
-                      step={900}
-                      disabled={
-                        isSubmitting
-                      }
-                      onChange={(event) =>
-                        setEndTime(
-                          event.target.value,
-                        )
-                      }
-                    />
+                      <input
+                        className="itinerary-item-form__control"
+                        id="itinerary-end-time"
+                        type="time"
+                        value={
+                          endTime
+                        }
+                        min={
+                          startTime ||
+                          undefined
+                        }
+                        step={900}
+                        aria-invalid={
+                          Boolean(timeRangeError)
+                        }
+                        aria-describedby={
+                          timeRangeError
+                            ? 'itinerary-time-range-error'
+                            : undefined
+                        }
+                        disabled={
+                          isSubmitting
+                        }
+                        onChange={(event) => {
+                          setEndTime(
+                            event.target.value,
+                          )
+                          setTimeRangeError('')
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  {timeRangeError && (
+                    <p
+                      id="itinerary-time-range-error"
+                      className="itinerary-item-form__time-error"
+                      role="alert"
+                    >
+                      {timeRangeError}
+                    </p>
+                  )}
+                </fieldset>
               </div>
             ) : (
               <div className="itinerary-item-form__plan-later">

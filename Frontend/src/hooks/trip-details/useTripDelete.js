@@ -2,10 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { deleteTrip } from '../../services/tripService'
 import { useAuth } from '../useAuth'
+import { useFeedback } from '../useFeedback'
 import { useTrips } from '../useTrips'
 
 export function useTripDelete({ trip }) {
   const { idToken } = useAuth()
+  const { showSuccess, showError } =
+    useFeedback()
   const { removeTripFromCache } = useTrips()
   const navigate = useNavigate()
 
@@ -56,6 +59,8 @@ export function useTripDelete({ trip }) {
 
       removeTripFromCache(trip.id)
 
+      showSuccess('Trip deleted.')
+
       navigate('/trips', {
         replace: true,
       })
@@ -66,6 +71,10 @@ export function useTripDelete({ trip }) {
       )
 
       setDeleteError(
+        'Could not delete the trip. Please try again.',
+      )
+
+      showError(
         'Could not delete the trip. Please try again.',
       )
     } finally {

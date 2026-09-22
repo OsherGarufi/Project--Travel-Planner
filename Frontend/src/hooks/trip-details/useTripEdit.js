@@ -6,6 +6,7 @@ import { updateTrip } from '../../services/tripService'
 import { buildTripUpdatePayload } from '../../utils/tripUpdateUtils'
 import { formatDateForInput } from '../../utils/dateUtils'
 import { useAuth } from '../useAuth'
+import { useFeedback } from '../useFeedback'
 import { useTrips } from '../useTrips'
 
 function normalizeCurrencyInput(value) {
@@ -35,6 +36,9 @@ export function useTripEdit({
     firebaseUser,
     idToken,
   } = useAuth()
+
+  const { showSuccess, showError } =
+    useFeedback()
 
   const {
     updateTripInCache,
@@ -451,6 +455,8 @@ export function useTripEdit({
         )
       }
 
+      showSuccess('Trip updated successfully.')
+
       return true
     } catch (error) {
       console.error(
@@ -460,6 +466,10 @@ export function useTripEdit({
 
       setSaveError(
         'Could not save the changes. Please try again.',
+      )
+
+      showError(
+        'Could not update the trip. Please try again.',
       )
 
       return false

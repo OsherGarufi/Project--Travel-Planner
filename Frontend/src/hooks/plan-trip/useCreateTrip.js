@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createTrip } from '../../services/tripService'
 import { useAuth } from '../useAuth'
+import { useFeedback } from '../useFeedback'
 import { useTrips } from '../useTrips'
 
 export function useCreateTrip({
@@ -13,6 +14,8 @@ export function useCreateTrip({
   budgetCurrency,
 }) {
   const { idToken } = useAuth()
+  const { showSuccess, showError } =
+    useFeedback()
   const { addTripToCache } = useTrips()
   const navigate = useNavigate()
 
@@ -95,6 +98,8 @@ export function useCreateTrip({
 
       addTripToCache(createdTrip)
 
+      showSuccess('Trip created successfully.')
+
       navigate(`/trips/${createdTrip.id}`)
     } catch (error) {
       console.error(
@@ -103,6 +108,10 @@ export function useCreateTrip({
       )
 
       setCreateTripError(
+        'Could not create the trip. Please try again.',
+      )
+
+      showError(
         'Could not create the trip. Please try again.',
       )
     } finally {

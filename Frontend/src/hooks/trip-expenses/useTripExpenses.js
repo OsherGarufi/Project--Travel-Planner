@@ -35,6 +35,7 @@ import {
   releaseTripExpensesRequest,
 } from '../../services/trips/tripsRequestManager'
 import { useAuth } from '../useAuth'
+import { useFeedback } from '../useFeedback'
 
 const EXPENSE_ENTRY_TYPES = {
   SCHEDULED: 'scheduled',
@@ -49,6 +50,9 @@ export function useTripExpenses(
     firebaseUser,
     idToken,
   } = useAuth()
+
+  const { showError } =
+    useFeedback()
 
   const userId =
     firebaseUser?.uid ?? null
@@ -447,6 +451,10 @@ export function useTripExpenses(
         'Could not add the expense. Please try again.',
       )
 
+      showError(
+        'Could not add the expense. Please try again.',
+      )
+
       return null
     } finally {
       setIsCreatingExpense(false)
@@ -562,6 +570,10 @@ export function useTripExpenses(
         )
 
         setExpenseActionError(
+          'Could not add the trip item. Please try again.',
+        )
+
+        showError(
           'Could not add the trip item. Please try again.',
         )
 
@@ -1058,6 +1070,10 @@ export function useTripExpenses(
         'Could not update the expense. Please try again.',
       )
 
+      showError(
+        'Could not update the expense. Please try again.',
+      )
+
       return null
     } finally {
       setUpdatingExpenseId(null)
@@ -1129,6 +1145,10 @@ export function useTripExpenses(
       )
 
       setExpenseActionError(
+        'Could not delete the expense. Please try again.',
+      )
+
+      showError(
         'Could not delete the expense. Please try again.',
       )
 
