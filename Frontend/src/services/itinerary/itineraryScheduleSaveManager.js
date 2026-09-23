@@ -49,33 +49,29 @@ function applyScheduleItemToCache(
       scheduleEntry.tripId,
     )
 
-  if (!cachedItems) {
-    return
+  if (cachedItems) {
+    const hasItem =
+      cachedItems.some(
+        (cachedItem) =>
+          cachedItem.id === item.id,
+      )
+
+    if (hasItem) {
+      const nextItems =
+        cachedItems.map(
+          (cachedItem) =>
+            cachedItem.id === item.id
+              ? item
+              : cachedItem,
+        )
+
+      setTripItineraryCache(
+        scheduleEntry.userId,
+        scheduleEntry.tripId,
+        nextItems,
+      )
+    }
   }
-
-  const hasItem =
-    cachedItems.some(
-      (cachedItem) =>
-        cachedItem.id === item.id,
-    )
-
-  if (!hasItem) {
-    return
-  }
-
-  const nextItems =
-    cachedItems.map(
-      (cachedItem) =>
-        cachedItem.id === item.id
-          ? item
-          : cachedItem,
-    )
-
-  setTripItineraryCache(
-    scheduleEntry.userId,
-    scheduleEntry.tripId,
-    nextItems,
-  )
 
   syncExpensesCacheFromItineraryItem(
     scheduleEntry.userId,
@@ -492,6 +488,58 @@ export function queueItineraryScheduleSave({
     scheduleKey,
     scheduleEntry,
   )
+}
+
+export function applyPendingItineraryScheduleUpdates(
+  userId,
+  tripId,
+  items,
+) {
+  if (!Array.isArray(items)) {
+    return []
+  }
+
+  const optimisticItemsById =
+    new Map()
+
+  for (
+    const scheduleEntry
+    of pendingScheduleUpdates.values()
+  ) {
+    if (
+      scheduleEntry.cancelled ||
+      scheduleEntry.userId !== userId ||
+      scheduleEntry.tripId !== tripId
+    ) {
+      continue
+    }
+
+    optimisticItemsById.set(
+      scheduleEntry.itemId,
+      scheduleEntry.optimisticItem,
+    )
+  }
+
+  return items.map((item) => {
+    const optimisticItem =
+      optimisticItemsById.get(
+        item.id,
+      )
+
+    if (!optimisticItem) {
+      return item
+    }
+
+    return {
+      ...item,
+      itineraryDate:
+        optimisticItem.itineraryDate,
+      startTime:
+        optimisticItem.startTime,
+      endTime:
+        optimisticItem.endTime,
+    }
+  })
 }
 
 export async function supersedeItineraryScheduleSave(

@@ -301,6 +301,9 @@ export function syncExpensesCacheFromItineraryItem(
   tripId,
   item,
   previousItem = null,
+  {
+    persist = true,
+  } = {},
 ) {
   if (
     !userId ||
@@ -359,6 +362,7 @@ export function syncExpensesCacheFromItineraryItem(
       userId,
       tripId,
       nextExpenses,
+      { persist },
     )
 
     return
@@ -440,6 +444,7 @@ export function syncExpensesCacheFromItineraryItem(
     userId,
     tripId,
     nextExpenses,
+    { persist },
   )
 }
 

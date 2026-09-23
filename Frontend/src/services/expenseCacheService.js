@@ -179,6 +179,9 @@ export function setCachedTripExpenses(
   userId,
   tripId,
   expenses,
+  {
+    persist = true,
+  } = {},
 ) {
   if (
     !userId ||
@@ -203,6 +206,10 @@ export function setCachedTripExpenses(
     cacheKey,
     cacheEntry,
   )
+
+  if (!persist) {
+    return
+  }
 
   try {
     localStorage.setItem(

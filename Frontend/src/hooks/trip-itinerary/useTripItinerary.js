@@ -18,6 +18,7 @@ import {
   releaseTripItineraryRequest,
 } from '../../services/itinerary/itineraryRequestManager'
 import {
+  applyPendingItineraryScheduleUpdates,
   queueItineraryScheduleSave,
   subscribeToItineraryScheduleSaves,
   supersedeItineraryScheduleSave,
@@ -31,6 +32,56 @@ import {
 } from '../../services/itinerary/itineraryService'
 import { useAuth } from '../useAuth'
 import { useFeedback } from '../useFeedback'
+
+function getScheduleReconciliationKey(
+  userId,
+  tripId,
+  itemId,
+) {
+  return `${userId}:${tripId}:${itemId}`
+}
+
+function applyScheduleReconciliations(
+  reconciliations,
+  userId,
+  tripId,
+  items,
+) {
+  let didApply = false
+
+  const nextItems = items.map(
+    (item) => {
+      const reconciliationKey =
+        getScheduleReconciliationKey(
+          userId,
+          tripId,
+          item.id,
+        )
+
+      const reconciledItem =
+        reconciliations.get(
+          reconciliationKey,
+        )
+
+      if (!reconciledItem) {
+        return item
+      }
+
+      didApply = true
+
+      reconciliations.delete(
+        reconciliationKey,
+      )
+
+      return reconciledItem
+    },
+  )
+
+  return {
+    items: nextItems,
+    didApply,
+  }
+}
 
 export function useTripItinerary(
   tripId,
@@ -58,6 +109,9 @@ export function useTripItinerary(
 
   const itineraryItemsRef =
     useRef([])
+
+  const scheduleReconciliationsRef =
+    useRef(new Map())
 
   const [
     loadedContextKey,
@@ -122,6 +176,7 @@ export function useTripItinerary(
     (
       itemId,
       nextItem,
+      shouldCache = true,
     ) => {
       const nextItems =
         itineraryItemsRef.current.map(
@@ -133,6 +188,7 @@ export function useTripItinerary(
 
       applyItineraryItems(
         nextItems,
+        shouldCache,
       )
     }
 
@@ -192,6 +248,7 @@ export function useTripItinerary(
       replaceItineraryItem(
         itemId,
         optimisticItem,
+        false,
       )
 
       syncExpensesCacheFromItineraryItem(
@@ -199,6 +256,7 @@ export function useTripItinerary(
         tripId,
         optimisticItem,
         currentItem,
+        { persist: false },
       )
 
       return optimisticItem
@@ -208,8 +266,7 @@ export function useTripItinerary(
     if (
       !userId ||
       !tripId ||
-      loadedContextKey !==
-        itineraryContextKey
+      !itineraryContextKey
     ) {
       return undefined
     }
@@ -224,21 +281,36 @@ export function useTripItinerary(
           return
         }
 
-        const nextItems =
-          itineraryItemsRef.current.map(
-            (item) =>
-              item.id ===
-              result.item.id
-                ? result.item
-                : item,
+        const reconciliationKey =
+          getScheduleReconciliationKey(
+            result.userId,
+            result.tripId,
+            result.item.id,
           )
 
-        itineraryItemsRef.current =
-          nextItems
+        scheduleReconciliationsRef
+          .current
+          .set(
+            reconciliationKey,
+            result.item,
+          )
 
-        setItineraryItems(
-          nextItems,
-        )
+        const reconciliation =
+          applyScheduleReconciliations(
+            scheduleReconciliationsRef.current,
+            userId,
+            tripId,
+            itineraryItemsRef.current,
+          )
+
+        if (reconciliation.didApply) {
+          itineraryItemsRef.current =
+            reconciliation.items
+
+          setItineraryItems(
+            reconciliation.items,
+          )
+        }
 
         if (
           result.status ===
@@ -261,7 +333,6 @@ export function useTripItinerary(
     userId,
     tripId,
     itineraryContextKey,
-    loadedContextKey,
     showError,
   ])
 
@@ -299,11 +370,34 @@ export function useTripItinerary(
           )
 
         if (cachedItems) {
+          const reconciliation =
+            applyScheduleReconciliations(
+              scheduleReconciliationsRef.current,
+              userId,
+              tripId,
+              cachedItems,
+            )
+
+          const visibleItems =
+            applyPendingItineraryScheduleUpdates(
+              userId,
+              tripId,
+              reconciliation.items,
+            )
+
+          if (reconciliation.didApply) {
+            setTripItineraryCache(
+              userId,
+              tripId,
+              reconciliation.items,
+            )
+          }
+
           itineraryItemsRef.current =
-            cachedItems
+            visibleItems
 
           setItineraryItems(
-            cachedItems,
+            visibleItems,
           )
 
           setItineraryError('')
@@ -346,17 +440,32 @@ export function useTripItinerary(
               ? result
               : []
 
+          const reconciliation =
+            applyScheduleReconciliations(
+              scheduleReconciliationsRef.current,
+              userId,
+              tripId,
+              loadedItems,
+            )
+
+          const visibleItems =
+            applyPendingItineraryScheduleUpdates(
+              userId,
+              tripId,
+              reconciliation.items,
+            )
+
           itineraryItemsRef.current =
-            loadedItems
+            visibleItems
 
           setItineraryItems(
-            loadedItems,
+            visibleItems,
           )
 
           setTripItineraryCache(
             userId,
             tripId,
-            loadedItems,
+            reconciliation.items,
           )
 
           setItineraryError('')
@@ -440,11 +549,34 @@ export function useTripItinerary(
           return
         }
 
+        const reconciliation =
+          applyScheduleReconciliations(
+            scheduleReconciliationsRef.current,
+            userId,
+            tripId,
+            nextItems,
+          )
+
+        const visibleItems =
+          applyPendingItineraryScheduleUpdates(
+            userId,
+            tripId,
+            reconciliation.items,
+          )
+
+        if (reconciliation.didApply) {
+          setTripItineraryCache(
+            userId,
+            tripId,
+            reconciliation.items,
+          )
+        }
+
         itineraryItemsRef.current =
-          nextItems
+          visibleItems
 
         setItineraryItems(
-          nextItems,
+          visibleItems,
         )
 
         setItineraryError('')
