@@ -6,10 +6,41 @@ const COUNTRIES_CACHE_DURATION_MS = 24 * 60 * 60 * 1000
 let countriesMemoryCache = null
 let countriesRequestPromise = null
 
+function readSessionStorageValue(cacheKey) {
+  try {
+    return sessionStorage.getItem(cacheKey)
+  } catch {
+    return null
+  }
+}
+
+function writeSessionStorageValue(
+  cacheKey,
+  cacheValue,
+) {
+  try {
+    sessionStorage.setItem(
+      cacheKey,
+      JSON.stringify(cacheValue),
+    )
+  } catch {
+    // Browser storage is optional.
+  }
+}
+
+function removeSessionStorageValue(cacheKey) {
+  try {
+    sessionStorage.removeItem(cacheKey)
+  } catch {
+    // Cache cleanup is best-effort only.
+  }
+}
+
 function getCountriesFromSessionStorage() {
-  const cachedValue = sessionStorage.getItem(
-    COUNTRIES_CACHE_KEY,
-  )
+  const cachedValue =
+    readSessionStorageValue(
+      COUNTRIES_CACHE_KEY,
+    )
 
   if (!cachedValue) {
     return null
@@ -23,7 +54,9 @@ function getCountriesFromSessionStorage() {
       typeof parsedCache.cachedAt === 'number'
 
     if (!isValidCache) {
-      sessionStorage.removeItem(COUNTRIES_CACHE_KEY)
+      removeSessionStorageValue(
+        COUNTRIES_CACHE_KEY,
+      )
 
       return null
     }
@@ -31,34 +64,31 @@ function getCountriesFromSessionStorage() {
     const cacheAge = Date.now() - parsedCache.cachedAt
 
     if (cacheAge >= COUNTRIES_CACHE_DURATION_MS) {
-      sessionStorage.removeItem(COUNTRIES_CACHE_KEY)
+      removeSessionStorageValue(
+        COUNTRIES_CACHE_KEY,
+      )
 
       return null
     }
 
     return parsedCache.countries
   } catch {
-    sessionStorage.removeItem(COUNTRIES_CACHE_KEY)
+    removeSessionStorageValue(
+      COUNTRIES_CACHE_KEY,
+    )
 
     return null
   }
 }
 
 function saveCountriesToSessionStorage(countries) {
-  try {
-    sessionStorage.setItem(
-      COUNTRIES_CACHE_KEY,
-      JSON.stringify({
-        countries,
-        cachedAt: Date.now(),
-      }),
-    )
-  } catch (error) {
-    console.warn(
-      'Could not cache countries in session storage:',
-      error,
-    )
-  }
+  writeSessionStorageValue(
+    COUNTRIES_CACHE_KEY,
+    {
+      countries,
+      cachedAt: Date.now(),
+    },
+  )
 }
 
 export async function getCountries() {

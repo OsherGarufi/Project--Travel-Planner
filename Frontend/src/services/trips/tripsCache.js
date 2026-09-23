@@ -1,6 +1,36 @@
 const TRIPS_CACHE_TTL =
   24 * 60 * 60 * 1000
 
+function readLocalStorageValue(cacheKey) {
+  try {
+    return window.localStorage.getItem(cacheKey)
+  } catch {
+    return null
+  }
+}
+
+function writeLocalStorageValue(
+  cacheKey,
+  cacheValue,
+) {
+  try {
+    window.localStorage.setItem(
+      cacheKey,
+      JSON.stringify(cacheValue),
+    )
+  } catch {
+    // Browser storage is optional.
+  }
+}
+
+function removeLocalStorageValue(cacheKey) {
+  try {
+    window.localStorage.removeItem(cacheKey)
+  } catch {
+    // Cache cleanup is best-effort only.
+  }
+}
+
 export function getTripsCacheKey(userId) {
   return `travelPlannerTrips:${userId}`
 }
@@ -12,14 +42,14 @@ export function readTripsCache(userId) {
 
   const cacheKey = getTripsCacheKey(userId)
 
+  const cachedValue =
+    readLocalStorageValue(cacheKey)
+
+  if (!cachedValue) {
+    return null
+  }
+
   try {
-    const cachedValue =
-      window.localStorage.getItem(cacheKey)
-
-    if (!cachedValue) {
-      return null
-    }
-
     const parsedCache = JSON.parse(cachedValue)
 
     const isValidCache =
@@ -28,7 +58,7 @@ export function readTripsCache(userId) {
       typeof parsedCache.isComplete === 'boolean'
 
     if (!isValidCache) {
-      window.localStorage.removeItem(cacheKey)
+      removeLocalStorageValue(cacheKey)
       return null
     }
 
@@ -37,7 +67,7 @@ export function readTripsCache(userId) {
       TRIPS_CACHE_TTL
 
     if (isExpired) {
-      window.localStorage.removeItem(cacheKey)
+      removeLocalStorageValue(cacheKey)
       return null
     }
 
@@ -45,14 +75,8 @@ export function readTripsCache(userId) {
       trips: parsedCache.trips,
       isComplete: parsedCache.isComplete,
     }
-  } catch (error) {
-    console.error(
-      'Failed to read trips cache:',
-      error,
-    )
-
-    window.localStorage.removeItem(cacheKey)
-
+  } catch {
+    removeLocalStorageValue(cacheKey)
     return null
   }
 }
@@ -68,21 +92,14 @@ export function writeTripsCache(
 
   const cacheKey = getTripsCacheKey(userId)
 
-  try {
-    window.localStorage.setItem(
-      cacheKey,
-      JSON.stringify({
-        trips,
-        isComplete,
-        savedAt: Date.now(),
-      }),
-    )
-  } catch (error) {
-    console.error(
-      'Failed to save trips cache:',
-      error,
-    )
-  }
+  writeLocalStorageValue(
+    cacheKey,
+    {
+      trips,
+      isComplete,
+      savedAt: Date.now(),
+    },
+  )
 }
 
 export function removeTripsCache(userId) {
@@ -90,7 +107,7 @@ export function removeTripsCache(userId) {
     return
   }
 
-  window.localStorage.removeItem(
+  removeLocalStorageValue(
     getTripsCacheKey(userId),
   )
 }
