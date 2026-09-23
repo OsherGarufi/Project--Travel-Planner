@@ -175,9 +175,14 @@ export function AuthProvider({
   ] = useState('')
 
   const [
-    isLoading,
-    setIsLoading,
+    isAuthInitializing,
+    setIsAuthInitializing,
   ] = useState(true)
+
+  const [
+    isAuthActionLoading,
+    setIsAuthActionLoading,
+  ] = useState(false)
 
   const isAuthActionInProgress =
     useRef(false)
@@ -258,7 +263,7 @@ export function AuthProvider({
     authRestoreRequestIdRef.current +=
       1
 
-    setIsLoading(true)
+    setIsAuthActionLoading(true)
     setError('')
   }
 
@@ -266,7 +271,7 @@ export function AuthProvider({
     isAuthActionInProgress.current =
       false
 
-    setIsLoading(false)
+    setIsAuthActionLoading(false)
   }
 
   useEffect(() => {
@@ -289,13 +294,12 @@ export function AuthProvider({
             !currentFirebaseUser
           ) {
             clearAuthState()
-            setIsLoading(false)
+            setIsAuthInitializing(false)
 
             return
           }
 
           try {
-            setIsLoading(true)
             setError('')
 
             const loginResult =
@@ -338,7 +342,7 @@ export function AuthProvider({
               authRestoreRequestIdRef.current ===
               restoreRequestId
             ) {
-              setIsLoading(false)
+              setIsAuthInitializing(false)
             }
           }
         },
@@ -487,7 +491,10 @@ export function AuthProvider({
     backendUser,
     idToken,
     error,
-    isLoading,
+    isAuthInitializing,
+    isLoading:
+      isAuthInitializing ||
+      isAuthActionLoading,
     login,
     loginWithEmailAndPassword,
     register,

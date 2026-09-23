@@ -5,10 +5,10 @@ function ProtectedRoute({ children }) {
   const {
     firebaseUser,
     backendUser,
-    isLoading,
+    isAuthInitializing,
   } = useAuth()
 
-  if (isLoading) {
+  if (isAuthInitializing) {
     return (
       <main>
         <p>Checking authentication...</p>
