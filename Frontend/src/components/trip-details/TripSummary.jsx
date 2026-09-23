@@ -456,7 +456,7 @@ function TripSummary({
             </div>
           </div>
         </div>
-      </section>
+
 
       <ExpenseSummary
         status={expenseSummaryStatus}
@@ -469,7 +469,8 @@ function TripSummary({
         percentageUsed={expenseSummary.percentageUsed}
         isEstimated={expenseSummary.isEstimated}
       />
-
+      </section>
+      
       <section
         className="trip-summary__notes"
         aria-labelledby="trip-notes-title"

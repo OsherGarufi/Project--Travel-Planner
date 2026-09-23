@@ -240,6 +240,10 @@
   margin-top: var(--tp-space-8);
 }
 
+.trip-summary__overview > .expense-summary {
+  margin-top: var(--tp-space-4);
+}
+
 .trip-summary__detail-card {
   display: flex;
   min-width: 0;
