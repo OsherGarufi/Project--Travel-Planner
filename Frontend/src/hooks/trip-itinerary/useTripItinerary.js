@@ -18,6 +18,11 @@ import {
   releaseTripItineraryRequest,
 } from '../../services/itinerary/itineraryRequestManager'
 import {
+  queueItineraryScheduleSave,
+  subscribeToItineraryScheduleSaves,
+  supersedeItineraryScheduleSave,
+} from '../../services/itinerary/itineraryScheduleSaveManager'
+import {
   createTripItineraryItem,
   deleteTripItineraryItem,
   getTripItinerary,
@@ -26,9 +31,6 @@ import {
 } from '../../services/itinerary/itineraryService'
 import { useAuth } from '../useAuth'
 import { useFeedback } from '../useFeedback'
-
-const ITINERARY_SCHEDULE_SAVE_DELAY_MS =
-  5000
 
 export function useTripItinerary(
   tripId,
@@ -56,9 +58,6 @@ export function useTripItinerary(
 
   const itineraryItemsRef =
     useRef([])
-
-  const pendingScheduleUpdatesRef =
-    useRef(new Map())
 
   const [
     loadedContextKey,
@@ -137,386 +136,6 @@ export function useTripItinerary(
       )
     }
 
-  const applyScheduleItemToCache =
-    (
-      scheduleEntry,
-      item,
-      previousItem,
-    ) => {
-      if (
-        !scheduleEntry?.userId ||
-        !scheduleEntry?.tripId ||
-        !item?.id
-      ) {
-        return
-      }
-
-      const cachedItems =
-        getTripItineraryCache(
-          scheduleEntry.userId,
-          scheduleEntry.tripId,
-        )
-
-      if (!cachedItems) {
-        return
-      }
-
-      const hasItem =
-        cachedItems.some(
-          (cachedItem) =>
-            cachedItem.id ===
-            item.id,
-        )
-
-      if (!hasItem) {
-        return
-      }
-
-      const nextItems =
-        cachedItems.map(
-          (cachedItem) =>
-            cachedItem.id ===
-            item.id
-              ? item
-              : cachedItem,
-        )
-
-      setTripItineraryCache(
-        scheduleEntry.userId,
-        scheduleEntry.tripId,
-        nextItems,
-      )
-
-      syncExpensesCacheFromItineraryItem(
-        scheduleEntry.userId,
-        scheduleEntry.tripId,
-        item,
-        previousItem,
-      )
-    }
-
-  const applyPersistedScheduleItem =
-    (
-      scheduleEntry,
-      item,
-    ) => {
-      const currentContextKey =
-        userId && tripId
-          ? `${userId}:${tripId}`
-          : null
-
-      const isCurrentContext =
-        scheduleEntry.contextKey ===
-        currentContextKey
-
-      if (isCurrentContext) {
-        const previousItem =
-          itineraryItemsRef.current.find(
-            (currentItem) =>
-              currentItem.id ===
-              item.id,
-          ) ?? null
-
-        replaceItineraryItem(
-          item.id,
-          item,
-        )
-
-        syncExpensesCacheFromItineraryItem(
-          scheduleEntry.userId,
-          scheduleEntry.tripId,
-          item,
-          previousItem,
-        )
-
-        return
-      }
-
-      applyScheduleItemToCache(
-        scheduleEntry,
-        item,
-        scheduleEntry.optimisticItem,
-      )
-    }
-
-  const rollbackScheduleItem =
-    (
-      scheduleEntry,
-    ) => {
-      const rollbackItem =
-        scheduleEntry?.confirmedItem
-
-      if (!rollbackItem?.id) {
-        return
-      }
-
-      const currentContextKey =
-        userId && tripId
-          ? `${userId}:${tripId}`
-          : null
-
-      const isCurrentContext =
-        scheduleEntry.contextKey ===
-        currentContextKey
-
-      if (isCurrentContext) {
-        const currentItem =
-          itineraryItemsRef.current.find(
-            (item) =>
-              item.id ===
-              rollbackItem.id,
-          ) ?? null
-
-        replaceItineraryItem(
-          rollbackItem.id,
-          rollbackItem,
-        )
-
-        syncExpensesCacheFromItineraryItem(
-          scheduleEntry.userId,
-          scheduleEntry.tripId,
-          rollbackItem,
-          currentItem,
-        )
-
-        return
-      }
-
-      applyScheduleItemToCache(
-        scheduleEntry,
-        rollbackItem,
-        scheduleEntry.optimisticItem,
-      )
-    }
-
-  const persistQueuedScheduleUpdate =
-    async (
-      itemId,
-      expectedVersion,
-    ) => {
-      const scheduleEntry =
-        pendingScheduleUpdatesRef
-          .current
-          .get(itemId)
-
-      if (
-        !scheduleEntry ||
-        scheduleEntry.cancelled ||
-        scheduleEntry.version !==
-          expectedVersion
-      ) {
-        return
-      }
-
-      scheduleEntry.timerId =
-        null
-
-      if (
-        scheduleEntry.requestPromise
-      ) {
-        scheduleEntry.isDue =
-          true
-
-        return
-      }
-
-      scheduleEntry.isDue =
-        false
-
-      const requestVersion =
-        scheduleEntry.version
-
-      const requestSchedule = {
-        itineraryDate:
-          scheduleEntry
-            .optimisticItem
-            .itineraryDate,
-
-        startTime:
-          scheduleEntry
-            .optimisticItem
-            .startTime,
-
-        endTime:
-          scheduleEntry
-            .optimisticItem
-            .endTime,
-      }
-
-      const requestPromise =
-        updateTripItinerarySchedule(
-          scheduleEntry.tripId,
-          itemId,
-          requestSchedule,
-          scheduleEntry.idToken,
-        )
-
-      scheduleEntry.requestPromise =
-        requestPromise
-
-      try {
-        const updatedItem =
-          await requestPromise
-
-        if (!updatedItem?.id) {
-          throw new Error(
-            'Invalid itinerary schedule response.',
-          )
-        }
-
-        const latestEntry =
-          pendingScheduleUpdatesRef
-            .current
-            .get(itemId)
-
-        if (
-          !latestEntry ||
-          latestEntry.cancelled
-        ) {
-          return
-        }
-
-        latestEntry.requestPromise =
-          null
-
-        latestEntry.confirmedItem =
-          updatedItem
-
-        if (
-          latestEntry.version !==
-          requestVersion
-        ) {
-          if (
-            latestEntry.isDue
-          ) {
-            latestEntry.isDue =
-              false
-
-            window.setTimeout(
-              () =>
-                persistQueuedScheduleUpdate(
-                  itemId,
-                  latestEntry.version,
-                ),
-              0,
-            )
-          }
-
-          return
-        }
-
-        pendingScheduleUpdatesRef
-          .current
-          .delete(itemId)
-
-        applyPersistedScheduleItem(
-          latestEntry,
-          updatedItem,
-        )
-      } catch (error) {
-        const latestEntry =
-          pendingScheduleUpdatesRef
-            .current
-            .get(itemId)
-
-        if (
-          !latestEntry ||
-          latestEntry.cancelled
-        ) {
-          return
-        }
-
-        latestEntry.requestPromise =
-          null
-
-        if (
-          latestEntry.version !==
-          requestVersion
-        ) {
-          if (
-            latestEntry.isDue
-          ) {
-            latestEntry.isDue =
-              false
-
-            window.setTimeout(
-              () =>
-                persistQueuedScheduleUpdate(
-                  itemId,
-                  latestEntry.version,
-                ),
-              0,
-            )
-          }
-
-          return
-        }
-
-        console.error(
-          'Failed to save dragged itinerary schedule:',
-          error,
-        )
-
-        pendingScheduleUpdatesRef
-          .current
-          .delete(itemId)
-
-        rollbackScheduleItem(
-          latestEntry,
-        )
-
-        setItineraryActionError(
-          'Could not save the new activity schedule. The previous schedule was restored.',
-        )
-
-        showError(
-          'Could not save the new activity schedule. The previous schedule was restored.',
-        )
-      }
-    }
-
-  const supersedeQueuedScheduleUpdate =
-    async (itemId) => {
-      const scheduleEntry =
-        pendingScheduleUpdatesRef
-          .current
-          .get(itemId)
-
-      if (!scheduleEntry) {
-        return
-      }
-
-      if (
-        scheduleEntry.timerId
-      ) {
-        window.clearTimeout(
-          scheduleEntry.timerId,
-        )
-
-        scheduleEntry.timerId =
-          null
-      }
-
-      scheduleEntry.cancelled =
-        true
-
-      pendingScheduleUpdatesRef
-        .current
-        .delete(itemId)
-
-      if (
-        scheduleEntry.requestPromise
-      ) {
-        try {
-          await scheduleEntry
-            .requestPromise
-        } catch {
-          // The next explicit mutation
-          // will become the source of truth.
-        }
-      }
-    }
-
   const queueItineraryScheduleUpdate =
     (
       itemId,
@@ -546,19 +165,6 @@ export function useTripItinerary(
         return null
       }
 
-      const existingEntry =
-        pendingScheduleUpdatesRef
-          .current
-          .get(itemId)
-
-      if (
-        existingEntry?.timerId
-      ) {
-        window.clearTimeout(
-          existingEntry.timerId,
-        )
-      }
-
       const optimisticItem = {
         ...currentItem,
 
@@ -572,56 +178,14 @@ export function useTripItinerary(
           scheduleData.endTime,
       }
 
-      const nextVersion =
-        (
-          existingEntry
-            ?.version ?? 0
-        ) + 1
-
-      const scheduleEntry = {
+      queueItineraryScheduleSave({
         userId,
         tripId,
-        idToken,
-
-        contextKey:
-          itineraryContextKey,
-
-        version:
-          nextVersion,
-
+        itemId,
         confirmedItem:
-          existingEntry
-            ?.confirmedItem ??
           currentItem,
-
         optimisticItem,
-
-        requestPromise:
-          existingEntry
-            ?.requestPromise ??
-          null,
-
-        timerId: null,
-        isDue: false,
-        cancelled: false,
-      }
-
-      scheduleEntry.timerId =
-        window.setTimeout(
-          () =>
-            persistQueuedScheduleUpdate(
-              itemId,
-              nextVersion,
-            ),
-          ITINERARY_SCHEDULE_SAVE_DELAY_MS,
-        )
-
-      pendingScheduleUpdatesRef
-        .current
-        .set(
-          itemId,
-          scheduleEntry,
-        )
+      })
 
       setItineraryActionError('')
 
@@ -639,6 +203,67 @@ export function useTripItinerary(
 
       return optimisticItem
     }
+
+  useEffect(() => {
+    if (
+      !userId ||
+      !tripId ||
+      loadedContextKey !==
+        itineraryContextKey
+    ) {
+      return undefined
+    }
+
+    return subscribeToItineraryScheduleSaves(
+      (result) => {
+        if (
+          result.userId !== userId ||
+          result.tripId !== tripId ||
+          !result.item?.id
+        ) {
+          return
+        }
+
+        const nextItems =
+          itineraryItemsRef.current.map(
+            (item) =>
+              item.id ===
+              result.item.id
+                ? result.item
+                : item,
+          )
+
+        itineraryItemsRef.current =
+          nextItems
+
+        setItineraryItems(
+          nextItems,
+        )
+
+        if (
+          result.status ===
+          'failed'
+        ) {
+          const errorMessage =
+            'Could not save the new activity schedule. The previous schedule was restored.'
+
+          setItineraryActionError(
+            errorMessage,
+          )
+
+          showError(
+            errorMessage,
+          )
+        }
+      },
+    )
+  }, [
+    userId,
+    tripId,
+    itineraryContextKey,
+    loadedContextKey,
+    showError,
+  ])
 
   useEffect(() => {
     let isActive = true
@@ -971,7 +596,9 @@ export function useTripItinerary(
         return null
       }
 
-      await supersedeQueuedScheduleUpdate(
+      await supersedeItineraryScheduleSave(
+        userId,
+        tripId,
         itemId,
       )
 
@@ -1061,7 +688,9 @@ export function useTripItinerary(
         return null
       }
 
-      await supersedeQueuedScheduleUpdate(
+      await supersedeItineraryScheduleSave(
+        userId,
+        tripId,
         itemId,
       )
 
@@ -1148,7 +777,9 @@ export function useTripItinerary(
         return false
       }
 
-      await supersedeQueuedScheduleUpdate(
+      await supersedeItineraryScheduleSave(
+        userId,
+        tripId,
         itemId,
       )
 

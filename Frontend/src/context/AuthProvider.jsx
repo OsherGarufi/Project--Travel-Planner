@@ -20,6 +20,9 @@ import {
   clearUserItineraryCache,
 } from '../services/itinerary/itineraryCache'
 import {
+  invalidateUserItineraryScheduleSaves,
+} from '../services/itinerary/itineraryScheduleSaveManager'
+import {
   removeTripsCache,
 } from '../services/trips/tripsCache'
 import {
@@ -129,6 +132,10 @@ function clearPrivateUserCache(
   if (!userId) {
     return
   }
+
+  invalidateUserItineraryScheduleSaves(
+    userId,
+  )
 
   invalidateUserAttractionsRequests(
     userId,

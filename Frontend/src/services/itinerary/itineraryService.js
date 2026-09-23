@@ -47,12 +47,14 @@ export function updateTripItinerarySchedule(
   itemId,
   scheduleData,
   idToken,
+  signal,
 ) {
   return apiRequest(
     `/api/Trips/${tripId}/itinerary/${itemId}/schedule`,
     {
       method: 'PATCH',
       body: JSON.stringify(scheduleData),
+      signal,
     },
     idToken,
   )
