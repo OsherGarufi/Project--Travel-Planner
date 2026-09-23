@@ -57,7 +57,88 @@ function toApiTimeValue(timeValue) {
     return null
   }
 
-  return `${timeValue}:00`
+  return `${toInputTimeValue(timeValue)}:00`
+}
+
+function normalizeOptionalText(value) {
+  return value?.trim() || null
+}
+
+function normalizeEditableValues({
+  title,
+  category,
+  scheduleType,
+  itineraryDate,
+  startTime,
+  endTime,
+  description,
+  referenceUrl,
+  cost,
+  currency,
+}) {
+  const normalizedCost =
+    cost === '' || cost == null
+      ? 0
+      : Number(cost)
+
+  const isScheduled =
+    scheduleType ===
+    SCHEDULE_TYPES.SCHEDULED
+
+  const isPaidActivity =
+    Number.isFinite(normalizedCost) &&
+    normalizedCost > 0
+
+  return {
+    title: title?.trim() ?? '',
+    category:
+      category?.trim() ?? '',
+    scheduleType:
+      isScheduled
+        ? SCHEDULE_TYPES.SCHEDULED
+        : SCHEDULE_TYPES.PLAN_LATER,
+    itineraryDate:
+      isScheduled && itineraryDate
+        ? itineraryDate
+        : null,
+    startTime:
+      isScheduled
+        ? toApiTimeValue(startTime)
+        : null,
+    endTime:
+      isScheduled
+        ? toApiTimeValue(endTime)
+        : null,
+    description:
+      normalizeOptionalText(
+        description,
+      ),
+    referenceUrl:
+      normalizeOptionalText(
+        referenceUrl,
+      ),
+    cost: normalizedCost,
+    currency:
+      isPaidActivity
+        ? currency
+            ?.trim()
+            .toUpperCase() || null
+        : null,
+  }
+}
+
+function areEditableValuesEqual(
+  firstValues,
+  secondValues,
+) {
+  return Object.keys(
+    firstValues,
+  ).every((key) =>
+    Object.is(
+      firstValues[key],
+      secondValues[key],
+    ),
+  )
 }
 
 function isBuiltInCategory(category) {
@@ -225,6 +306,36 @@ function ItineraryItemForm({
     Number.isFinite(numericCost) &&
     numericCost > 0
 
+  const initialEditableValues =
+    normalizeEditableValues({
+      ...initialItem,
+      category: initialCategory,
+      scheduleType:
+        initialIsScheduled
+          ? SCHEDULE_TYPES.SCHEDULED
+          : SCHEDULE_TYPES.PLAN_LATER,
+    })
+
+  const currentEditableValues =
+    normalizeEditableValues({
+      title,
+      category: finalCategory,
+      scheduleType,
+      itineraryDate,
+      startTime,
+      endTime,
+      description,
+      referenceUrl,
+      cost,
+      currency,
+    })
+
+  const hasChanges =
+    !areEditableValuesEqual(
+      initialEditableValues,
+      currentEditableValues,
+    )
+
   const handleCategoryChange = (
     event,
   ) => {
@@ -281,19 +392,28 @@ function ItineraryItemForm({
     setValidationError('')
     setTimeRangeError('')
 
-    const normalizedTitle =
-      title.trim()
+    if (!hasChanges) {
+      return
+    }
 
-    const normalizedDescription =
-      description.trim()
-
-    const normalizedReferenceUrl =
-      referenceUrl.trim()
-
-    const normalizedCurrency =
-      currency
-        .trim()
-        .toUpperCase()
+    const {
+      title: normalizedTitle,
+      category:
+        normalizedCategory,
+      itineraryDate:
+        normalizedItineraryDate,
+      startTime:
+        normalizedStartTime,
+      endTime:
+        normalizedEndTime,
+      description:
+        normalizedDescription,
+      referenceUrl:
+        normalizedReferenceUrl,
+      cost: normalizedCost,
+      currency:
+        normalizedCurrency,
+    } = currentEditableValues
 
     if (!normalizedTitle) {
       setValidationError(
@@ -303,7 +423,7 @@ function ItineraryItemForm({
       return
     }
 
-    if (!finalCategory) {
+    if (!normalizedCategory) {
       setValidationError(
         'Please choose or enter a category.',
       )
@@ -312,7 +432,7 @@ function ItineraryItemForm({
     }
 
     if (
-      finalCategory.length > 50
+      normalizedCategory.length > 50
     ) {
       setValidationError(
         'Category cannot exceed 50 characters.',
@@ -323,7 +443,7 @@ function ItineraryItemForm({
 
     if (
       isScheduled &&
-      !itineraryDate
+      !normalizedItineraryDate
     ) {
       setValidationError(
         'Please choose a date.',
@@ -357,9 +477,9 @@ function ItineraryItemForm({
 
     if (
       !Number.isFinite(
-        numericCost,
+        normalizedCost,
       ) ||
-      numericCost < 0
+      normalizedCost < 0
     ) {
       setValidationError(
         'Please enter a valid cost.',
@@ -401,42 +521,28 @@ function ItineraryItemForm({
         normalizedTitle,
 
       category:
-        finalCategory,
+        normalizedCategory,
 
       itineraryDate:
-        isScheduled
-          ? itineraryDate
-          : null,
+        normalizedItineraryDate,
 
       startTime:
-        isScheduled
-          ? toApiTimeValue(
-              startTime,
-            )
-          : null,
+        normalizedStartTime,
 
       endTime:
-        isScheduled
-          ? toApiTimeValue(
-              endTime,
-            )
-          : null,
+        normalizedEndTime,
 
       description:
-        normalizedDescription ||
-        null,
+        normalizedDescription,
 
       referenceUrl:
-        normalizedReferenceUrl ||
-        null,
+        normalizedReferenceUrl,
 
       cost:
-        numericCost,
+        normalizedCost,
 
       currency:
-        isPaidActivity
-          ? normalizedCurrency
-          : null,
+        normalizedCurrency,
     })
   }
 
@@ -992,7 +1098,8 @@ function ItineraryItemForm({
               className="itinerary-item-form__submit"
               type="submit"
               disabled={
-                isSubmitting
+                isSubmitting ||
+                !hasChanges
               }
             >
               {isSubmitting

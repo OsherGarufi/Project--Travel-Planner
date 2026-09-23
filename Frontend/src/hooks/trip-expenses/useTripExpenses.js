@@ -43,6 +43,42 @@ const EXPENSE_ENTRY_TYPES = {
   ONLY_EXPENSE: 'only-expense',
 }
 
+function reconcileExpenseItemsForTripDateRange(
+  expenses,
+  startDate,
+  endDate,
+) {
+  let hasReconciledExpense =
+    false
+
+  const reconciledExpenses =
+    expenses.map((expense) => {
+      if (
+        !expense.itineraryItemId ||
+        !expense.itineraryDate ||
+        (expense.itineraryDate >=
+          startDate &&
+          expense.itineraryDate <=
+            endDate)
+      ) {
+        return expense
+      }
+
+      hasReconciledExpense = true
+
+      return {
+        ...expense,
+        itineraryDate: null,
+        startTime: null,
+        endTime: null,
+      }
+    })
+
+  return hasReconciledExpense
+    ? reconciledExpenses
+    : expenses
+}
+
 export function useTripExpenses(
   tripId,
 ) {
@@ -69,6 +105,9 @@ export function useTripExpenses(
 
   const expensesRef =
     useRef([])
+
+  const pendingDateRangeRef =
+    useRef(null)
 
   const [
     loadedContextKey,
@@ -145,6 +184,9 @@ export function useTripExpenses(
           !idToken ||
           !expensesContextKey
         ) {
+          pendingDateRangeRef.current =
+            null
+
           expensesRef.current = []
 
           setExpenses([])
@@ -152,6 +194,59 @@ export function useTripExpenses(
           setExpensesError('')
 
           return
+        }
+
+        const hydrateExpenses = (
+          nextExpenses,
+          persistExpenses = false,
+        ) => {
+          const pendingDateRange =
+            pendingDateRangeRef.current
+
+          const hydratedExpenses =
+            pendingDateRange
+              ?.contextKey ===
+            expensesContextKey
+              ? reconcileExpenseItemsForTripDateRange(
+                  nextExpenses,
+                  pendingDateRange.startDate,
+                  pendingDateRange.endDate,
+                )
+              : nextExpenses
+
+          if (
+            pendingDateRange
+              ?.contextKey ===
+            expensesContextKey
+          ) {
+            pendingDateRangeRef.current =
+              null
+          }
+
+          expensesRef.current =
+            hydratedExpenses
+
+          setExpenses(
+            hydratedExpenses,
+          )
+
+          if (
+            persistExpenses ||
+            hydratedExpenses !==
+              nextExpenses
+          ) {
+            setCachedTripExpenses(
+              userId,
+              tripId,
+              hydratedExpenses,
+            )
+          }
+
+          setExpensesError('')
+
+          setLoadedContextKey(
+            expensesContextKey,
+          )
         }
 
         const cachedExpenses =
@@ -165,17 +260,8 @@ export function useTripExpenses(
             cachedExpenses,
           )
         ) {
-          expensesRef.current =
-            cachedExpenses
-
-          setExpenses(
+          hydrateExpenses(
             cachedExpenses,
-          )
-
-          setExpensesError('')
-
-          setLoadedContextKey(
-            expensesContextKey,
           )
 
           return
@@ -211,23 +297,9 @@ export function useTripExpenses(
               ? result
               : []
 
-          expensesRef.current =
-            loadedExpenses
-
-          setExpenses(
+          hydrateExpenses(
             loadedExpenses,
-          )
-
-          setCachedTripExpenses(
-            userId,
-            tripId,
-            loadedExpenses,
-          )
-
-          setExpensesError('')
-
-          setLoadedContextKey(
-            expensesContextKey,
+            true,
           )
         } catch (error) {
           if (!isActive) {
@@ -392,6 +464,48 @@ export function useTripExpenses(
       (currentVersion) =>
         currentVersion + 1,
     )
+  }
+
+  const reconcileExpensesForTripDateRange = (
+    startDate,
+    endDate,
+  ) => {
+    if (
+      !startDate ||
+      !endDate ||
+      !expensesContextKey
+    ) {
+      return
+    }
+
+    pendingDateRangeRef.current = {
+      contextKey: expensesContextKey,
+      startDate,
+      endDate,
+    }
+
+    if (
+      loadedContextKey !==
+      expensesContextKey
+    ) {
+      return
+    }
+
+    const nextExpenses =
+      reconcileExpenseItemsForTripDateRange(
+        expensesRef.current,
+        startDate,
+        endDate,
+      )
+
+    pendingDateRangeRef.current = null
+
+    if (
+      nextExpenses !==
+      expensesRef.current
+    ) {
+      applyExpenses(nextExpenses)
+    }
   }
 
   const addExpense = async (
@@ -1176,6 +1290,7 @@ export function useTripExpenses(
     deletingExpenseId,
 
     reloadExpenses,
+    reconcileExpensesForTripDateRange,
 
     addExpense,
     addExpenseActivity,

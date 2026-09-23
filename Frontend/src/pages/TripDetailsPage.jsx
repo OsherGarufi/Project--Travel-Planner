@@ -337,11 +337,28 @@ function TripDetailsPage() {
 
   const handleSaveEditing =
     async () => {
+      const shouldReconcileExpenses =
+        hasDateChanges
+
+      const submittedStartDate =
+        startDate
+
+      const submittedEndDate =
+        endDate
+
       const wasSaved =
         await saveTrip()
 
       if (!wasSaved) {
         return
+      }
+
+      if (shouldReconcileExpenses) {
+        tripExpenses
+          .reconcileExpensesForTripDateRange(
+            submittedStartDate,
+            submittedEndDate,
+          )
       }
 
       clearEditWeather()
