@@ -14,9 +14,11 @@ import {
   createTripExpense,
   deleteTripExpense,
   getTripExpenses,
+  transitionTripExpense,
   updateTripExpense,
 } from '../../services/expenseService'
 import {
+  clearTripItineraryCache,
   getTripItineraryCache,
   setTripItineraryCache,
 } from '../../services/itinerary/itineraryCache'
@@ -27,7 +29,7 @@ import {
 } from '../../services/itinerary/itineraryExpenseCacheSync'
 import {
   createTripItineraryItem,
-  deleteTripItineraryItem,
+  getTripItinerary,
   updateTripItineraryItem,
 } from '../../services/itinerary/itineraryService'
 import {
@@ -41,6 +43,14 @@ const EXPENSE_ENTRY_TYPES = {
   SCHEDULED: 'scheduled',
   PLAN_LATER: 'plan-later',
   ONLY_EXPENSE: 'only-expense',
+}
+
+function hasAuthoritativeApiResponse(
+  error,
+) {
+  return /^API Error: \d+$/.test(
+    error?.message ?? '',
+  )
 }
 
 function reconcileExpenseItemsForTripDateRange(
@@ -467,6 +477,67 @@ export function useTripExpenses(
         currentVersion + 1,
     )
   }
+
+  const reconcileAfterAmbiguousTransition =
+    async (authSession) => {
+      const [
+        expensesResult,
+        itineraryResult,
+      ] = await Promise.allSettled([
+        getTripExpenses(
+          tripId,
+          idToken,
+        ),
+        getTripItinerary(
+          tripId,
+          idToken,
+        ),
+      ])
+
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return
+      }
+
+      if (
+        expensesResult.status ===
+          'fulfilled' &&
+        Array.isArray(
+          expensesResult.value,
+        )
+      ) {
+        applyExpenses(
+          expensesResult.value,
+        )
+      } else {
+        clearCachedTripExpenses(
+          userId,
+          tripId,
+        )
+      }
+
+      if (
+        itineraryResult.status ===
+          'fulfilled' &&
+        Array.isArray(
+          itineraryResult.value,
+        )
+      ) {
+        setTripItineraryCache(
+          userId,
+          tripId,
+          itineraryResult.value,
+        )
+      } else {
+        clearTripItineraryCache(
+          userId,
+          tripId,
+        )
+      }
+    }
 
   const reconcileExpensesForTripDateRange = (
     startDate,
@@ -939,6 +1010,8 @@ export function useTripExpenses(
       )
     }
 
+    let transitionWasAttempted = false
+
     try {
       setUpdatingExpenseId(
         expenseId,
@@ -1095,54 +1168,23 @@ export function useTripExpenses(
       /*
        * Linked Expense -> Only expense
        *
-       * With the existing API contract, deleting a paid
-       * itinerary item also deletes its linked Expense.
-       * Therefore create the replacement unlinked Expense
-       * first, then delete the old linked pair. If the second
-       * request fails, remove the replacement as a rollback.
+       * The dedicated transition endpoint creates the
+       * replacement Expense and removes the linked pair inside
+       * one backend transaction.
        */
       if (
         currentIsLinked &&
         targetIsOnlyExpense
       ) {
-        const replacementExpense =
-          await createTripExpense(
+        transitionWasAttempted = true
+
+        const transitionResult =
+          await transitionTripExpense(
             tripId,
+            expenseId,
             expenseData,
             idToken,
           )
-
-        if (
-          !replacementExpense?.id
-        ) {
-          throw new Error(
-            'Invalid replacement expense response.',
-          )
-        }
-
-        try {
-          await deleteTripItineraryItem(
-            tripId,
-            currentExpense
-              .itineraryItemId,
-            idToken,
-          )
-        } catch (error) {
-          try {
-            await deleteTripExpense(
-              tripId,
-              replacementExpense.id,
-              idToken,
-            )
-          } catch (rollbackError) {
-            console.error(
-              'Failed to roll back replacement expense:',
-              rollbackError,
-            )
-          }
-
-          throw error
-        }
 
         if (
           !isAuthSessionCurrent(
@@ -1152,17 +1194,31 @@ export function useTripExpenses(
           return null
         }
 
+        if (
+          !transitionResult?.expense?.id ||
+          transitionResult.replacedExpenseId !==
+            expenseId ||
+          transitionResult.itineraryItem ||
+          transitionResult.removedItineraryItemId !==
+            currentExpense.itineraryItemId
+        ) {
+          throw new Error(
+            'Invalid expense transition response.',
+          )
+        }
+
         removeCachedItineraryItem(
-          currentExpense
-            .itineraryItemId,
+          transitionResult
+            .removedItineraryItemId,
         )
 
         const nextExpenses =
           expensesRef.current.map(
             (expense) =>
               expense.id ===
-              expenseId
-                ? replacementExpense
+              transitionResult
+                .replacedExpenseId
+                ? transitionResult.expense
                 : expense,
           )
 
@@ -1170,56 +1226,35 @@ export function useTripExpenses(
           nextExpenses,
         )
 
-        return replacementExpense
+        return transitionResult.expense
       }
 
       /*
        * Only expense -> Scheduled / Plan later
        *
-       * Creating a paid itinerary item creates a new linked
-       * Expense transactionally. Once that succeeds, remove
-       * the old unlinked Expense. If removing the old Expense
-       * fails, delete the newly-created itinerary item to roll
-       * back the new linked pair.
+       * The dedicated transition endpoint creates the linked
+       * replacement and removes the standalone Expense inside
+       * one backend transaction.
        */
-      const createdItem =
-        await createTripItineraryItem(
-          tripId,
-          itineraryData,
-          idToken,
-        )
+      transitionWasAttempted = true
 
-      if (
-        !createdItem?.id ||
-        !createdItem?.expenseId
-      ) {
-        throw new Error(
-          'Invalid linked activity response.',
-        )
-      }
-
-      try {
-        await deleteTripExpense(
+      const transitionResult =
+        await transitionTripExpense(
           tripId,
           expenseId,
+          {
+            ...expenseData,
+            itinerary: {
+              itineraryDate:
+                itineraryData.itineraryDate,
+              startTime:
+                itineraryData.startTime,
+              endTime:
+                itineraryData.endTime,
+            },
+          },
           idToken,
         )
-      } catch (error) {
-        try {
-          await deleteTripItineraryItem(
-            tripId,
-            createdItem.id,
-            idToken,
-          )
-        } catch (rollbackError) {
-          console.error(
-            'Failed to roll back linked activity:',
-            rollbackError,
-          )
-        }
-
-        throw error
-      }
 
       if (
         !isAuthSessionCurrent(
@@ -1229,50 +1264,39 @@ export function useTripExpenses(
         return null
       }
 
-      updateCachedItineraryItem(
-        createdItem,
-      )
-
-      syncExpensesCacheFromItineraryItem(
-        userId,
-        tripId,
-        createdItem,
-      )
-
-      const syncedExpenses =
-        getCachedTripExpenses(
-          userId,
-          tripId,
-        )
-
       if (
-        !Array.isArray(
-          syncedExpenses,
-        )
+        !transitionResult?.expense?.id ||
+        !transitionResult?.itineraryItem?.id ||
+        transitionResult.itineraryItem.expenseId !==
+          transitionResult.expense.id ||
+        transitionResult.replacedExpenseId !==
+          expenseId ||
+        transitionResult.removedItineraryItemId
       ) {
         throw new Error(
-          'Could not synchronize the expense cache.',
+          'Invalid expense transition response.',
         )
       }
 
+      updateCachedItineraryItem(
+        transitionResult.itineraryItem,
+      )
+
       const nextExpenses =
-        syncedExpenses.filter(
+        expensesRef.current.map(
           (expense) =>
             expense.id !==
-            expenseId,
+            transitionResult
+              .replacedExpenseId
+              ? expense
+              : transitionResult.expense,
         )
 
       applyExpenses(
         nextExpenses,
       )
 
-      return (
-        nextExpenses.find(
-          (expense) =>
-            expense.id ===
-            createdItem.expenseId,
-        ) ?? null
-      )
+      return transitionResult.expense
     } catch (error) {
       if (
         !isAuthSessionCurrent(
@@ -1280,6 +1304,25 @@ export function useTripExpenses(
         )
       ) {
         return null
+      }
+
+      if (
+        transitionWasAttempted &&
+        !hasAuthoritativeApiResponse(
+          error,
+        )
+      ) {
+        await reconcileAfterAmbiguousTransition(
+          authSession,
+        )
+
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
       }
 
       console.error(

@@ -6,6 +6,20 @@ using Npgsql;
 
 namespace Backend.Services;
 
+public enum ExpenseTransitionStatus
+{
+    Succeeded,
+    NotFound,
+    Conflict
+}
+
+public class ExpenseTransitionResult
+{
+    public ExpenseTransitionStatus Status { get; init; }
+
+    public TransitionTripExpenseResponse? Response { get; init; }
+}
+
 public class ItineraryExpenseService
 {
     private readonly IConfiguration _configuration;
@@ -223,6 +237,192 @@ public class ItineraryExpenseService
                 expense,
                 itineraryItem
             );
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Converts a standalone expense into a linked itinerary
+    /// entry, or a linked entry into a standalone expense.
+    /// The replacement and removal operations are committed as
+    /// one transaction while preserving replacement-id behavior.
+    /// </summary>
+    public async Task<ExpenseTransitionResult>
+        TransitionExpenseAsync(
+            Guid tripId,
+            Guid expenseId,
+            Guid userId,
+            TransitionTripExpenseRequest request
+        )
+    {
+        await using var connection =
+            new NpgsqlConnection(
+                GetConnectionString()
+            );
+
+        await connection.OpenAsync();
+
+        await using var transaction =
+            await connection.BeginTransactionAsync();
+
+        try
+        {
+            var sourceExpense =
+                await _expenseDbService
+                    .GetTripExpenseForUserAsync(
+                        connection,
+                        transaction,
+                        tripId,
+                        expenseId,
+                        userId
+                    );
+
+            if (sourceExpense is null)
+            {
+                await transaction.RollbackAsync();
+
+                return new ExpenseTransitionResult
+                {
+                    Status = ExpenseTransitionStatus.NotFound
+                };
+            }
+
+            var linkedItineraryItem =
+                await _itineraryDbService
+                    .GetLinkedItineraryItemForExpenseAsync(
+                        connection,
+                        transaction,
+                        tripId,
+                        expenseId,
+                        userId
+                    );
+
+            var targetIsLinked =
+                request.Itinerary is not null;
+
+            var sourceIsLinked =
+                linkedItineraryItem is not null;
+
+            if (targetIsLinked == sourceIsLinked)
+            {
+                await transaction.RollbackAsync();
+
+                return new ExpenseTransitionResult
+                {
+                    Status = ExpenseTransitionStatus.Conflict
+                };
+            }
+
+            var replacementExpense =
+                await _expenseDbService
+                    .CreateTripExpenseForUserAsync(
+                        connection,
+                        transaction,
+                        tripId,
+                        userId,
+                        CreateStandaloneExpenseRequest(
+                            request
+                        )
+                    )
+                ?? throw new InvalidOperationException(
+                    "Could not create the replacement expense."
+                );
+
+            TripItineraryItem? resultingItineraryItem =
+                null;
+
+            Guid? removedItineraryItemId =
+                null;
+
+            if (targetIsLinked)
+            {
+                resultingItineraryItem =
+                    await _itineraryDbService
+                        .CreateTripItineraryItemForUserAsync(
+                            connection,
+                            transaction,
+                            tripId,
+                            userId,
+                            replacementExpense.Id,
+                            CreateItineraryRequestFromExpense(
+                                request
+                            )
+                        )
+                    ?? throw new InvalidOperationException(
+                        "Could not create the replacement itinerary item."
+                    );
+            }
+            else
+            {
+                removedItineraryItemId =
+                    linkedItineraryItem!.Id;
+
+                var itineraryWasDeleted =
+                    await _itineraryDbService
+                        .DeleteTripItineraryItemForUserAsync(
+                            connection,
+                            transaction,
+                            tripId,
+                            linkedItineraryItem.Id,
+                            userId
+                        );
+
+                if (!itineraryWasDeleted)
+                {
+                    throw new InvalidOperationException(
+                        "Could not remove the linked itinerary item."
+                    );
+                }
+            }
+
+            var sourceExpenseWasDeleted =
+                await _expenseDbService
+                    .DeleteTripExpenseForUserAsync(
+                        connection,
+                        transaction,
+                        tripId,
+                        expenseId,
+                        userId
+                    );
+
+            if (!sourceExpenseWasDeleted)
+            {
+                throw new InvalidOperationException(
+                    "Could not remove the source expense."
+                );
+            }
+
+            await transaction.CommitAsync();
+
+            var itineraryResponse =
+                resultingItineraryItem is null
+                    ? null
+                    : MapItineraryResponse(
+                        resultingItineraryItem,
+                        replacementExpense.Amount,
+                        replacementExpense.Currency
+                    );
+
+            return new ExpenseTransitionResult
+            {
+                Status = ExpenseTransitionStatus.Succeeded,
+                Response = new TransitionTripExpenseResponse
+                {
+                    ReplacedExpenseId = expenseId,
+                    RemovedItineraryItemId =
+                        removedItineraryItemId,
+                    Expense = MapExpenseResponse(
+                        replacementExpense,
+                        resultingItineraryItem
+                    ),
+                    ItineraryItem = itineraryResponse
+                }
+            };
         }
         catch
         {
@@ -884,7 +1084,7 @@ public class ItineraryExpenseService
     /// </summary>
     private static CreateTripExpenseRequest
         CreateStandaloneExpenseRequest(
-            CreateTripExpenseWithItineraryRequest request
+            TripExpenseRequestBase request
         )
     {
         return new CreateTripExpenseRequest
@@ -920,8 +1120,31 @@ public class ItineraryExpenseService
             CreateTripExpenseWithItineraryRequest request
         )
     {
-        var itinerary =
+        return CreateItineraryRequestFromExpense(
+            request,
             request.Itinerary
+        );
+    }
+
+    private static CreateTripItineraryItemRequest
+        CreateItineraryRequestFromExpense(
+            TransitionTripExpenseRequest request
+        )
+    {
+        return CreateItineraryRequestFromExpense(
+            request,
+            request.Itinerary
+        );
+    }
+
+    private static CreateTripItineraryItemRequest
+        CreateItineraryRequestFromExpense(
+            TripExpenseRequestBase request,
+            CreateExpenseItineraryRequest? itinerary
+        )
+    {
+        var requiredItinerary =
+            itinerary
             ?? throw new InvalidOperationException(
                 "Itinerary information is required."
             );
@@ -947,13 +1170,13 @@ public class ItineraryExpenseService
                 request.Currency,
 
             ItineraryDate =
-                itinerary.ItineraryDate,
+                requiredItinerary.ItineraryDate,
 
             StartTime =
-                itinerary.StartTime,
+                requiredItinerary.StartTime,
 
             EndTime =
-                itinerary.EndTime
+                requiredItinerary.EndTime
         };
     }
 

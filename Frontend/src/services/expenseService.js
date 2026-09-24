@@ -42,6 +42,24 @@ export function updateTripExpense(
   )
 }
 
+export function transitionTripExpense(
+  tripId,
+  expenseId,
+  transitionData,
+  idToken,
+) {
+  return apiRequest(
+    `/api/Trips/${tripId}/expenses/${expenseId}/transition`,
+    {
+      method: 'POST',
+      body: JSON.stringify(
+        transitionData,
+      ),
+    },
+    idToken,
+  )
+}
+
 export function deleteTripExpense(
   tripId,
   expenseId,

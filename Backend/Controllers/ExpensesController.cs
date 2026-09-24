@@ -172,6 +172,91 @@ public class ExpensesController : ControllerBase
         return Ok(updatedExpense);
     }
 
+    [HttpPost("{expenseId:guid}/transition")]
+    public async Task<IActionResult> TransitionTripExpense(
+        Guid tripId,
+        Guid expenseId,
+        [FromBody] TransitionTripExpenseRequest request
+    )
+    {
+        var user =
+            await _currentUserService.GetCurrentUserAsync();
+
+        if (user is null)
+        {
+            return Unauthorized(
+                "Invalid or missing Firebase ID token."
+            );
+        }
+
+        var trip =
+            await _dbService.GetTripByIdForUserAsync(
+                tripId,
+                user.Id
+            );
+
+        if (trip is null)
+        {
+            return NotFound(
+                $"Trip with id '{tripId}' was not found."
+            );
+        }
+
+        var itineraryDate =
+            request.Itinerary?.ItineraryDate;
+
+        if (
+            itineraryDate.HasValue &&
+            (
+                itineraryDate.Value < trip.StartDate ||
+                itineraryDate.Value > trip.EndDate
+            )
+        )
+        {
+            return BadRequest(
+                "Itinerary date must be within the trip date range."
+            );
+        }
+
+        var result =
+            await _itineraryExpenseService
+                .TransitionExpenseAsync(
+                    tripId,
+                    expenseId,
+                    user.Id,
+                    request
+                );
+
+        return result.Status switch
+        {
+            ExpenseTransitionStatus.Succeeded
+                when result.Response is not null =>
+                    Ok(result.Response),
+
+            ExpenseTransitionStatus.NotFound =>
+                NotFound(
+                    $"Expense with id '{expenseId}' was not found for trip '{tripId}'."
+                ),
+
+            ExpenseTransitionStatus.Conflict =>
+                Conflict(
+                    new
+                    {
+                        code =
+                            "expense_transition_conflict",
+
+                        message =
+                            "The requested expense relationship is already current. Use the normal update endpoint instead."
+                    }
+                ),
+
+            _ =>
+                StatusCode(
+                    StatusCodes.Status500InternalServerError
+                )
+        };
+    }
+
     /// <summary>
     /// Deletes an expense.
     ///

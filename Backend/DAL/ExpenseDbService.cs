@@ -689,6 +689,70 @@ public class ExpenseDbService
             ?? normalizedCategory;
     }
 
+    internal async Task<TripExpense?>
+        GetTripExpenseForUserAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction? transaction,
+            Guid tripId,
+            Guid expenseId,
+            Guid userId
+        )
+    {
+        const string sql = """
+        SELECT
+            e.id,
+            e.trip_id,
+            e.category,
+            e.title,
+            e.amount,
+            e.currency,
+            e.reference_url,
+            e.notes,
+            e.created_at,
+            e.updated_at
+        FROM trip_expenses e
+        INNER JOIN trips t
+            ON t.id = e.trip_id
+        WHERE e.id = @expense_id
+          AND e.trip_id = @trip_id
+          AND t.user_id = @user_id
+        LIMIT 1
+        FOR UPDATE OF e;
+        """;
+
+        await using var command =
+            new NpgsqlCommand(
+                sql,
+                connection,
+                transaction
+            );
+
+        command.Parameters.AddWithValue(
+            "expense_id",
+            expenseId
+        );
+
+        command.Parameters.AddWithValue(
+            "trip_id",
+            tripId
+        );
+
+        command.Parameters.AddWithValue(
+            "user_id",
+            userId
+        );
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+
+        return MapTripExpense(reader);
+    }
+
     private static string CollapseWhitespace(
         string value
     )
