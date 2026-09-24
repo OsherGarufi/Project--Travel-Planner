@@ -304,6 +304,12 @@ function TripDetailsPage() {
       destinationCountry?.currencies,
     )
 
+  const hasWeatherDestination =
+    Boolean(
+      trip?.destinationCountryCode?.trim() &&
+        trip?.destinationCity?.trim(),
+    )
+
   useEffect(() => {
     if (
       activeFocusMode !==
@@ -892,8 +898,8 @@ function TripDetailsPage() {
             hasChanges={
               hasChanges
             }
-            hasDateChanges={
-              hasDateChanges
+            hasWeatherDestination={
+              hasWeatherDestination
             }
             isSaving={
               isSaving

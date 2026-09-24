@@ -4,7 +4,9 @@ import {
 } from 'react'
 import CountryDetails from '../components/CountryDetails'
 import BudgetSection from '../components/plan-trip/BudgetSection'
-import CreateTripSection from '../components/plan-trip/CreateTripSection'
+import CreateTripSection, {
+  TripTitleField,
+} from '../components/plan-trip/CreateTripSection'
 import DestinationForm from '../components/plan-trip/DestinationForm'
 import ForecastUnavailable from '../components/plan-trip/ForecastUnavailable'
 import HistoricalWeather from '../components/plan-trip/HistoricalWeather'
@@ -206,6 +208,16 @@ function PlanTripPage() {
     })
   }
 
+  const hasCompleteDestinationAndDates =
+    Boolean(
+      selectedCountry &&
+        selectedCity &&
+        startDate &&
+        endDate &&
+        startDate >= minimumTravelDate &&
+        endDate >= startDate,
+    )
+
   return (
     <div className="plan-trip-page">
       <header className="plan-trip-page__header">
@@ -226,6 +238,14 @@ function PlanTripPage() {
       </header>
 
       <div className="plan-trip-page__content">
+        <TripTitleField
+          tripTitle={tripTitle}
+          isCreatingTrip={isCreatingTrip}
+          onTripTitleChange={
+            handleTripTitleChange
+          }
+        />
+
         <DestinationForm
           countries={countries}
           selectedCountryCode={
@@ -294,6 +314,12 @@ function PlanTripPage() {
           }
         />
 
+        {hasCompleteDestinationAndDates && (
+          <CountryDetails
+            country={selectedCountry}
+          />
+        )}
+
         <div
           ref={weatherSectionRef}
           className="plan-trip-page__weather-anchor"
@@ -343,10 +369,6 @@ function PlanTripPage() {
           attribution={WEATHER_ATTRIBUTION}
         />
 
-        <CountryDetails
-          country={selectedCountry}
-        />
-
         <BudgetSection
           budgetAmount={budgetAmount}
           budgetCurrency={budgetCurrency}
@@ -383,9 +405,6 @@ function PlanTripPage() {
           }
           createTripError={
             createTripError
-          }
-          onTripTitleChange={
-            handleTripTitleChange
           }
           onCreateTrip={
             createSelectedTrip

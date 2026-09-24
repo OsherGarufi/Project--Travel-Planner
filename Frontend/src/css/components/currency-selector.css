@@ -27,6 +27,7 @@
 
 .currency-selector__select,
 .currency-selector__custom-input {
+  height: var(--tp-control-height-lg);
   min-height:
     var(--tp-control-height-lg);
   border: 1px solid

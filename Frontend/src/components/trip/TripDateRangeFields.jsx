@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import '../../css/components/trip-date-range-fields.css'
+import DatePickerField from './DatePickerField'
 
 function TripDateRangeFields({
   startDate,
@@ -12,6 +14,9 @@ function TripDateRangeFields({
   onStartDateChange,
   onEndDateChange,
 }) {
+  const [openField, setOpenField] =
+    useState(null)
+
   const rootClassName = [
     'trip-date-range-fields',
     className,
@@ -29,14 +34,21 @@ function TripDateRangeFields({
           Start date
         </label>
 
-        <input
+        <DatePickerField
           id={startDateId}
-          className="trip-date-range-fields__input"
-          type="date"
+          label="Start date"
           value={startDate}
-          min={startDateMinimum || undefined}
+          minimum={startDateMinimum}
           disabled={disabled}
-          required
+          isOpen={openField === 'start'}
+          onToggle={() =>
+            setOpenField((currentField) =>
+              currentField === 'start'
+                ? null
+                : 'start',
+            )
+          }
+          onClose={() => setOpenField(null)}
           onChange={onStartDateChange}
         />
       </div>
@@ -49,14 +61,21 @@ function TripDateRangeFields({
           End date
         </label>
 
-        <input
+        <DatePickerField
           id={endDateId}
-          className="trip-date-range-fields__input"
-          type="date"
+          label="End date"
           value={endDate}
-          min={endDateMinimum || undefined}
+          minimum={endDateMinimum}
           disabled={disabled}
-          required
+          isOpen={openField === 'end'}
+          onToggle={() =>
+            setOpenField((currentField) =>
+              currentField === 'end'
+                ? null
+                : 'end',
+            )
+          }
+          onClose={() => setOpenField(null)}
           onChange={onEndDateChange}
         />
       </div>

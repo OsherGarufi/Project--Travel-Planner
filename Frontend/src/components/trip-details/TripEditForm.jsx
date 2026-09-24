@@ -69,7 +69,7 @@ function TripEditForm({
   localCurrency,
 
   hasChanges,
-  hasDateChanges,
+  hasWeatherDestination,
 
   isSaving,
   saveError,
@@ -203,7 +203,7 @@ function TripEditForm({
           }
         />
 
-        {hasDateChanges &&
+        {hasWeatherDestination &&
           hasValidDates &&
           !isWeatherOpen && (
             <div className="trip-edit-form__weather trip-edit-form__field--full">
@@ -217,14 +217,14 @@ function TripEditForm({
 
                 <div>
                   <p className="trip-edit-form__weather-title">
-                    Travel dates changed
+                    Weather forecast
                   </p>
 
                   <p className="trip-edit-form__weather-description">
                     Check the weather
-                    forecast for your
-                    updated travel dates
-                    before saving.
+                    forecast for this
+                    destination and your
+                    current travel dates.
                   </p>
                 </div>
               </div>
@@ -257,7 +257,7 @@ function TripEditForm({
             </div>
           )}
 
-        {hasDateChanges &&
+        {hasWeatherDestination &&
           hasValidDates &&
           isWeatherOpen && (
             <div className="trip-edit-form__weather-expanded trip-edit-form__field--full">

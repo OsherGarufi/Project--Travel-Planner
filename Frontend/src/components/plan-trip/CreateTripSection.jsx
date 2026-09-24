@@ -145,6 +145,36 @@ function formatBudgetAmount(amount) {
   }).format(amount)
 }
 
+export function TripTitleField({
+  tripTitle,
+  isCreatingTrip,
+  onTripTitleChange,
+}) {
+  return (
+    <div className="create-trip-section__field">
+      <label
+        className="create-trip-section__label"
+        htmlFor="create-trip-title-input"
+      >
+        Trip title
+      </label>
+
+      <input
+        id="create-trip-title-input"
+        className="create-trip-section__input"
+        type="text"
+        value={tripTitle}
+        maxLength={100}
+        placeholder="e.g. Summer in Rome"
+        autoComplete="off"
+        required
+        disabled={isCreatingTrip}
+        onChange={onTripTitleChange}
+      />
+    </div>
+  )
+}
+
 function CreateTripSection({
   tripTitle,
   countryName,
@@ -156,7 +186,6 @@ function CreateTripSection({
   isCreatingTrip,
   isCreateDisabled,
   createTripError,
-  onTripTitleChange,
   onCreateTrip,
 }) {
   const normalizedTripTitle =
@@ -218,28 +247,6 @@ function CreateTripSection({
             Ready to create
           </span>
         )}
-      </div>
-
-      <div className="create-trip-section__field">
-        <label
-          className="create-trip-section__label"
-          htmlFor="create-trip-title-input"
-        >
-          Trip title
-        </label>
-
-        <input
-          id="create-trip-title-input"
-          className="create-trip-section__input"
-          type="text"
-          value={tripTitle}
-          maxLength={100}
-          placeholder="e.g. Summer in Rome"
-          autoComplete="off"
-          required
-          disabled={isCreatingTrip}
-          onChange={onTripTitleChange}
-        />
       </div>
 
       {hasTripSummary ? (
