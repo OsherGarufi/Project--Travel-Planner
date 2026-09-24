@@ -112,6 +112,9 @@ function TripDetailsPage() {
   const focusFormRef =
     useRef(null)
 
+  const editWeatherCityControllerRef =
+    useRef(null)
+
   const [
     activeFocusMode,
     setActiveFocusMode,
@@ -261,6 +264,13 @@ function TripDetailsPage() {
     }
   }, [])
 
+  useEffect(() => {
+    return () => {
+      editWeatherCityControllerRef.current?.abort()
+      editWeatherCityControllerRef.current = null
+    }
+  }, [])
+
   const destinationCountry =
     useMemo(() => {
       const countryCode =
@@ -312,8 +322,12 @@ function TripDetailsPage() {
   }, [activeFocusMode])
 
   const clearEditWeather = () => {
+    editWeatherCityControllerRef.current?.abort()
+    editWeatherCityControllerRef.current = null
+
     resetWeather()
     setEditWeatherCity(null)
+    setIsResolvingWeatherCity(false)
     setWeatherLookupError('')
     setIsEditWeatherOpen(false)
   }
@@ -477,11 +491,18 @@ function TripDetailsPage() {
         !trip?.destinationCountryCode ||
         !trip?.destinationCity ||
         !startDate ||
-        !endDate ||
-        isResolvingWeatherCity
+        !endDate
       ) {
         return
       }
+
+      editWeatherCityControllerRef.current?.abort()
+
+      const controller =
+        new AbortController()
+
+      editWeatherCityControllerRef.current =
+        controller
 
       try {
         setIsResolvingWeatherCity(
@@ -495,7 +516,16 @@ function TripDetailsPage() {
           await searchCities(
             trip.destinationCountryCode,
             trip.destinationCity,
+            controller.signal,
           )
+
+        if (
+          controller.signal.aborted ||
+          editWeatherCityControllerRef.current !==
+            controller
+        ) {
+          return
+        }
 
         const normalizedCityName =
           trip.destinationCity
@@ -533,6 +563,15 @@ function TripDetailsPage() {
           matchedCity,
         )
       } catch (error) {
+        if (
+          error.name === 'AbortError' ||
+          controller.signal.aborted ||
+          editWeatherCityControllerRef.current !==
+            controller
+        ) {
+          return
+        }
+
         console.error(
           'Failed to resolve city for weather:',
           error,
@@ -544,9 +583,16 @@ function TripDetailsPage() {
           'Could not load the weather forecast. Please try again.',
         )
       } finally {
-        setIsResolvingWeatherCity(
-          false,
-        )
+        if (
+          editWeatherCityControllerRef.current ===
+          controller
+        ) {
+          editWeatherCityControllerRef.current = null
+
+          setIsResolvingWeatherCity(
+            false,
+          )
+        }
       }
     }
 
