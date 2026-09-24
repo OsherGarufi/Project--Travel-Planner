@@ -85,6 +85,8 @@ export function useTripExpenses(
   const {
     firebaseUser,
     idToken,
+    captureAuthSession,
+    isAuthSessionCurrent,
   } = useAuth()
 
   const { showError } =
@@ -522,6 +524,13 @@ export function useTripExpenses(
       return null
     }
 
+    const authSession =
+      captureAuthSession()
+
+    if (!authSession) {
+      return null
+    }
+
     try {
       setIsCreatingExpense(true)
       setExpenseActionError('')
@@ -532,6 +541,14 @@ export function useTripExpenses(
           expenseData,
           idToken,
         )
+
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return null
+      }
 
       if (!createdExpense?.id) {
         throw new Error(
@@ -556,6 +573,14 @@ export function useTripExpenses(
 
       return createdExpense
     } catch (error) {
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return null
+      }
+
       console.error(
         'Failed to create trip expense:',
         error,
@@ -571,7 +596,13 @@ export function useTripExpenses(
 
       return null
     } finally {
-      setIsCreatingExpense(false)
+      if (
+        isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        setIsCreatingExpense(false)
+      }
     }
   }
 
@@ -588,6 +619,13 @@ export function useTripExpenses(
         return null
       }
 
+      const authSession =
+        captureAuthSession()
+
+      if (!authSession) {
+        return null
+      }
+
       try {
         setIsCreatingExpense(true)
         setExpenseActionError('')
@@ -598,6 +636,14 @@ export function useTripExpenses(
             itemData,
             idToken,
           )
+
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
 
         if (
           !createdItem?.id ||
@@ -678,6 +724,14 @@ export function useTripExpenses(
 
         return createdItem
       } catch (error) {
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
+
         console.error(
           'Failed to create linked trip activity:',
           error,
@@ -693,7 +747,13 @@ export function useTripExpenses(
 
         return null
       } finally {
-        setIsCreatingExpense(false)
+        if (
+          isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          setIsCreatingExpense(false)
+        }
       }
     }
 
@@ -748,6 +808,13 @@ export function useTripExpenses(
       !targetIsOnlyExpense &&
       !targetIsLinked
     ) {
+      return null
+    }
+
+    const authSession =
+      captureAuthSession()
+
+    if (!authSession) {
       return null
     }
 
@@ -897,6 +964,14 @@ export function useTripExpenses(
             idToken,
           )
 
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
+
         if (!updatedExpense?.id) {
           throw new Error(
             'Invalid expense response.',
@@ -956,6 +1031,14 @@ export function useTripExpenses(
             itineraryData,
             idToken,
           )
+
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
 
         if (
           !updatedItem?.id ||
@@ -1061,6 +1144,14 @@ export function useTripExpenses(
           throw error
         }
 
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
+
         removeCachedItineraryItem(
           currentExpense
             .itineraryItemId,
@@ -1130,6 +1221,14 @@ export function useTripExpenses(
         throw error
       }
 
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return null
+      }
+
       updateCachedItineraryItem(
         createdItem,
       )
@@ -1175,6 +1274,14 @@ export function useTripExpenses(
         ) ?? null
       )
     } catch (error) {
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return null
+      }
+
       console.error(
         'Failed to update trip expense entry:',
         error,
@@ -1190,7 +1297,13 @@ export function useTripExpenses(
 
       return null
     } finally {
-      setUpdatingExpenseId(null)
+      if (
+        isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        setUpdatingExpenseId(null)
+      }
     }
   }
 
@@ -1207,6 +1320,13 @@ export function useTripExpenses(
         expensesContextKey ||
       deletingExpenseId
     ) {
+      return false
+    }
+
+    const authSession =
+      captureAuthSession()
+
+    if (!authSession) {
       return false
     }
 
@@ -1231,6 +1351,14 @@ export function useTripExpenses(
         deleteLinkedActivity,
       )
 
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return false
+      }
+
       const nextExpenses =
         expensesRef.current.filter(
           (expense) =>
@@ -1253,6 +1381,14 @@ export function useTripExpenses(
 
       return true
     } catch (error) {
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return false
+      }
+
       console.error(
         'Failed to delete trip expense:',
         error,
@@ -1268,7 +1404,13 @@ export function useTripExpenses(
 
       return false
     } finally {
-      setDeletingExpenseId(null)
+      if (
+        isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        setDeletingExpenseId(null)
+      }
     }
   }
 

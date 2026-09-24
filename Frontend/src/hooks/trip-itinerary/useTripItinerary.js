@@ -89,6 +89,8 @@ export function useTripItinerary(
   const {
     firebaseUser,
     idToken,
+    captureAuthSession,
+    isAuthSessionCurrent,
   } = useAuth()
 
   const { showError } =
@@ -653,6 +655,13 @@ export function useTripItinerary(
         return null
       }
 
+      const authSession =
+        captureAuthSession()
+
+      if (!authSession) {
+        return null
+      }
+
       try {
         setIsCreatingItineraryItem(
           true,
@@ -666,6 +675,14 @@ export function useTripItinerary(
             itemData,
             idToken,
           )
+
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
 
         if (!createdItem?.id) {
           throw new Error(
@@ -690,6 +707,14 @@ export function useTripItinerary(
 
         return createdItem
       } catch (error) {
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
+
         console.error(
           'Failed to create itinerary item:',
           error,
@@ -705,9 +730,15 @@ export function useTripItinerary(
 
         return null
       } finally {
-        setIsCreatingItineraryItem(
-          false,
-        )
+        if (
+          isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          setIsCreatingItineraryItem(
+            false,
+          )
+        }
       }
     }
 
@@ -728,11 +759,26 @@ export function useTripItinerary(
         return null
       }
 
+      const authSession =
+        captureAuthSession()
+
+      if (!authSession) {
+        return null
+      }
+
       await supersedeItineraryScheduleSave(
         userId,
         tripId,
         itemId,
       )
+
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return null
+      }
 
       const previousItem =
         itineraryItemsRef.current.find(
@@ -754,6 +800,14 @@ export function useTripItinerary(
             itemData,
             idToken,
           )
+
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
 
         if (!updatedItem?.id) {
           throw new Error(
@@ -782,6 +836,14 @@ export function useTripItinerary(
 
         return updatedItem
       } catch (error) {
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
+
         console.error(
           'Failed to update itinerary item:',
           error,
@@ -797,9 +859,15 @@ export function useTripItinerary(
 
         return null
       } finally {
-        setIsUpdatingItineraryItem(
-          false,
-        )
+        if (
+          isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          setIsUpdatingItineraryItem(
+            false,
+          )
+        }
       }
     }
 
@@ -820,11 +888,26 @@ export function useTripItinerary(
         return null
       }
 
+      const authSession =
+        captureAuthSession()
+
+      if (!authSession) {
+        return null
+      }
+
       await supersedeItineraryScheduleSave(
         userId,
         tripId,
         itemId,
       )
+
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return null
+      }
 
       const previousItem =
         itineraryItemsRef.current.find(
@@ -846,6 +929,14 @@ export function useTripItinerary(
             scheduleData,
             idToken,
           )
+
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
 
         if (!updatedItem?.id) {
           throw new Error(
@@ -874,6 +965,14 @@ export function useTripItinerary(
 
         return updatedItem
       } catch (error) {
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return null
+        }
+
         console.error(
           'Failed to update itinerary schedule:',
           error,
@@ -889,9 +988,15 @@ export function useTripItinerary(
 
         return null
       } finally {
-        setIsUpdatingItinerarySchedule(
-          false,
-        )
+        if (
+          isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          setIsUpdatingItinerarySchedule(
+            false,
+          )
+        }
       }
     }
 
@@ -909,11 +1014,26 @@ export function useTripItinerary(
         return false
       }
 
+      const authSession =
+        captureAuthSession()
+
+      if (!authSession) {
+        return false
+      }
+
       await supersedeItineraryScheduleSave(
         userId,
         tripId,
         itemId,
       )
+
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return false
+      }
 
       const itemToDelete =
         itineraryItemsRef.current.find(
@@ -933,6 +1053,14 @@ export function useTripItinerary(
           itemId,
           idToken,
         )
+
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return false
+        }
 
         const nextItems =
           itineraryItemsRef.current.filter(
@@ -954,6 +1082,14 @@ export function useTripItinerary(
 
         return true
       } catch (error) {
+        if (
+          !isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          return false
+        }
+
         console.error(
           'Failed to delete itinerary item:',
           error,
@@ -969,9 +1105,15 @@ export function useTripItinerary(
 
         return false
       } finally {
-        setIsDeletingItineraryItem(
-          false,
-        )
+        if (
+          isAuthSessionCurrent(
+            authSession,
+          )
+        ) {
+          setIsDeletingItineraryItem(
+            false,
+          )
+        }
       }
     }
 

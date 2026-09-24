@@ -9,7 +9,11 @@ export function useTripNotesEdit({
   trip,
   replaceTrip,
 }) {
-  const { idToken } = useAuth()
+  const {
+    idToken,
+    captureAuthSession,
+    isAuthSessionCurrent,
+  } = useAuth()
   const { showSuccess, showError } =
     useFeedback()
   const { updateTripInCache } =
@@ -67,6 +71,13 @@ export function useTripNotesEdit({
       return false
     }
 
+    const authSession =
+      captureAuthSession()
+
+    if (!authSession) {
+      return false
+    }
+
     const normalizedNotes =
       notes.trim() || null
 
@@ -89,6 +100,14 @@ export function useTripNotesEdit({
           idToken,
         )
 
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return false
+      }
+
       const updatedTrip =
         updateResult?.id
           ? updateResult
@@ -107,6 +126,14 @@ export function useTripNotesEdit({
 
       return true
     } catch (error) {
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return false
+      }
+
       console.error(
         'Failed to update trip notes:',
         error,
@@ -122,7 +149,13 @@ export function useTripNotesEdit({
 
       return false
     } finally {
-      setIsSavingNotes(false)
+      if (
+        isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        setIsSavingNotes(false)
+      }
     }
   }
 

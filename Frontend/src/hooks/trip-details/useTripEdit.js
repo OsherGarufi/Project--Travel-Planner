@@ -35,6 +35,8 @@ export function useTripEdit({
   const {
     firebaseUser,
     idToken,
+    captureAuthSession,
+    isAuthSessionCurrent,
   } = useAuth()
 
   const { showSuccess, showError } =
@@ -372,6 +374,13 @@ export function useTripEdit({
       return false
     }
 
+    const authSession =
+      captureAuthSession()
+
+    if (!authSession) {
+      return false
+    }
+
     const validationResult =
       validateTripDetails()
 
@@ -425,6 +434,14 @@ export function useTripEdit({
           idToken,
         )
 
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return false
+      }
+
       const updatedTrip =
         updateResult?.id
           ? updateResult
@@ -459,6 +476,14 @@ export function useTripEdit({
 
       return true
     } catch (error) {
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return false
+      }
+
       console.error(
         'Failed to update trip:',
         error,
@@ -474,7 +499,13 @@ export function useTripEdit({
 
       return false
     } finally {
-      setIsSaving(false)
+      if (
+        isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        setIsSaving(false)
+      }
     }
   }
 

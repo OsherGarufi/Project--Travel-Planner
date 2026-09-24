@@ -6,7 +6,11 @@ import { useFeedback } from '../useFeedback'
 import { useTrips } from '../useTrips'
 
 export function useTripDelete({ trip }) {
-  const { idToken } = useAuth()
+  const {
+    idToken,
+    captureAuthSession,
+    isAuthSessionCurrent,
+  } = useAuth()
   const { showSuccess, showError } =
     useFeedback()
   const { removeTripFromCache } = useTrips()
@@ -51,11 +55,26 @@ export function useTripDelete({ trip }) {
       return
     }
 
+    const authSession =
+      captureAuthSession()
+
+    if (!authSession) {
+      return
+    }
+
     try {
       setIsDeleting(true)
       setDeleteError('')
 
       await deleteTrip(trip.id, idToken)
+
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return
+      }
 
       removeTripFromCache(trip.id)
 
@@ -65,6 +84,14 @@ export function useTripDelete({ trip }) {
         replace: true,
       })
     } catch (error) {
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return
+      }
+
       console.error(
         'Failed to delete trip:',
         error,
@@ -78,7 +105,13 @@ export function useTripDelete({ trip }) {
         'Could not delete the trip. Please try again.',
       )
     } finally {
-      setIsDeleting(false)
+      if (
+        isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        setIsDeleting(false)
+      }
     }
   }
 

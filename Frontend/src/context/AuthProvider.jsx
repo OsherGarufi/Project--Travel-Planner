@@ -200,6 +200,28 @@ export function AuthProvider({
   const activeUserIdRef =
     useRef(null)
 
+  const authSessionGenerationRef =
+    useRef(0)
+
+  const activeAuthSessionRef =
+    useRef(null)
+
+  const captureAuthSession =
+    useCallback(
+      () =>
+        activeAuthSessionRef.current,
+      [],
+    )
+
+  const isAuthSessionCurrent =
+    useCallback(
+      (authSession) =>
+        Boolean(authSession) &&
+        activeAuthSessionRef.current ===
+          authSession,
+      [],
+    )
+
   const applyAuthResult =
     useCallback(
       (loginResult) => {
@@ -219,6 +241,22 @@ export function AuthProvider({
           clearPrivateUserCache(
             previousUserId,
           )
+        }
+
+        if (
+          nextUserId &&
+          activeAuthSessionRef.current
+            ?.userId !== nextUserId
+        ) {
+          authSessionGenerationRef.current +=
+            1
+
+          activeAuthSessionRef.current =
+            Object.freeze({
+              userId: nextUserId,
+              generation:
+                authSessionGenerationRef.current,
+            })
         }
 
         activeUserIdRef.current =
@@ -243,6 +281,14 @@ export function AuthProvider({
     useCallback(() => {
       const currentUserId =
         activeUserIdRef.current
+
+      if (activeAuthSessionRef.current) {
+        authSessionGenerationRef.current +=
+          1
+
+        activeAuthSessionRef.current =
+          null
+      }
 
       if (currentUserId) {
         clearPrivateUserCache(
@@ -507,6 +553,8 @@ export function AuthProvider({
     register,
     logout,
     clearError,
+    captureAuthSession,
+    isAuthSessionCurrent,
   }
 
   return (

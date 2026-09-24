@@ -13,7 +13,11 @@ export function useCreateTrip({
   budgetAmount,
   budgetCurrency,
 }) {
-  const { idToken } = useAuth()
+  const {
+    idToken,
+    captureAuthSession,
+    isAuthSessionCurrent,
+  } = useAuth()
   const { showSuccess, showError } =
     useFeedback()
   const { addTripToCache } = useTrips()
@@ -67,6 +71,13 @@ export function useCreateTrip({
       return
     }
 
+    const authSession =
+      captureAuthSession()
+
+    if (!authSession) {
+      return
+    }
+
     const tripData = {
       title: normalizedTripTitle,
       destinationCountryCode:
@@ -90,6 +101,14 @@ export function useCreateTrip({
         idToken,
       )
 
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return
+      }
+
       if (!createdTrip?.id) {
         throw new Error(
           'The server did not return the created trip.',
@@ -102,6 +121,14 @@ export function useCreateTrip({
 
       navigate(`/trips/${createdTrip.id}`)
     } catch (error) {
+      if (
+        !isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        return
+      }
+
       console.error(
         'Failed to create trip:',
         error,
@@ -115,7 +142,13 @@ export function useCreateTrip({
         'Could not create the trip. Please try again.',
       )
     } finally {
-      setIsCreatingTrip(false)
+      if (
+        isAuthSessionCurrent(
+          authSession,
+        )
+      ) {
+        setIsCreatingTrip(false)
+      }
     }
   }
 
