@@ -1,8 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   clearCachedTripExpenses,
   getCachedTripExpenses,
@@ -10,171 +6,43 @@ import {
   setCachedTripExpenses,
   syncCachedTripExpensesFromStorage,
 } from '../../services/expenseCacheService'
-import {
-  createTripExpense,
-  deleteTripExpense,
-  getTripExpenses,
-  transitionTripExpense,
-  updateTripExpense,
-} from '../../services/expenseService'
-import {
-  clearTripItineraryCache,
-  getTripItineraryCache,
-  setTripItineraryCache,
-} from '../../services/itinerary/itineraryCache'
-import {
-  syncExpensesCacheFromItineraryItem,
-  syncItineraryCacheAfterExpenseDelete,
-  syncItineraryCacheFromExpense,
-} from '../../services/itinerary/itineraryExpenseCacheSync'
-import {
-  createTripItineraryItem,
-  getTripItinerary,
-  updateTripItineraryItem,
-} from '../../services/itinerary/itineraryService'
+import { getTripExpenses } from '../../services/expenseService'
 import {
   getOrCreateTripExpensesRequest,
   releaseTripExpensesRequest,
 } from '../../services/trips/tripsRequestManager'
 import { useAuth } from '../useAuth'
 import { useFeedback } from '../useFeedback'
+import { reconcileExpenseItemsForTripDateRange } from './expenseReconciliation'
+import { useExpenseMutations } from './useExpenseMutations'
 
-const EXPENSE_ENTRY_TYPES = {
-  SCHEDULED: 'scheduled',
-  PLAN_LATER: 'plan-later',
-  ONLY_EXPENSE: 'only-expense',
-}
-
-function hasAuthoritativeApiResponse(
-  error,
-) {
-  return /^API Error: \d+$/.test(
-    error?.message ?? '',
-  )
-}
-
-function reconcileExpenseItemsForTripDateRange(
-  expenses,
-  startDate,
-  endDate,
-) {
-  let hasReconciledExpense =
-    false
-
-  const reconciledExpenses =
-    expenses.map((expense) => {
-      if (
-        !expense.itineraryItemId ||
-        !expense.itineraryDate ||
-        (expense.itineraryDate >=
-          startDate &&
-          expense.itineraryDate <=
-            endDate)
-      ) {
-        return expense
-      }
-
-      hasReconciledExpense = true
-
-      return {
-        ...expense,
-        itineraryDate: null,
-        startTime: null,
-        endTime: null,
-      }
-    })
-
-  return hasReconciledExpense
-    ? reconciledExpenses
-    : expenses
-}
-
-export function useTripExpenses(
-  tripId,
-) {
+export function useTripExpenses(tripId) {
   const {
     firebaseUser,
     idToken,
     captureAuthSession,
     isAuthSessionCurrent,
   } = useAuth()
+  const { showError } = useFeedback()
 
-  const { showError } =
-    useFeedback()
-
-  const userId =
-    firebaseUser?.uid ?? null
-
+  const userId = firebaseUser?.uid ?? null
   const expensesContextKey =
-    userId && tripId
-      ? `${userId}:${tripId}`
-      : null
+    userId && tripId ? `${userId}:${tripId}` : null
 
-  const [
-    expenses,
-    setExpenses,
-  ] = useState([])
+  const [expenses, setExpenses] = useState([])
+  const expensesRef = useRef([])
+  const pendingDateRangeRef = useRef(null)
+  const [loadedContextKey, setLoadedContextKey] =
+    useState(null)
+  const [reloadVersion, setReloadVersion] = useState(0)
+  const [expensesError, setExpensesError] = useState('')
 
-  const expensesRef =
-    useRef([])
+  const applyExpenses = (nextExpenses) => {
+    expensesRef.current = nextExpenses
+    setExpenses(nextExpenses)
 
-  const pendingDateRangeRef =
-    useRef(null)
-
-  const [
-    loadedContextKey,
-    setLoadedContextKey,
-  ] = useState(null)
-
-  const [
-    reloadVersion,
-    setReloadVersion,
-  ] = useState(0)
-
-  const [
-    expensesError,
-    setExpensesError,
-  ] = useState('')
-
-  const [
-    expenseActionError,
-    setExpenseActionError,
-  ] = useState('')
-
-  const [
-    isCreatingExpense,
-    setIsCreatingExpense,
-  ] = useState(false)
-
-  const [
-    updatingExpenseId,
-    setUpdatingExpenseId,
-  ] = useState(null)
-
-  const [
-    deletingExpenseId,
-    setDeletingExpenseId,
-  ] = useState(null)
-
-  const applyExpenses = (
-    nextExpenses,
-  ) => {
-    expensesRef.current =
-      nextExpenses
-
-    setExpenses(
-      nextExpenses,
-    )
-
-    if (
-      userId &&
-      tripId
-    ) {
-      setCachedTripExpenses(
-        userId,
-        tripId,
-        nextExpenses,
-      )
+    if (userId && tripId) {
+      setCachedTripExpenses(userId, tripId, nextExpenses)
     }
   }
 
@@ -182,168 +50,119 @@ export function useTripExpenses(
     let isActive = true
     let expensesRequest = null
 
-    const loadExpenses =
-      async () => {
-        await Promise.resolve()
+    const loadExpenses = async () => {
+      await Promise.resolve()
+
+      if (!isActive) {
+        return
+      }
+
+      if (
+        !tripId ||
+        !userId ||
+        !idToken ||
+        !expensesContextKey
+      ) {
+        pendingDateRangeRef.current = null
+        expensesRef.current = []
+        setExpenses([])
+        setLoadedContextKey(null)
+        setExpensesError('')
+        return
+      }
+
+      const hydrateExpenses = (
+        nextExpenses,
+        persistExpenses = false,
+      ) => {
+        const pendingDateRange = pendingDateRangeRef.current
+        const hydratedExpenses =
+          pendingDateRange?.contextKey === expensesContextKey
+            ? reconcileExpenseItemsForTripDateRange(
+                nextExpenses,
+                pendingDateRange.startDate,
+                pendingDateRange.endDate,
+              )
+            : nextExpenses
+
+        if (
+          pendingDateRange?.contextKey === expensesContextKey
+        ) {
+          pendingDateRangeRef.current = null
+        }
+
+        expensesRef.current = hydratedExpenses
+        setExpenses(hydratedExpenses)
+
+        if (
+          persistExpenses ||
+          hydratedExpenses !== nextExpenses
+        ) {
+          setCachedTripExpenses(
+            userId,
+            tripId,
+            hydratedExpenses,
+          )
+        }
+
+        setExpensesError('')
+        setLoadedContextKey(expensesContextKey)
+      }
+
+      const cachedExpenses = getCachedTripExpenses(
+        userId,
+        tripId,
+      )
+
+      if (Array.isArray(cachedExpenses)) {
+        hydrateExpenses(cachedExpenses)
+        return
+      }
+
+      expensesRef.current = []
+      setExpenses([])
+      setLoadedContextKey(null)
+      setExpensesError('')
+
+      expensesRequest = getOrCreateTripExpensesRequest(
+        userId,
+        tripId,
+        () => getTripExpenses(tripId, idToken),
+      )
+
+      try {
+        const result = await expensesRequest
 
         if (!isActive) {
           return
         }
 
-        if (
-          !tripId ||
-          !userId ||
-          !idToken ||
-          !expensesContextKey
-        ) {
-          pendingDateRangeRef.current =
-            null
-
-          expensesRef.current = []
-
-          setExpenses([])
-          setLoadedContextKey(null)
-          setExpensesError('')
-
+        hydrateExpenses(
+          Array.isArray(result) ? result : [],
+          true,
+        )
+      } catch (error) {
+        if (!isActive) {
           return
         }
 
-        const hydrateExpenses = (
-          nextExpenses,
-          persistExpenses = false,
-        ) => {
-          const pendingDateRange =
-            pendingDateRangeRef.current
-
-          const hydratedExpenses =
-            pendingDateRange
-              ?.contextKey ===
-            expensesContextKey
-              ? reconcileExpenseItemsForTripDateRange(
-                  nextExpenses,
-                  pendingDateRange.startDate,
-                  pendingDateRange.endDate,
-                )
-              : nextExpenses
-
-          if (
-            pendingDateRange
-              ?.contextKey ===
-            expensesContextKey
-          ) {
-            pendingDateRangeRef.current =
-              null
-          }
-
-          expensesRef.current =
-            hydratedExpenses
-
-          setExpenses(
-            hydratedExpenses,
-          )
-
-          if (
-            persistExpenses ||
-            hydratedExpenses !==
-              nextExpenses
-          ) {
-            setCachedTripExpenses(
-              userId,
-              tripId,
-              hydratedExpenses,
-            )
-          }
-
-          setExpensesError('')
-
-          setLoadedContextKey(
-            expensesContextKey,
-          )
-        }
-
-        const cachedExpenses =
-          getCachedTripExpenses(
-            userId,
-            tripId,
-          )
-
-        if (
-          Array.isArray(
-            cachedExpenses,
-          )
-        ) {
-          hydrateExpenses(
-            cachedExpenses,
-          )
-
-          return
-        }
-
+        console.error('Failed to load trip expenses:', error)
         expensesRef.current = []
-
         setExpenses([])
-        setLoadedContextKey(null)
-        setExpensesError('')
-
-        expensesRequest =
-          getOrCreateTripExpensesRequest(
+        setExpensesError(
+          'Could not load trip expenses. Please try again.',
+        )
+        setLoadedContextKey(expensesContextKey)
+      } finally {
+        if (expensesRequest) {
+          releaseTripExpensesRequest(
             userId,
             tripId,
-            () =>
-              getTripExpenses(
-                tripId,
-                idToken,
-              ),
+            expensesRequest,
           )
-
-        try {
-          const result =
-            await expensesRequest
-
-          if (!isActive) {
-            return
-          }
-
-          const loadedExpenses =
-            Array.isArray(result)
-              ? result
-              : []
-
-          hydrateExpenses(
-            loadedExpenses,
-            true,
-          )
-        } catch (error) {
-          if (!isActive) {
-            return
-          }
-
-          console.error(
-            'Failed to load trip expenses:',
-            error,
-          )
-
-          expensesRef.current = []
-
-          setExpenses([])
-
-          setExpensesError(
-            'Could not load trip expenses. Please try again.',
-          )
-
-          setLoadedContextKey(
-            expensesContextKey,
-          )
-        } finally {
-          if (expensesRequest) {
-            releaseTripExpensesRequest(
-              userId,
-              tripId,
-              expensesRequest,
-            )
-          }
         }
       }
+    }
 
     loadExpenses()
 
@@ -363,65 +182,40 @@ export function useTripExpenses(
       !userId ||
       !tripId ||
       !expensesContextKey ||
-      loadedContextKey !==
-        expensesContextKey
+      loadedContextKey !== expensesContextKey
     ) {
       return undefined
     }
 
-    const cacheKey =
-      getTripExpensesCacheKey(
-        userId,
-        tripId,
-      )
-
-    const handleStorageChange = (
-      event,
-    ) => {
+    const cacheKey = getTripExpensesCacheKey(userId, tripId)
+    const handleStorageChange = (event) => {
       if (
-        event.storageArea !==
-          localStorage ||
+        event.storageArea !== localStorage ||
         event.key !== cacheKey ||
         !event.newValue
       ) {
         return
       }
 
-      const nextExpenses =
-        syncCachedTripExpensesFromStorage(
-          userId,
-          tripId,
-          event.newValue,
-        )
+      const nextExpenses = syncCachedTripExpensesFromStorage(
+        userId,
+        tripId,
+        event.newValue,
+      )
 
-      if (
-        !Array.isArray(
-          nextExpenses,
-        )
-      ) {
+      if (!Array.isArray(nextExpenses)) {
         return
       }
 
-      expensesRef.current =
-        nextExpenses
-
-      setExpenses(
-        nextExpenses,
-      )
-
+      expensesRef.current = nextExpenses
+      setExpenses(nextExpenses)
       setExpensesError('')
     }
 
-    window.addEventListener(
-      'storage',
-      handleStorageChange,
-    )
+    window.addEventListener('storage', handleStorageChange)
 
     return () => {
-      window.removeEventListener(
-        'storage',
-        handleStorageChange,
-      )
+      window.removeEventListener('storage', handleStorageChange)
     }
   }, [
     userId,
@@ -430,124 +224,39 @@ export function useTripExpenses(
     loadedContextKey,
   ])
 
-  const hasExpensesContext =
-    Boolean(
-      tripId &&
-      userId &&
-      idToken &&
-      expensesContextKey,
-    )
-
-  const isLoadingExpenses =
-    Boolean(
-      hasExpensesContext &&
-      loadedContextKey !==
-        expensesContextKey,
-    )
-
+  const hasExpensesContext = Boolean(
+    tripId && userId && idToken && expensesContextKey,
+  )
+  const isLoadingExpenses = Boolean(
+    hasExpensesContext &&
+      loadedContextKey !== expensesContextKey,
+  )
   const visibleExpenses =
     hasExpensesContext &&
-    loadedContextKey ===
-      expensesContextKey
+    loadedContextKey === expensesContextKey
       ? expenses
       : []
 
   const reloadExpenses = () => {
-    if (
-      !tripId ||
-      !userId ||
-      !idToken
-    ) {
+    if (!tripId || !userId || !idToken) {
       return
     }
 
-    clearCachedTripExpenses(
-      userId,
-      tripId,
-    )
-
+    clearCachedTripExpenses(userId, tripId)
     expensesRef.current = []
-
     setExpenses([])
     setExpensesError('')
     setLoadedContextKey(null)
-
     setReloadVersion(
-      (currentVersion) =>
-        currentVersion + 1,
+      (currentVersion) => currentVersion + 1,
     )
   }
-
-  const reconcileAfterAmbiguousTransition =
-    async (authSession) => {
-      const [
-        expensesResult,
-        itineraryResult,
-      ] = await Promise.allSettled([
-        getTripExpenses(
-          tripId,
-          idToken,
-        ),
-        getTripItinerary(
-          tripId,
-          idToken,
-        ),
-      ])
-
-      if (
-        !isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        return
-      }
-
-      if (
-        expensesResult.status ===
-          'fulfilled' &&
-        Array.isArray(
-          expensesResult.value,
-        )
-      ) {
-        applyExpenses(
-          expensesResult.value,
-        )
-      } else {
-        clearCachedTripExpenses(
-          userId,
-          tripId,
-        )
-      }
-
-      if (
-        itineraryResult.status ===
-          'fulfilled' &&
-        Array.isArray(
-          itineraryResult.value,
-        )
-      ) {
-        setTripItineraryCache(
-          userId,
-          tripId,
-          itineraryResult.value,
-        )
-      } else {
-        clearTripItineraryCache(
-          userId,
-          tripId,
-        )
-      }
-    }
 
   const reconcileExpensesForTripDateRange = (
     startDate,
     endDate,
   ) => {
-    if (
-      !startDate ||
-      !endDate ||
-      !expensesContextKey
-    ) {
+    if (!startDate || !endDate || !expensesContextKey) {
       return
     }
 
@@ -557,932 +266,58 @@ export function useTripExpenses(
       endDate,
     }
 
-    if (
-      loadedContextKey !==
-      expensesContextKey
-    ) {
+    if (loadedContextKey !== expensesContextKey) {
       return
     }
 
-    const nextExpenses =
-      reconcileExpenseItemsForTripDateRange(
-        expensesRef.current,
-        startDate,
-        endDate,
-      )
+    const nextExpenses = reconcileExpenseItemsForTripDateRange(
+      expensesRef.current,
+      startDate,
+      endDate,
+    )
 
     pendingDateRangeRef.current = null
 
-    if (
-      nextExpenses !==
-      expensesRef.current
-    ) {
+    if (nextExpenses !== expensesRef.current) {
       applyExpenses(nextExpenses)
     }
   }
 
-  const addExpense = async (
-    expenseData,
-  ) => {
-    if (
-      !tripId ||
-      !userId ||
-      !idToken ||
-      loadedContextKey !==
-        expensesContextKey ||
-      isCreatingExpense
-    ) {
-      return null
-    }
-
-    const authSession =
-      captureAuthSession()
-
-    if (!authSession) {
-      return null
-    }
-
-    try {
-      setIsCreatingExpense(true)
-      setExpenseActionError('')
-
-      const createdExpense =
-        await createTripExpense(
-          tripId,
-          expenseData,
-          idToken,
-        )
-
-      if (
-        !isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        return null
-      }
-
-      if (!createdExpense?.id) {
-        throw new Error(
-          'Invalid expense response.',
-        )
-      }
-
-      const nextExpenses = [
-        createdExpense,
-        ...expensesRef.current,
-      ]
-
-      applyExpenses(
-        nextExpenses,
-      )
-
-      syncItineraryCacheFromExpense(
-        userId,
-        tripId,
-        createdExpense,
-      )
-
-      return createdExpense
-    } catch (error) {
-      if (
-        !isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        return null
-      }
-
-      console.error(
-        'Failed to create trip expense:',
-        error,
-      )
-
-      setExpenseActionError(
-        'Could not add the expense. Please try again.',
-      )
-
-      showError(
-        'Could not add the expense. Please try again.',
-      )
-
-      return null
-    } finally {
-      if (
-        isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        setIsCreatingExpense(false)
-      }
-    }
-  }
-
-  const addExpenseActivity =
-    async (itemData) => {
-      if (
-        !tripId ||
-        !userId ||
-        !idToken ||
-        loadedContextKey !==
-          expensesContextKey ||
-        isCreatingExpense
-      ) {
-        return null
-      }
-
-      const authSession =
-        captureAuthSession()
-
-      if (!authSession) {
-        return null
-      }
-
-      try {
-        setIsCreatingExpense(true)
-        setExpenseActionError('')
-
-        const createdItem =
-          await createTripItineraryItem(
-            tripId,
-            itemData,
-            idToken,
-          )
-
-        if (
-          !isAuthSessionCurrent(
-            authSession,
-          )
-        ) {
-          return null
-        }
-
-        if (
-          !createdItem?.id ||
-          !createdItem?.expenseId
-        ) {
-          throw new Error(
-            'Invalid linked activity response.',
-          )
-        }
-
-        const cachedItineraryItems =
-          getTripItineraryCache(
-            userId,
-            tripId,
-          )
-
-        if (
-          Array.isArray(
-            cachedItineraryItems,
-          )
-        ) {
-          const hasCreatedItem =
-            cachedItineraryItems.some(
-              (item) =>
-                item.id ===
-                createdItem.id,
-            )
-
-          const nextItineraryItems =
-            hasCreatedItem
-              ? cachedItineraryItems.map(
-                  (item) =>
-                    item.id ===
-                    createdItem.id
-                      ? createdItem
-                      : item,
-                )
-              : [
-                  ...cachedItineraryItems,
-                  createdItem,
-                ]
-
-          setTripItineraryCache(
-            userId,
-            tripId,
-            nextItineraryItems,
-          )
-        }
-
-        syncExpensesCacheFromItineraryItem(
-          userId,
-          tripId,
-          createdItem,
-        )
-
-        const nextExpenses =
-          getCachedTripExpenses(
-            userId,
-            tripId,
-          )
-
-        if (
-          !Array.isArray(
-            nextExpenses,
-          )
-        ) {
-          throw new Error(
-            'Could not synchronize the expense cache.',
-          )
-        }
-
-        expensesRef.current =
-          nextExpenses
-
-        setExpenses(
-          nextExpenses,
-        )
-
-        return createdItem
-      } catch (error) {
-        if (
-          !isAuthSessionCurrent(
-            authSession,
-          )
-        ) {
-          return null
-        }
-
-        console.error(
-          'Failed to create linked trip activity:',
-          error,
-        )
-
-        setExpenseActionError(
-          'Could not add the trip item. Please try again.',
-        )
-
-        showError(
-          'Could not add the trip item. Please try again.',
-        )
-
-        return null
-      } finally {
-        if (
-          isAuthSessionCurrent(
-            authSession,
-          )
-        ) {
-          setIsCreatingExpense(false)
-        }
-      }
-    }
-
-  const editExpenseEntry = async (
-    expenseId,
-    entryData,
-  ) => {
-    if (
-      !tripId ||
-      !userId ||
-      !expenseId ||
-      !idToken ||
-      !entryData ||
-      loadedContextKey !==
-        expensesContextKey ||
-      updatingExpenseId
-    ) {
-      return null
-    }
-
-    const currentExpense =
-      expensesRef.current.find(
-        (expense) =>
-          expense.id ===
-          expenseId,
-      ) ?? null
-
-    if (!currentExpense) {
-      return null
-    }
-
-    const currentIsLinked =
-      Boolean(
-        currentExpense
-          .itineraryItemId,
-      )
-
-    const targetIsOnlyExpense =
-      entryData.entryType ===
-      EXPENSE_ENTRY_TYPES
-        .ONLY_EXPENSE
-
-    const targetIsLinked =
-      entryData.entryType ===
-        EXPENSE_ENTRY_TYPES
-          .SCHEDULED ||
-      entryData.entryType ===
-        EXPENSE_ENTRY_TYPES
-          .PLAN_LATER
-
-    if (
-      !targetIsOnlyExpense &&
-      !targetIsLinked
-    ) {
-      return null
-    }
-
-    const authSession =
-      captureAuthSession()
-
-    if (!authSession) {
-      return null
-    }
-
-    const expenseData = {
-      category:
-        entryData.category,
-
-      title:
-        entryData.title,
-
-      amount:
-        entryData.amount,
-
-      currency:
-        entryData.currency,
-
-      referenceUrl:
-        entryData.referenceUrl,
-
-      notes:
-        entryData.description,
-    }
-
-    const itineraryData = {
-      title:
-        entryData.title,
-
-      category:
-        entryData.category,
-
-      itineraryDate:
-        entryData.itineraryDate,
-
-      startTime:
-        entryData.startTime,
-
-      endTime:
-        entryData.endTime,
-
-      description:
-        entryData.description,
-
-      referenceUrl:
-        entryData.referenceUrl,
-
-      cost:
-        entryData.amount,
-
-      currency:
-        entryData.currency,
-    }
-
-    const updateCachedItineraryItem = (
-      updatedItem,
-    ) => {
-      const cachedItems =
-        getTripItineraryCache(
-          userId,
-          tripId,
-        )
-
-      if (
-        !Array.isArray(
-          cachedItems,
-        )
-      ) {
-        return
-      }
-
-      const itemExists =
-        cachedItems.some(
-          (item) =>
-            item.id ===
-            updatedItem.id,
-        )
-
-      const nextItems =
-        itemExists
-          ? cachedItems.map(
-              (item) =>
-                item.id ===
-                updatedItem.id
-                  ? updatedItem
-                  : item,
-            )
-          : [
-              ...cachedItems,
-              updatedItem,
-            ]
-
-      setTripItineraryCache(
-        userId,
-        tripId,
-        nextItems,
-      )
-    }
-
-    const removeCachedItineraryItem = (
-      itemId,
-    ) => {
-      const cachedItems =
-        getTripItineraryCache(
-          userId,
-          tripId,
-        )
-
-      if (
-        !Array.isArray(
-          cachedItems,
-        )
-      ) {
-        return
-      }
-
-      setTripItineraryCache(
-        userId,
-        tripId,
-        cachedItems.filter(
-          (item) =>
-            item.id !== itemId,
-        ),
-      )
-    }
-
-    let transitionWasAttempted = false
-
-    try {
-      setUpdatingExpenseId(
-        expenseId,
-      )
-
-      setExpenseActionError('')
-
-      /*
-       * Expense only -> Expense only
-       *
-       * No relationship change is needed, so the normal
-       * Expense PUT is the correct and smallest mutation.
-       */
-      if (
-        !currentIsLinked &&
-        targetIsOnlyExpense
-      ) {
-        const updatedExpense =
-          await updateTripExpense(
-            tripId,
-            expenseId,
-            expenseData,
-            idToken,
-          )
-
-        if (
-          !isAuthSessionCurrent(
-            authSession,
-          )
-        ) {
-          return null
-        }
-
-        if (!updatedExpense?.id) {
-          throw new Error(
-            'Invalid expense response.',
-          )
-        }
-
-        const nextExpenses =
-          expensesRef.current.map(
-            (expense) =>
-              expense.id ===
-              expenseId
-                ? updatedExpense
-                : expense,
-          )
-
-        applyExpenses(
-          nextExpenses,
-        )
-
-        return updatedExpense
-      }
-
-      /*
-       * Linked Expense -> Scheduled / Plan later
-       *
-       * The itinerary PUT already updates the Activity and its
-       * linked Expense together in one backend transaction.
-       * This also applies the requested scheduling state.
-       */
-      if (
-        currentIsLinked &&
-        targetIsLinked
-      ) {
-        const cachedItems =
-          getTripItineraryCache(
-            userId,
-            tripId,
-          )
-
-        const previousItem =
-          Array.isArray(
-            cachedItems,
-          )
-            ? cachedItems.find(
-                (item) =>
-                  item.id ===
-                  currentExpense
-                    .itineraryItemId,
-              ) ?? null
-            : null
-
-        const updatedItem =
-          await updateTripItineraryItem(
-            tripId,
-            currentExpense
-              .itineraryItemId,
-            itineraryData,
-            idToken,
-          )
-
-        if (
-          !isAuthSessionCurrent(
-            authSession,
-          )
-        ) {
-          return null
-        }
-
-        if (
-          !updatedItem?.id ||
-          !updatedItem?.expenseId
-        ) {
-          throw new Error(
-            'Invalid linked activity response.',
-          )
-        }
-
-        updateCachedItineraryItem(
-          updatedItem,
-        )
-
-        syncExpensesCacheFromItineraryItem(
-          userId,
-          tripId,
-          updatedItem,
-          previousItem,
-        )
-
-        const syncedExpenses =
-          getCachedTripExpenses(
-            userId,
-            tripId,
-          )
-
-        if (
-          !Array.isArray(
-            syncedExpenses,
-          )
-        ) {
-          throw new Error(
-            'Could not synchronize the expense cache.',
-          )
-        }
-
-        expensesRef.current =
-          syncedExpenses
-
-        setExpenses(
-          syncedExpenses,
-        )
-
-        return (
-          syncedExpenses.find(
-            (expense) =>
-              expense.id ===
-              updatedItem.expenseId,
-          ) ?? null
-        )
-      }
-
-      /*
-       * Linked Expense -> Only expense
-       *
-       * The dedicated transition endpoint creates the
-       * replacement Expense and removes the linked pair inside
-       * one backend transaction.
-       */
-      if (
-        currentIsLinked &&
-        targetIsOnlyExpense
-      ) {
-        transitionWasAttempted = true
-
-        const transitionResult =
-          await transitionTripExpense(
-            tripId,
-            expenseId,
-            expenseData,
-            idToken,
-          )
-
-        if (
-          !isAuthSessionCurrent(
-            authSession,
-          )
-        ) {
-          return null
-        }
-
-        if (
-          !transitionResult?.expense?.id ||
-          transitionResult.replacedExpenseId !==
-            expenseId ||
-          transitionResult.itineraryItem ||
-          transitionResult.removedItineraryItemId !==
-            currentExpense.itineraryItemId
-        ) {
-          throw new Error(
-            'Invalid expense transition response.',
-          )
-        }
-
-        removeCachedItineraryItem(
-          transitionResult
-            .removedItineraryItemId,
-        )
-
-        const nextExpenses =
-          expensesRef.current.map(
-            (expense) =>
-              expense.id ===
-              transitionResult
-                .replacedExpenseId
-                ? transitionResult.expense
-                : expense,
-          )
-
-        applyExpenses(
-          nextExpenses,
-        )
-
-        return transitionResult.expense
-      }
-
-      /*
-       * Only expense -> Scheduled / Plan later
-       *
-       * The dedicated transition endpoint creates the linked
-       * replacement and removes the standalone Expense inside
-       * one backend transaction.
-       */
-      transitionWasAttempted = true
-
-      const transitionResult =
-        await transitionTripExpense(
-          tripId,
-          expenseId,
-          {
-            ...expenseData,
-            itinerary: {
-              itineraryDate:
-                itineraryData.itineraryDate,
-              startTime:
-                itineraryData.startTime,
-              endTime:
-                itineraryData.endTime,
-            },
-          },
-          idToken,
-        )
-
-      if (
-        !isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        return null
-      }
-
-      if (
-        !transitionResult?.expense?.id ||
-        !transitionResult?.itineraryItem?.id ||
-        transitionResult.itineraryItem.expenseId !==
-          transitionResult.expense.id ||
-        transitionResult.replacedExpenseId !==
-          expenseId ||
-        transitionResult.removedItineraryItemId
-      ) {
-        throw new Error(
-          'Invalid expense transition response.',
-        )
-      }
-
-      updateCachedItineraryItem(
-        transitionResult.itineraryItem,
-      )
-
-      const nextExpenses =
-        expensesRef.current.map(
-          (expense) =>
-            expense.id !==
-            transitionResult
-              .replacedExpenseId
-              ? expense
-              : transitionResult.expense,
-        )
-
-      applyExpenses(
-        nextExpenses,
-      )
-
-      return transitionResult.expense
-    } catch (error) {
-      if (
-        !isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        return null
-      }
-
-      if (
-        transitionWasAttempted &&
-        !hasAuthoritativeApiResponse(
-          error,
-        )
-      ) {
-        await reconcileAfterAmbiguousTransition(
-          authSession,
-        )
-
-        if (
-          !isAuthSessionCurrent(
-            authSession,
-          )
-        ) {
-          return null
-        }
-      }
-
-      console.error(
-        'Failed to update trip expense entry:',
-        error,
-      )
-
-      setExpenseActionError(
-        'Could not update the expense. Please try again.',
-      )
-
-      showError(
-        'Could not update the expense. Please try again.',
-      )
-
-      return null
-    } finally {
-      if (
-        isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        setUpdatingExpenseId(null)
-      }
-    }
-  }
-
-  const removeExpense = async (
-    expenseId,
-    deleteLinkedActivity = null,
-  ) => {
-    if (
-      !tripId ||
-      !userId ||
-      !expenseId ||
-      !idToken ||
-      loadedContextKey !==
-        expensesContextKey ||
-      deletingExpenseId
-    ) {
-      return false
-    }
-
-    const authSession =
-      captureAuthSession()
-
-    if (!authSession) {
-      return false
-    }
-
-    const expenseToDelete =
-      expensesRef.current.find(
-        (expense) =>
-          expense.id ===
-          expenseId,
-      )
-
-    try {
-      setDeletingExpenseId(
-        expenseId,
-      )
-
-      setExpenseActionError('')
-
-      await deleteTripExpense(
-        tripId,
-        expenseId,
-        idToken,
-        deleteLinkedActivity,
-      )
-
-      if (
-        !isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        return false
-      }
-
-      const nextExpenses =
-        expensesRef.current.filter(
-          (expense) =>
-            expense.id !==
-            expenseId,
-        )
-
-      applyExpenses(
-        nextExpenses,
-      )
-
-      if (expenseToDelete) {
-        syncItineraryCacheAfterExpenseDelete(
-          userId,
-          tripId,
-          expenseToDelete,
-          deleteLinkedActivity,
-        )
-      }
-
-      return true
-    } catch (error) {
-      if (
-        !isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        return false
-      }
-
-      console.error(
-        'Failed to delete trip expense:',
-        error,
-      )
-
-      setExpenseActionError(
-        'Could not delete the expense. Please try again.',
-      )
-
-      showError(
-        'Could not delete the expense. Please try again.',
-      )
-
-      return false
-    } finally {
-      if (
-        isAuthSessionCurrent(
-          authSession,
-        )
-      ) {
-        setDeletingExpenseId(null)
-      }
-    }
-  }
-
-  const clearExpenseActionError =
-    () => {
-      setExpenseActionError('')
-    }
+  const mutationController = useExpenseMutations({
+    tripId,
+    userId,
+    idToken,
+    expensesContextKey,
+    loadedContextKey,
+    expensesRef,
+    setExpenses,
+    applyExpenses,
+    captureAuthSession,
+    isAuthSessionCurrent,
+    showError,
+  })
 
   return {
-    expenses:
-      visibleExpenses,
+    expenses: visibleExpenses,
 
     isLoadingExpenses,
     expensesError,
-    expenseActionError,
+    expenseActionError: mutationController.expenseActionError,
 
-    isCreatingExpense,
-    updatingExpenseId,
-    deletingExpenseId,
+    isCreatingExpense: mutationController.isCreatingExpense,
+    updatingExpenseId: mutationController.updatingExpenseId,
+    deletingExpenseId: mutationController.deletingExpenseId,
 
     reloadExpenses,
     reconcileExpensesForTripDateRange,
 
-    addExpense,
-    addExpenseActivity,
+    addExpense: mutationController.addExpense,
+    addExpenseActivity: mutationController.addExpenseActivity,
 
-    editExpenseEntry,
-    removeExpense,
+    editExpenseEntry: mutationController.editExpenseEntry,
+    removeExpense: mutationController.removeExpense,
 
-    clearExpenseActionError,
+    clearExpenseActionError:
+      mutationController.clearExpenseActionError,
   }
 }
