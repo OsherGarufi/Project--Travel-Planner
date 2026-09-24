@@ -44,13 +44,23 @@ function getActionPosition(
       )
       ?.getBoundingClientRect()
 
-  const boundaryCenter =
-    boundaryRect
-      ? (
-          boundaryRect.left +
-          boundaryRect.right
-        ) / 2
-      : window.innerWidth / 2
+  const rootFontSize =
+    Number.parseFloat(
+      getComputedStyle(
+        document.documentElement,
+      ).fontSize,
+    ) || 16
+
+  const popupWidth =
+    14 * rootFontSize
+
+  const boundaryRight =
+    boundaryRect?.right ??
+    window.innerWidth
+
+  const spaceOnRight =
+    boundaryRight -
+    event.clientX
 
   return {
     x:
@@ -62,8 +72,8 @@ function getActionPosition(
       cardRect.top + 6,
 
     alignEnd:
-      event.clientX >
-      boundaryCenter,
+      spaceOnRight <
+      popupWidth,
   }
 }
 
