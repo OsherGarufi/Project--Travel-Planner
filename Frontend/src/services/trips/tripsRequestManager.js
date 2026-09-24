@@ -21,6 +21,7 @@ function getTripExpensesRequestKey(
 export function getOrCreateTripsRequest(
   userId,
   requestFactory,
+  mutationRevision,
 ) {
   const activeRequest =
     activeTripsRequests.get(userId)
@@ -29,8 +30,10 @@ export function getOrCreateTripsRequest(
     return activeRequest
   }
 
-  const newRequest =
-    requestFactory()
+  const newRequest = {
+    request: requestFactory(),
+    mutationRevision,
+  }
 
   activeTripsRequests.set(
     userId,

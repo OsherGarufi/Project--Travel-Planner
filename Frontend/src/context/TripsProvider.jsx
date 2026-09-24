@@ -53,6 +53,8 @@ function TripsProviderForUser({
 
   const isMountedRef = useRef(true)
 
+  const tripMutationRevisionRef = useRef(0)
+
   useEffect(() => {
     isMountedRef.current = true
 
@@ -161,25 +163,59 @@ function TripsProviderForUser({
         tripsError: '',
       }))
 
-      const tripsRequest =
-        getOrCreateTripsRequest(
-          userId,
-          () => getTrips(idToken),
-        )
-
       try {
-        const tripsResult = await tripsRequest
+        while (isMountedRef.current) {
+          const tripsRequest =
+            getOrCreateTripsRequest(
+              userId,
+              () => getTrips(idToken),
+              tripMutationRevisionRef.current,
+            )
 
-        const normalizedTrips =
-          Array.isArray(tripsResult)
-            ? tripsResult
-            : []
+          let tripsResult
 
-        if (isMountedRef.current) {
+          try {
+            tripsResult =
+              await tripsRequest.request
+          } catch (error) {
+            if (
+              isMountedRef.current &&
+              tripsRequest.mutationRevision !==
+                tripMutationRevisionRef.current
+            ) {
+              continue
+            }
+
+            throw error
+          } finally {
+            releaseTripsRequest(
+              userId,
+              tripsRequest,
+            )
+          }
+
+          const normalizedTrips =
+            Array.isArray(tripsResult)
+              ? tripsResult
+              : []
+
+          if (!isMountedRef.current) {
+            return normalizedTrips
+          }
+
+          if (
+            tripsRequest.mutationRevision !==
+            tripMutationRevisionRef.current
+          ) {
+            continue
+          }
+
           applyTrips(normalizedTrips, true)
+
+          return normalizedTrips
         }
 
-        return normalizedTrips
+        return []
       } catch (error) {
         if (isMountedRef.current) {
           setTripsState((currentState) => ({
@@ -191,11 +227,6 @@ function TripsProviderForUser({
 
         throw error
       } finally {
-        releaseTripsRequest(
-          userId,
-          tripsRequest,
-        )
-
         if (isMountedRef.current) {
           setTripsState((currentState) => ({
             ...currentState,
@@ -221,6 +252,8 @@ function TripsProviderForUser({
         return
       }
 
+      tripMutationRevisionRef.current += 1
+
       const nextTrips = [
         trip,
         ...tripsRef.current.filter(
@@ -238,9 +271,16 @@ function TripsProviderForUser({
   )
 
   const updateTripInCache = useCallback(
-    (updatedTrip) => {
+    (
+      updatedTrip,
+      { trackMutation = true } = {},
+    ) => {
       if (!updatedTrip?.id) {
         return
+      }
+
+      if (trackMutation) {
+        tripMutationRevisionRef.current += 1
       }
 
       const tripExists =
@@ -266,6 +306,8 @@ function TripsProviderForUser({
 
   const removeTripFromCache = useCallback(
     (tripId) => {
+      tripMutationRevisionRef.current += 1
+
       const nextTrips =
         tripsRef.current.filter(
           (trip) => trip.id !== tripId,
@@ -317,7 +359,9 @@ function TripsProviderForUser({
           isMountedRef.current &&
           tripResult?.id
         ) {
-          updateTripInCache(tripResult)
+          updateTripInCache(tripResult, {
+            trackMutation: false,
+          })
         }
 
         return tripResult ?? null
