@@ -1,8 +1,12 @@
 using Backend.DAL;
 using Backend.Middleware;
 using Backend.Services;
+using Backend.Services.Ai;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using Google.GenAI;
+using Google.GenAI.Types;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 
 var builder =
@@ -111,6 +115,62 @@ builder.Services.AddScoped<ItineraryExpenseService>();
 builder.Services.AddScoped<TripService>();
 builder.Services.AddScoped<FirebaseAuthService>();
 builder.Services.AddScoped<CurrentUserService>();
+
+builder.Services
+    .AddOptions<GeminiOptions>()
+    .Bind(
+        builder.Configuration.GetSection(
+            GeminiOptions.SectionName
+        )
+    )
+    .ValidateDataAnnotations()
+    .Validate(
+        options =>
+            !string.IsNullOrWhiteSpace(options.ApiKey),
+        "Gemini API key is missing."
+    )
+    .Validate(
+        options =>
+            !string.IsNullOrWhiteSpace(options.Model),
+        "Gemini model is missing."
+    )
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<Client>(
+    serviceProvider =>
+    {
+        var options = serviceProvider
+            .GetRequiredService<IOptions<GeminiOptions>>()
+            .Value;
+
+        return new Client(
+            apiKey: options.ApiKey,
+            httpOptions: new HttpOptions
+            {
+                Timeout = options.TimeoutSeconds * 1000,
+                RetryOptions = new HttpRetryOptions
+                {
+                    Attempts = options.MaxAttempts,
+                    InitialDelay = 1,
+                    MaxDelay = 5,
+                    ExpBase = 2,
+                    Jitter = 1,
+                    HttpStatusCodes =
+                    [
+                        StatusCodes.Status408RequestTimeout,
+                        StatusCodes.Status429TooManyRequests,
+                        StatusCodes.Status500InternalServerError,
+                        StatusCodes.Status502BadGateway,
+                        StatusCodes.Status503ServiceUnavailable,
+                        StatusCodes.Status504GatewayTimeout
+                    ]
+                }
+            }
+        );
+    }
+);
+
+builder.Services.AddScoped<IAiService, GeminiAiService>();
 
 builder.Services.AddMemoryCache();
 
