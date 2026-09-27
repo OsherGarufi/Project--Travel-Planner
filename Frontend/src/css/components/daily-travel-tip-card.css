@@ -95,6 +95,14 @@
   line-height: var(--tp-line-height-relaxed);
 }
 
+.daily-travel-tip-card__disclosure {
+  max-width: 54rem;
+  margin-top: var(--tp-space-3);
+  color: var(--tp-color-text-muted);
+  font-size: var(--tp-font-size-xs);
+  line-height: var(--tp-line-height-relaxed);
+}
+
 .daily-travel-tip-card__skeleton {
   display: flex;
   flex-direction: column;

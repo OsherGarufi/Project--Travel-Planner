@@ -87,6 +87,12 @@ function DailyTravelTipCard({
         <p className="daily-travel-tip-card__tip">
           {tip.tip}
         </p>
+
+        <p className="daily-travel-tip-card__disclosure">
+          AI-generated travel tip. Verify important
+          details with official sources before relying
+          on them.
+        </p>
       </div>
     </section>
   )
