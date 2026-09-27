@@ -43,7 +43,6 @@ function AttractionsContent({ trip, userId, onAddToItinerary }) {
     <section className="trip-attractions" aria-label="Explore attractions">
       <header className="trip-attractions__header">
         <div>
-          <p className="trip-attractions__eyebrow">MAKE ROOM FOR DISCOVERY</p>
           <h2>Explore attractions</h2>
           <p>Find your next stop around {trip.destinationCity}, {trip.destinationCountryName}.</p>
         </div>

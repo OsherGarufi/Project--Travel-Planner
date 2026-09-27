@@ -677,10 +677,6 @@ function TripExpensesSection({
         <div className="trip-expenses__top">
           <div className="trip-expenses__header">
             <div className="trip-expenses__header-copy">
-              <p className="trip-expenses__eyebrow">
-                EXPENSES
-              </p>
-
               <h2 className="trip-expenses__title">
                 Trip expenses
               </h2>

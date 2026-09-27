@@ -350,10 +350,6 @@ function TripSummary({
               <p className="trip-summary__eyebrow">
                 TRIP DETAILS
               </p>
-
-              <p className="trip-summary__country">
-                {trip.destinationCountryName}
-              </p>
             </div>
           </div>
 
@@ -391,10 +387,6 @@ function TripSummary({
           >
             {trip.title}
           </h1>
-
-          <p className="trip-summary__destination">
-            {destination}
-          </p>
         </div>
 
         <div className="trip-summary__details">

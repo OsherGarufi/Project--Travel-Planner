@@ -17,6 +17,124 @@
   display: none;
 }
 
+/*
+ * Keep the top-level My Trip sections on the same visual grid as the
+ * Trip Details overview without changing their existing internal layouts.
+ */
+.trip-details-page
+  :is(
+    .trip-summary__notes,
+    .trip-attractions,
+    .trip-expenses,
+    .delete-trip-section
+  ) {
+  width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
+}
+
+.trip-details-page
+  :is(
+    .trip-summary__notes,
+    .trip-attractions,
+    .trip-expenses
+  ) {
+  position: relative;
+  overflow: hidden;
+  border-color:
+    rgba(191, 215, 237, 0.62);
+  border-radius: var(--tp-radius-xl);
+  background-color:
+    var(--tp-color-surface);
+  background-image:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(109, 230, 220, 0.12),
+      transparent 24rem
+    ),
+    radial-gradient(
+      circle at 0% 100%,
+      rgba(149, 188, 223, 0.12),
+      transparent 26rem
+    ),
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.98),
+      rgba(249, 250, 251, 0.96)
+    );
+  box-shadow:
+    var(--tp-shadow-sm),
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.9);
+}
+
+.trip-details-page
+  :is(
+    .trip-summary__notes,
+    .trip-attractions,
+    .trip-expenses
+  )::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  border-radius:
+    var(--tp-radius-xl)
+    var(--tp-radius-xl)
+    0
+    0;
+  background:
+    linear-gradient(
+      90deg,
+      var(--tp-color-primary-400),
+      var(--tp-color-accent-400)
+    );
+  pointer-events: none;
+}
+
+.trip-details-page
+  .delete-trip-section {
+  border-radius: var(--tp-radius-xl);
+  box-shadow:
+    var(--tp-shadow-sm),
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.72);
+}
+
+.trip-details-page
+  :is(
+    .trip-summary__notes-title,
+    .trip-attractions__header h2,
+    .trip-expenses__title
+  ) {
+  margin: 0;
+  color: var(--tp-color-text-primary);
+  font-size: var(--tp-font-size-xl);
+  font-weight:
+    var(--tp-font-weight-semibold);
+  line-height:
+    var(--tp-line-height-heading);
+  letter-spacing: -0.02em;
+}
+
+.trip-details-page
+  :is(
+    .trip-summary__notes-message,
+    .trip-summary__notes-updated,
+    .trip-attractions__header h2 + p,
+    .trip-expenses__description
+  ) {
+  margin-top: var(--tp-space-2);
+  color: var(--tp-color-text-secondary);
+  font-size: var(--tp-font-size-sm);
+  font-weight:
+    var(--tp-font-weight-regular);
+  line-height:
+    var(--tp-line-height-body);
+}
+
 .trip-details-page__topbar {
   display: flex;
   align-items: center;
@@ -256,6 +374,29 @@
 @media (max-width: 40rem) {
   .trip-details-page {
     gap: var(--tp-space-6);
+  }
+
+  .trip-details-page
+    :is(
+      .trip-summary__notes,
+      .trip-attractions,
+      .trip-expenses,
+      .delete-trip-section
+    ) {
+    border-radius: var(--tp-radius-lg);
+  }
+
+  .trip-details-page
+    :is(
+      .trip-summary__notes,
+      .trip-attractions,
+      .trip-expenses
+    )::before {
+    border-radius:
+      var(--tp-radius-lg)
+      var(--tp-radius-lg)
+      0
+      0;
   }
 
   .trip-details-page__topbar {
