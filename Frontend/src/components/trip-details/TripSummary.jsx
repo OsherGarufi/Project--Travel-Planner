@@ -498,54 +498,42 @@ function TripSummary({
         className="trip-summary__notes"
         aria-labelledby="trip-notes-title"
       >
-        <div className="trip-summary__notes-top">
-          <div className="trip-summary__notes-header">
-            <span
-              className="trip-summary__notes-icon"
-              aria-hidden="true"
-            >
-              <NotesIcon />
-            </span>
+        <span
+          className="trip-summary__notes-icon"
+          aria-hidden="true"
+        >
+          <NotesIcon />
+        </span>
 
-            <div>
-              <p className="trip-summary__notes-eyebrow">
-                PERSONAL NOTES
-              </p>
+        <div className="trip-summary__notes-content">
+          <h2
+            id="trip-notes-title"
+            className="trip-summary__notes-title"
+          >
+            Trip Notes
+          </h2>
 
-              <h2
-                id="trip-notes-title"
-                className="trip-summary__notes-title"
-              >
-                Trip notes
-              </h2>
-            </div>
-          </div>
-
-        </div>
-
-        <div className="trip-summary__notes-summary">
-          <div>
+          {notesUpdatedAt ? (
+            <p className="trip-summary__notes-updated">
+              Last updated: {notesUpdatedAt}
+            </p>
+          ) : (
             <p className="trip-summary__notes-message">
               {hasNotes
                 ? 'You have notes saved for this trip.'
                 : 'No notes have been added to this trip yet.'}
             </p>
-            {hasNotes && notesUpdatedAt && (
-              <p className="trip-summary__notes-updated">
-                Last updated: {notesUpdatedAt}
-              </p>
-            )}
-          </div>
-
-          <button
-            className="trip-summary__notes-edit"
-            type="button"
-            onClick={hasNotes ? onViewNotes : onAddNotes}
-            disabled={isNotesEditDisabled}
-          >
-            {hasNotes ? 'View notes' : 'Add notes'}
-          </button>
+          )}
         </div>
+
+        <button
+          className="trip-summary__notes-edit"
+          type="button"
+          onClick={hasNotes ? onViewNotes : onAddNotes}
+          disabled={isNotesEditDisabled}
+        >
+          {hasNotes ? 'VIEW' : 'CREATE'}
+        </button>
       </section>
     </div>
   )
