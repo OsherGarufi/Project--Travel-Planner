@@ -111,8 +111,10 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<DbService>();
 builder.Services.AddScoped<ExpenseDbService>();
 builder.Services.AddScoped<ItineraryDbService>();
+builder.Services.AddScoped<DailyTravelTipDbService>();
 builder.Services.AddScoped<ItineraryExpenseService>();
 builder.Services.AddScoped<TripService>();
+builder.Services.AddScoped<DailyTravelTipService>();
 builder.Services.AddScoped<FirebaseAuthService>();
 builder.Services.AddScoped<CurrentUserService>();
 

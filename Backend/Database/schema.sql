@@ -182,6 +182,26 @@ CREATE TABLE IF NOT EXISTS trip_itinerary_items (
 );
 
 -- =========================
+-- Daily travel tips table
+-- =========================
+CREATE TABLE IF NOT EXISTS daily_travel_tips (
+    tip_date DATE PRIMARY KEY,
+    title TEXT NOT NULL,
+    tip TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT daily_travel_tips_title_check
+        CHECK (
+            char_length(trim(title)) BETWEEN 1 AND 80
+        ),
+
+    CONSTRAINT daily_travel_tips_tip_check
+        CHECK (
+            char_length(trim(tip)) BETWEEN 1 AND 300
+        )
+);
+
+-- =========================
 -- Indexes
 -- =========================
 CREATE INDEX IF NOT EXISTS idx_trips_user_id
@@ -229,6 +249,9 @@ ALTER TABLE trip_expenses
 ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE trip_itinerary_items
+ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE daily_travel_tips
 ENABLE ROW LEVEL SECURITY;
 
 -- =========================

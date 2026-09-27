@@ -4,6 +4,7 @@ import {
   useState,
 } from 'react'
 import { Link } from 'react-router-dom'
+import DailyTravelTipCard from '../components/home/DailyTravelTipCard'
 import HomeTripCard from '../components/home/HomeTripCard'
 import NextTripCard from '../components/home/NextTripCard'
 import TravelCarousel from '../components/home/TravelCarousel'
@@ -11,6 +12,7 @@ import '../css/pages/home-page.css'
 import { useAuth } from '../hooks/useAuth'
 import { useTrips } from '../hooks/useTrips'
 import { getCountries } from '../services/countryService'
+import { getDailyTravelTip } from '../services/dailyTravelTipService'
 
 function ArrowIcon() {
   return (
@@ -77,6 +79,12 @@ function HomePage() {
   const [countries, setCountries] =
     useState([])
 
+  const [dailyTravelTip, setDailyTravelTip] =
+    useState(null)
+
+  const [isLoadingDailyTravelTip, setIsLoadingDailyTravelTip] =
+    useState(true)
+
   const {
     firebaseUser,
     backendUser,
@@ -120,6 +128,31 @@ function HomePage() {
       })
       .catch(() => {
         // Flags are decorative.
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let isActive = true
+
+    getDailyTravelTip()
+      .then((tip) => {
+        if (isActive) {
+          setDailyTravelTip(tip)
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setDailyTravelTip(null)
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingDailyTravelTip(false)
+        }
       })
 
     return () => {
@@ -212,6 +245,11 @@ function HomePage() {
       </section>
 
       <TravelCarousel />
+
+      <DailyTravelTipCard
+        tip={dailyTravelTip}
+        isLoading={isLoadingDailyTravelTip}
+      />
 
       <section
         className="home-page__plan-card"
