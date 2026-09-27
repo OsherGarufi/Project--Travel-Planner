@@ -66,6 +66,7 @@ public class DbService
             budget_amount,
             budget_currency,
             notes,
+            notes_updated_at,
             created_at,
             updated_at
         FROM trips
@@ -131,6 +132,7 @@ public class DbService
             budget_amount,
             budget_currency,
             notes,
+            notes_updated_at,
             created_at,
             updated_at
         FROM trips
@@ -196,7 +198,8 @@ public class DbService
             end_date,
             budget_amount,
             budget_currency,
-            notes
+            notes,
+            notes_updated_at
         )
         VALUES (
             @user_id,
@@ -208,7 +211,8 @@ public class DbService
             @end_date,
             @budget_amount,
             @budget_currency,
-            @notes
+            @notes,
+            CASE WHEN @notes IS NULL THEN NULL ELSE NOW() END
         )
         RETURNING
             id,
@@ -222,6 +226,7 @@ public class DbService
             budget_amount,
             budget_currency,
             notes,
+            notes_updated_at,
             created_at,
             updated_at;
         """;
@@ -279,13 +284,14 @@ public class DbService
             request.BudgetCurrency.ToUpper()
         );
 
+        var normalizedNotes =
+            NormalizeNotes(request.Notes);
+
         command.Parameters.AddWithValue(
             "notes",
-            string.IsNullOrWhiteSpace(
-                request.Notes
-            )
+            normalizedNotes is null
                 ? DBNull.Value
-                : request.Notes
+                : normalizedNotes
         );
 
         await using var reader =
@@ -360,6 +366,15 @@ public class DbService
             end_date = @end_date,
             budget_amount = @budget_amount,
             budget_currency = @budget_currency,
+            notes_updated_at =
+                CASE
+                    WHEN NULLIF(BTRIM(notes), '')
+                        IS NOT DISTINCT FROM @notes
+                        THEN notes_updated_at
+                    WHEN @notes IS NULL
+                        THEN NULL
+                    ELSE NOW()
+                END,
             notes = @notes
         WHERE id = @id
           AND user_id = @user_id
@@ -375,6 +390,7 @@ public class DbService
             budget_amount,
             budget_currency,
             notes,
+            notes_updated_at,
             created_at,
             updated_at;
         """;
@@ -438,13 +454,14 @@ public class DbService
             request.BudgetCurrency.ToUpper()
         );
 
+        var normalizedNotes =
+            NormalizeNotes(request.Notes);
+
         command.Parameters.AddWithValue(
             "notes",
-            string.IsNullOrWhiteSpace(
-                request.Notes
-            )
+            normalizedNotes is null
                 ? DBNull.Value
-                : request.Notes
+                : normalizedNotes
         );
 
         await using var reader =
@@ -815,6 +832,19 @@ public class DbService
                         )
                     ),
 
+            NotesUpdatedAt =
+                reader.IsDBNull(
+                    reader.GetOrdinal(
+                        "notes_updated_at"
+                    )
+                )
+                    ? null
+                    : reader.GetDateTime(
+                        reader.GetOrdinal(
+                            "notes_updated_at"
+                        )
+                    ),
+
             CreatedAt =
                 reader.GetDateTime(
                     reader.GetOrdinal(
@@ -829,5 +859,14 @@ public class DbService
                     )
                 )
         };
+    }
+
+    private static string? NormalizeNotes(
+        string? notes
+    )
+    {
+        return string.IsNullOrWhiteSpace(notes)
+            ? null
+            : notes.Trim();
     }
 }

@@ -36,6 +36,7 @@ public abstract class TripRequestBase : IValidatableObject
     [StringLength(3, MinimumLength = 3)]
     public string BudgetCurrency { get; set; } = "ILS";
 
+    [StringLength(10000)]
     public string? Notes { get; set; }
 
     public IEnumerable<ValidationResult> Validate(

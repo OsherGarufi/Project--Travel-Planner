@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS trips (
     budget_currency CHAR(3) NOT NULL DEFAULT 'ILS',
 
     notes TEXT,
+    notes_updated_at TIMESTAMPTZ NULL,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -46,6 +47,12 @@ CREATE TABLE IF NOT EXISTS trips (
         CHECK (
             budget_amount IS NULL
             OR budget_amount >= 0
+        ),
+
+    CONSTRAINT trips_notes_check
+        CHECK (
+            notes IS NULL
+            OR char_length(notes) <= 10000
         )
 );
 

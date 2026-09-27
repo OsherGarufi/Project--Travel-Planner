@@ -18,6 +18,7 @@ public class Trip
     public string BudgetCurrency { get; set; } = "ILS";
 
     public string? Notes { get; set; }
+    public DateTime? NotesUpdatedAt { get; set; }
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

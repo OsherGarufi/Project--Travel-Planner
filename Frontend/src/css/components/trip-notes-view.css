@@ -1,0 +1,91 @@
+.trip-notes-view {
+  padding: var(--tp-space-8);
+  border: 1px solid var(--tp-color-border-subtle);
+  border-radius: var(--tp-radius-xl);
+  background-color: var(--tp-color-surface);
+  box-shadow: var(--tp-shadow-sm);
+}
+
+.trip-notes-view__eyebrow {
+  margin-bottom: var(--tp-space-1);
+  color: var(--tp-color-primary-500);
+  font-size: var(--tp-font-size-xs);
+  font-weight: var(--tp-font-weight-semibold);
+  letter-spacing: 0.08em;
+}
+
+.trip-notes-view__title {
+  color: var(--tp-color-text-primary);
+  font-size: var(--tp-font-size-xl);
+}
+
+.trip-notes-view__content {
+  max-height: min(28rem, 55vh);
+  margin-top: var(--tp-space-6);
+  padding: var(--tp-space-5);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--tp-color-border-subtle);
+  border-radius: var(--tp-radius-md);
+  color: var(--tp-color-text-secondary);
+  background-color: var(--tp-color-surface-subtle);
+  line-height: var(--tp-line-height-relaxed);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.trip-notes-view__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tp-space-3);
+  margin-top: var(--tp-space-6);
+}
+
+.trip-notes-view__back,
+.trip-notes-view__edit {
+  min-height: var(--tp-control-height-md);
+  padding: 0 var(--tp-space-5);
+  border-radius: var(--tp-radius-md);
+  font-size: var(--tp-font-size-sm);
+  font-weight: var(--tp-font-weight-semibold);
+  cursor: pointer;
+}
+
+.trip-notes-view__back {
+  border: 1px solid var(--tp-color-border);
+  color: var(--tp-color-text-secondary);
+  background: var(--tp-color-surface);
+}
+
+.trip-notes-view__edit {
+  border: 1px solid transparent;
+  color: var(--tp-color-text-inverse);
+  background: var(--tp-color-primary-700);
+}
+
+.trip-notes-view__back:focus-visible,
+.trip-notes-view__edit:focus-visible {
+  box-shadow: var(--tp-focus-ring);
+}
+
+@media (max-width: 40rem) {
+  .trip-notes-view {
+    padding: var(--tp-space-5);
+    border-radius: var(--tp-radius-lg);
+  }
+
+  .trip-notes-view__content {
+    max-height: min(28rem, 50vh);
+    padding: var(--tp-space-4);
+  }
+
+  .trip-notes-view__actions {
+    flex-direction: column-reverse;
+  }
+
+  .trip-notes-view__back,
+  .trip-notes-view__edit {
+    width: 100%;
+  }
+}

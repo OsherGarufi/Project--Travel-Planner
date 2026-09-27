@@ -30,6 +30,21 @@ export function updateTrip(tripId, tripData, idToken) {
   )
 }
 
+export function organizeTripNotes(
+  tripId,
+  notes,
+  idToken,
+) {
+  return apiRequest(
+    `/api/Trips/${tripId}/notes/organize`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    },
+    idToken,
+  )
+}
+
 export function deleteTrip(tripId, idToken) {
   return apiRequest(
     `/api/Trips/${tripId}`,

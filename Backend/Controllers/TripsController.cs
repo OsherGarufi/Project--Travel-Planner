@@ -1,6 +1,8 @@
 ﻿using Backend.DAL;
 using Backend.Dtos;
+using Backend.Dtos.TripNotes;
 using Backend.Services;
+using Backend.Services.Ai;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -11,16 +13,19 @@ public class TripsController : ControllerBase
 {
     private readonly DbService _dbService;
     private readonly TripService _tripService;
+    private readonly TripNotesOrganizerService _tripNotesOrganizerService;
     private readonly CurrentUserService _currentUserService;
 
     public TripsController(
         DbService dbService,
         TripService tripService,
+        TripNotesOrganizerService tripNotesOrganizerService,
         CurrentUserService currentUserService
     )
     {
         _dbService = dbService;
         _tripService = tripService;
+        _tripNotesOrganizerService = tripNotesOrganizerService;
         _currentUserService = currentUserService;
     }
 
@@ -155,6 +160,72 @@ public class TripsController : ControllerBase
         }
 
         return Ok(updatedTrip);
+    }
+
+    [HttpPost("{id:guid}/notes/organize")]
+    public async Task<IActionResult> OrganizeTripNotes(
+        Guid id,
+        [FromBody] OrganizeTripNotesRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        var user =
+            await _currentUserService
+                .GetCurrentUserAsync();
+
+        if (user is null)
+        {
+            return Unauthorized(
+                "Invalid or missing Firebase ID token."
+            );
+        }
+
+        var trip =
+            await _dbService
+                .GetTripByIdForUserAsync(
+                    id,
+                    user.Id
+                );
+
+        if (trip is null)
+        {
+            return NotFound(
+                $"Trip with id '{id}' was not found."
+            );
+        }
+
+        if (
+            string.IsNullOrWhiteSpace(request.Notes)
+            || request.Notes.Length > 10000
+        )
+        {
+            return BadRequest(
+                "Notes must contain between 1 and 10000 characters."
+            );
+        }
+
+        try
+        {
+            var result =
+                await _tripNotesOrganizerService
+                    .OrganizeAsync(
+                        request.Notes,
+                        cancellationToken
+                    );
+
+            return Ok(result);
+        }
+        catch (AiServiceException)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        "Could not organize the notes. Please try again."
+                }
+            );
+        }
     }
 
     /// <summary>

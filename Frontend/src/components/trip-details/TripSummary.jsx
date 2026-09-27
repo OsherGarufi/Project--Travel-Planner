@@ -168,6 +168,23 @@ function formatTripDate(dateValue) {
   ).format(date)
 }
 
+function formatNotesUpdatedAt(dateValue) {
+  if (!dateValue) {
+    return ''
+  }
+
+  const date = new Date(dateValue)
+
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('en', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}
+
 function formatBudget(amount) {
   const numericAmount =
     Number(amount)
@@ -240,7 +257,8 @@ function TripSummary({
   isLoadingExpenses,
   expensesError,
   onEditTrip,
-  onEditNotes,
+  onAddNotes,
+  onViewNotes,
   isTripEditDisabled = false,
   isNotesEditDisabled = false,
 }) {
@@ -304,6 +322,11 @@ function TripSummary({
       : expensesError
         ? 'unavailable'
         : expenseSummary.status
+
+  const hasNotes = Boolean(trip.notes?.trim())
+  const notesUpdatedAt = formatNotesUpdatedAt(
+    trip.notesUpdatedAt,
+  )
 
   return (
     <div className="trip-summary">
@@ -498,35 +521,31 @@ function TripSummary({
             </div>
           </div>
 
+        </div>
+
+        <div className="trip-summary__notes-summary">
+          <div>
+            <p className="trip-summary__notes-message">
+              {hasNotes
+                ? 'You have notes saved for this trip.'
+                : 'No notes have been added to this trip yet.'}
+            </p>
+            {hasNotes && notesUpdatedAt && (
+              <p className="trip-summary__notes-updated">
+                Last updated: {notesUpdatedAt}
+              </p>
+            )}
+          </div>
+
           <button
             className="trip-summary__notes-edit"
             type="button"
-            onClick={onEditNotes}
-            disabled={
-              isNotesEditDisabled
-            }
+            onClick={hasNotes ? onViewNotes : onAddNotes}
+            disabled={isNotesEditDisabled}
           >
-            <span
-              className="trip-summary__notes-edit-icon"
-              aria-hidden="true"
-            >
-              <EditIcon />
-            </span>
-
-            <span>Edit notes</span>
+            {hasNotes ? 'View notes' : 'Add notes'}
           </button>
         </div>
-
-        {trip.notes ? (
-          <p className="trip-summary__notes-text">
-            {trip.notes}
-          </p>
-        ) : (
-          <p className="trip-summary__notes-empty">
-            No notes have been added
-            to this trip yet.
-          </p>
-        )}
       </section>
     </div>
   )

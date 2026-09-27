@@ -336,7 +336,18 @@ function TripsProviderForUser({
             (trip) => trip.id === tripId,
           )
 
-        if (cachedTrip) {
+        const hasAuthoritativeNotes =
+          cachedTrip &&
+          Object.prototype.hasOwnProperty.call(
+            cachedTrip,
+            'notes',
+          ) &&
+          Object.prototype.hasOwnProperty.call(
+            cachedTrip,
+            'notesUpdatedAt',
+          )
+
+        if (hasAuthoritativeNotes) {
           return cachedTrip
         }
       }

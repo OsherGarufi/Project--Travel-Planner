@@ -12,6 +12,7 @@ import TripAttractionsSection from '../components/trip-attractions/TripAttractio
 import DeleteTripSection from '../components/trip-details/DeleteTripSection'
 import TripEditForm from '../components/trip-details/TripEditForm'
 import TripNotesEditForm from '../components/trip-details/TripNotesEditForm'
+import TripNotesView from '../components/trip-details/TripNotesView'
 import TripSummary from '../components/trip-details/TripSummary'
 import TripExpensesSection from '../components/trip-expenses/TripExpensesSection'
 import '../css/pages/trip-details-page.css'
@@ -194,14 +195,27 @@ function TripDetailsPage() {
   })
 
   const {
-    notes,
+    savedNote,
+    draftNote,
+    preAiDraft,
+    aiResult,
+    notesMode,
     hasNotesChanges,
+    canOrganize,
+    isOrganizing,
+    organizeError,
     isSavingNotes,
     notesSaveError,
 
+    startNotesView,
     startNotesEditing,
+    editNotes,
     cancelNotesEditing,
+    closeNotesView,
     saveNotes,
+    organizeNotes,
+    applyAiResult,
+    restorePreAiDraft,
     handleNotesChange,
   } = useTripNotesEdit({
     trip,
@@ -397,11 +411,30 @@ function TripDetailsPage() {
       )
     }
 
+  const handleStartNotesView = () => {
+    resetDelete()
+    clearEditWeather()
+    startNotesView()
+
+    setActiveFocusMode(FOCUS_MODE.NOTES)
+  }
+
+  const handleEditNotes = () => {
+    editNotes()
+  }
+
+  const handleCloseNotesView = () => {
+    closeNotesView()
+    setActiveFocusMode(null)
+  }
+
   const handleCancelNotesEditing =
     () => {
       cancelNotesEditing()
 
-      setActiveFocusMode(null)
+      if (!savedNote.trim()) {
+        setActiveFocusMode(null)
+      }
     }
 
   const handleSaveNotesEditing =
@@ -803,8 +836,11 @@ function TripDetailsPage() {
           onEditTrip={
             handleStartEditing
           }
-          onEditNotes={
+          onAddNotes={
             handleStartNotesEditing
+          }
+          onViewNotes={
+            handleStartNotesView
           }
           isTripEditDisabled={
             isDeleting
@@ -954,27 +990,32 @@ function TripDetailsPage() {
       {activeFocusMode ===
         FOCUS_MODE.NOTES && (
         <div ref={focusFormRef}>
-          <TripNotesEditForm
-            notes={notes}
-            hasChanges={
-              hasNotesChanges
-            }
-            isSaving={
-              isSavingNotes
-            }
-            saveError={
-              notesSaveError
-            }
-            onNotesChange={
-              handleNotesChange
-            }
-            onSave={
-              handleSaveNotesEditing
-            }
-            onCancel={
-              handleCancelNotesEditing
-            }
-          />
+          {notesMode === 'view' ? (
+            <TripNotesView
+              notes={savedNote}
+              onEdit={handleEditNotes}
+              onBack={handleCloseNotesView}
+            />
+          ) : (
+            <TripNotesEditForm
+              notes={draftNote}
+              hasChanges={hasNotesChanges}
+              isSaving={isSavingNotes}
+              saveError={notesSaveError}
+              isOrganizing={isOrganizing}
+              organizeError={organizeError}
+              canOrganize={canOrganize}
+              aiResult={aiResult}
+              notesMode={notesMode}
+              canUndoAi={preAiDraft !== null}
+              onNotesChange={handleNotesChange}
+              onSave={handleSaveNotesEditing}
+              onCancel={handleCancelNotesEditing}
+              onOrganize={organizeNotes}
+              onApplyAi={applyAiResult}
+              onRestoreAi={restorePreAiDraft}
+            />
+          )}
         </div>
       )}
     </div>
