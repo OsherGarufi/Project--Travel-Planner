@@ -279,16 +279,12 @@ function TripsPage() {
     <div className="trips-page">
       <header className="trips-page__header">
         <div>
-          <p className="trips-page__eyebrow">
-            MY TRIPS
-          </p>
-
           <h1 className="trips-page__title">
-            Your Trips
+            Trips
           </h1>
 
           <p className="trips-page__description">
-            View your current plans, upcoming
+            View current plans, upcoming
             adventures and previous trips in one
             place.
           </p>

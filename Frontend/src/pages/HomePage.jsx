@@ -5,7 +5,6 @@ import {
 } from 'react'
 import { Link } from 'react-router-dom'
 import DailyTravelTipCard from '../components/home/DailyTravelTipCard'
-import HomeTripCard from '../components/home/HomeTripCard'
 import NextTripCard from '../components/home/NextTripCard'
 import TravelCarousel from '../components/home/TravelCarousel'
 import '../css/pages/home-page.css'
@@ -93,8 +92,6 @@ function HomePage() {
   const {
     trips,
     hasLoadedTrips,
-    isLoadingTrips,
-    tripsError,
     loadTrips,
   } = useTrips()
 
@@ -170,10 +167,7 @@ function HomePage() {
       )
     }, [countries])
 
-  const {
-    nextTrip,
-    previewTrips,
-  } = useMemo(() => {
+  const nextTrip = useMemo(() => {
     const today = getToday()
 
     const futureTrips = trips
@@ -193,24 +187,8 @@ function HomePage() {
         return firstDate - secondDate
       })
 
-    const futureTripIds = new Set(
-      futureTrips.map((trip) => trip.id),
-    )
-
-    const remainingTrips = trips.filter(
-      (trip) => !futureTripIds.has(trip.id),
-    )
-
-    return {
-      nextTrip: futureTrips[0] ?? null,
-      previewTrips: [
-        ...futureTrips,
-        ...remainingTrips,
-      ].slice(0, 3),
-    }
+    return futureTrips[0] ?? null
   }, [trips])
-
-  const hasTrips = trips.length > 0
 
   const getFlagUrl = (trip) => {
     const countryCode =
@@ -230,10 +208,6 @@ function HomePage() {
   return (
     <div className="home-page">
       <section className="home-page__intro">
-        <p className="home-page__eyebrow">
-          YOUR TRIP SPACE
-        </p>
-
         <h1 className="home-page__title">
           Welcome {firstName}
         </h1>
@@ -304,104 +278,6 @@ function HomePage() {
           flagUrl={getFlagUrl(nextTrip)}
         />
       )}
-
-      <section
-        className="home-page__trips-section"
-        aria-labelledby="home-trips-title"
-      >
-        <div className="home-page__section-header">
-          <h2
-            id="home-trips-title"
-            className="home-page__section-title"
-          >
-            Your trips
-          </h2>
-
-          {hasTrips && (
-            <Link
-              className="home-page__view-all"
-              to="/trips"
-            >
-              <span>View all</span>
-
-              <span
-                className="home-page__view-all-icon"
-                aria-hidden="true"
-              >
-                <ArrowIcon />
-              </span>
-            </Link>
-          )}
-        </div>
-
-        {tripsError && (
-          <div
-            className="home-page__error"
-            role="alert"
-          >
-            {tripsError}
-          </div>
-        )}
-
-        {!hasTrips && isLoadingTrips && (
-          <div className="home-page__trip-grid">
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="home-page__trip-skeleton"
-                aria-hidden="true"
-              >
-                <span className="home-page__skeleton-line home-page__skeleton-line--short" />
-                <span className="home-page__skeleton-line home-page__skeleton-line--title" />
-                <span className="home-page__skeleton-line" />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!isLoadingTrips &&
-          hasLoadedTrips &&
-          !hasTrips && (
-            <div className="home-page__empty">
-              <span
-                className="home-page__empty-icon"
-                aria-hidden="true"
-              >
-                <PlaneIcon />
-              </span>
-
-              <div className="home-page__empty-copy">
-                <h3 className="home-page__empty-title">
-                  No trips yet
-                </h3>
-
-                <p className="home-page__empty-description">
-                  Your saved trips will appear here once
-                  you start planning.
-                </p>
-              </div>
-
-              <Link
-                className="home-page__empty-link"
-                to="/plan"
-              >
-                Plan your first trip
-              </Link>
-            </div>
-          )}
-
-        {hasTrips && (
-          <div className="home-page__trip-grid">
-            {previewTrips.map((trip) => (
-              <HomeTripCard
-                key={trip.id}
-                trip={trip}
-                flagUrl={getFlagUrl(trip)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   )
 }
