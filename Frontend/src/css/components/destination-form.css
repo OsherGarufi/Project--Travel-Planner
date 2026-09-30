@@ -55,14 +55,6 @@
   height: 1.4rem;
 }
 
-.destination-form__section-step {
-  margin-bottom: var(--tp-space-1);
-  color: var(--tp-color-primary-500);
-  font-size: var(--tp-font-size-xs);
-  font-weight: var(--tp-font-weight-semibold);
-  letter-spacing: 0.09em;
-}
-
 .destination-form__section-title {
   color: var(--tp-color-text-primary);
   font-size: var(--tp-font-size-xl);
@@ -83,6 +75,10 @@
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
   gap: var(--tp-space-6);
+}
+
+.destination-form__destination-details {
+  margin-top: var(--tp-space-6);
 }
 
 .destination-form__field {
@@ -250,14 +246,6 @@
 .destination-form__footer-icon svg {
   width: 1.2rem;
   height: 1.2rem;
-}
-
-.destination-form__footer-step {
-  margin-bottom: 2px;
-  color: var(--tp-color-primary-500);
-  font-size: var(--tp-font-size-xs);
-  font-weight: var(--tp-font-weight-semibold);
-  letter-spacing: 0.08em;
 }
 
 .destination-form__footer-title {

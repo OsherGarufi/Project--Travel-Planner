@@ -69,10 +69,6 @@ function BudgetSection({
           </span>
 
           <div>
-            <p className="budget-section__eyebrow">
-              TRIP BUDGET
-            </p>
-
             <h2
               id="budget-section-title"
               className="budget-section__title"

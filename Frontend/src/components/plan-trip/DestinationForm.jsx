@@ -124,6 +124,9 @@ function DestinationForm({
 
   isLoadingWeather,
   isLoadingHistoricalWeather,
+  isWeatherVisible,
+  weatherResultsId,
+  destinationDetails,
 
   onCountryChange,
   onCityChange,
@@ -163,10 +166,6 @@ function DestinationForm({
           </div>
 
           <div>
-            <p className="destination-form__section-step">
-              STEP 01
-            </p>
-
             <h2 className="destination-form__section-title">
               Choose your destination
             </h2>
@@ -329,6 +328,12 @@ function DestinationForm({
               )}
           </div>
         </div>
+
+        {destinationDetails && (
+          <div className="destination-form__destination-details">
+            {destinationDetails}
+          </div>
+        )}
       </section>
 
       <div
@@ -343,10 +348,6 @@ function DestinationForm({
           </div>
 
           <div>
-            <p className="destination-form__section-step">
-              STEP 02
-            </p>
-
             <h2 className="destination-form__section-title">
               Set your travel dates
             </h2>
@@ -386,10 +387,6 @@ function DestinationForm({
             </span>
 
             <div>
-              <p className="destination-form__footer-step">
-                STEP 03
-              </p>
-
               <h3 className="destination-form__footer-title">
                 Check the weather
               </h3>
@@ -408,11 +405,15 @@ function DestinationForm({
           type="button"
           onClick={onCheckDestination}
           disabled={isCheckDestinationDisabled}
+          aria-expanded={isWeatherVisible}
+          aria-controls={weatherResultsId}
         >
           <span>
-          {isLoadingWeather
-            ? 'Loading forecast...'
-            : 'View weather forecast'}
+            {isLoadingWeather
+              ? 'Loading forecast...'
+              : isWeatherVisible
+                ? 'Hide weather forecast'
+                : 'View weather forecast'}
           </span>
 
           {!isLoadingWeather && (

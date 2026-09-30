@@ -26,6 +26,9 @@ import { formatDateForInput } from '../utils/dateUtils'
 function PlanTripPage() {
   const weatherSectionRef = useRef(null)
 
+  const [isWeatherVisible, setIsWeatherVisible] =
+    useState(false)
+
   const {
     countries,
     selectedCountry,
@@ -118,6 +121,7 @@ function PlanTripPage() {
 
   const handleCountryChange = (event) => {
     resetWeather()
+    setIsWeatherVisible(false)
     clearCreateTripError()
 
     handleDestinationCountryChange(event)
@@ -125,6 +129,7 @@ function PlanTripPage() {
 
   const handleCityChange = (event) => {
     resetWeather()
+    setIsWeatherVisible(false)
     clearCreateTripError()
 
     handleDestinationCityChange(event)
@@ -134,6 +139,7 @@ function PlanTripPage() {
     city,
   ) => {
     resetWeather()
+    setIsWeatherVisible(false)
     clearCreateTripError()
 
     handleDestinationAdditionalCitySelection(
@@ -163,6 +169,7 @@ function PlanTripPage() {
     }
 
     resetWeather()
+    setIsWeatherVisible(false)
   }
 
   const handleEndDateChange = (event) => {
@@ -185,9 +192,15 @@ function PlanTripPage() {
     setEndDate(newEndDate)
     clearCreateTripError()
     resetWeather()
+    setIsWeatherVisible(false)
   }
 
   const handleViewWeatherForecast = () => {
+    if (isWeatherVisible) {
+      setIsWeatherVisible(false)
+      return
+    }
+
     if (
       !selectedCity ||
       !startDate ||
@@ -198,7 +211,21 @@ function PlanTripPage() {
       return
     }
 
-    handleCheckDestination()
+    setIsWeatherVisible(true)
+
+    const hasRetainedWeatherState = Boolean(
+      weatherForecast ||
+        weatherError ||
+        isForecastUnavailable ||
+        historicalWeather ||
+        historicalWeatherError ||
+        isLoadingWeather ||
+        isLoadingHistoricalWeather,
+    )
+
+    if (!hasRetainedWeatherState) {
+      handleCheckDestination()
+    }
 
     requestAnimationFrame(() => {
       weatherSectionRef.current?.scrollIntoView({
@@ -208,23 +235,9 @@ function PlanTripPage() {
     })
   }
 
-  const hasCompleteDestinationAndDates =
-    Boolean(
-      selectedCountry &&
-        selectedCity &&
-        startDate &&
-        endDate &&
-        startDate >= minimumTravelDate &&
-        endDate >= startDate,
-    )
-
   return (
     <div className="plan-trip-page">
       <header className="plan-trip-page__header">
-        <p className="plan-trip-page__eyebrow">
-          TRIP PLANNER
-        </p>
-
         <h1 className="plan-trip-page__title">
           Plan a new trip
         </h1>
@@ -284,6 +297,17 @@ function PlanTripPage() {
           isLoadingHistoricalWeather={
             isLoadingHistoricalWeather
           }
+          isWeatherVisible={
+            isWeatherVisible
+          }
+          weatherResultsId="plan-trip-weather-results"
+          destinationDetails={
+            selectedCountry && selectedCity ? (
+              <CountryDetails
+                country={selectedCountry}
+              />
+            ) : null
+          }
           onCountryChange={
             handleCountryChange
           }
@@ -314,60 +338,56 @@ function PlanTripPage() {
           }
         />
 
-        {hasCompleteDestinationAndDates && (
-          <CountryDetails
-            country={selectedCountry}
-          />
-        )}
-
-        <div
-          ref={weatherSectionRef}
-          className="plan-trip-page__weather-anchor"
-          aria-hidden="true"
-        />
-
-        {weatherError && (
-          <p
-            className="plan-trip-page__error"
-            role="alert"
+        {isWeatherVisible && (
+          <div
+            id="plan-trip-weather-results"
+            ref={weatherSectionRef}
+            className="plan-trip-page__weather-results"
           >
-            {weatherError}
-          </p>
+            {weatherError && (
+              <p
+                className="plan-trip-page__error"
+                role="alert"
+              >
+                {weatherError}
+              </p>
+            )}
+
+            <ForecastUnavailable
+              isUnavailable={
+                isForecastUnavailable
+              }
+              forecastDays={
+                WEATHER_FORECAST_DAYS
+              }
+              isLoadingHistoricalWeather={
+                isLoadingHistoricalWeather
+              }
+              historicalWeatherError={
+                historicalWeatherError
+              }
+              onViewLastYearWeather={
+                handleViewLastYearWeather
+              }
+            />
+
+            <WeatherForecast
+              forecast={weatherForecast}
+              isPartial={isPartialForecast}
+              forecastDays={
+                WEATHER_FORECAST_DAYS
+              }
+              attribution={WEATHER_ATTRIBUTION}
+            />
+
+            <HistoricalWeather
+              historicalWeather={
+                historicalWeather
+              }
+              attribution={WEATHER_ATTRIBUTION}
+            />
+          </div>
         )}
-
-        <ForecastUnavailable
-          isUnavailable={
-            isForecastUnavailable
-          }
-          forecastDays={
-            WEATHER_FORECAST_DAYS
-          }
-          isLoadingHistoricalWeather={
-            isLoadingHistoricalWeather
-          }
-          historicalWeatherError={
-            historicalWeatherError
-          }
-          onViewLastYearWeather={
-            handleViewLastYearWeather
-          }
-        />
-
-        <WeatherForecast
-          forecast={weatherForecast}
-          isPartial={isPartialForecast}
-          forecastDays={
-            WEATHER_FORECAST_DAYS
-          }
-          attribution={WEATHER_ATTRIBUTION}
-        />
-
-        <HistoricalWeather
-          historicalWeather={
-            historicalWeather
-          }
-          attribution={WEATHER_ATTRIBUTION}
-        />
 
         <BudgetSection
           budgetAmount={budgetAmount}

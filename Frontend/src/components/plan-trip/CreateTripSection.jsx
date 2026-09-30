@@ -218,10 +218,6 @@ function CreateTripSection({
     >
       <div className="create-trip-section__header">
         <div>
-          <p className="create-trip-section__eyebrow">
-            FINAL STEP
-          </p>
-
           <h2
             id="create-trip-title"
             className="create-trip-section__title"
