@@ -398,7 +398,7 @@
   }
 
   .trips-page__plan-button {
-    width: 100%;
+    display: none;
   }
 
   .trips-page__sections {
