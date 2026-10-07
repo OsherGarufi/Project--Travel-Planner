@@ -1,6 +1,7 @@
 ﻿using Backend.Dtos;
 using Backend.Models;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Backend.DAL;
 
@@ -289,6 +290,7 @@ public class DbService
 
         command.Parameters.AddWithValue(
             "notes",
+            NpgsqlDbType.Text,
             normalizedNotes is null
                 ? DBNull.Value
                 : normalizedNotes
